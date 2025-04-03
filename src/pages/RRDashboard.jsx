@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MaterialModal } from './MaterialModal';
+import { MaterialModal } from '../modals/MaterialModal';
 import Navbar from '../components/Navbar';
+import { TransporterModal } from '../modals/TransporterModal';
 
 const RRDashboard = () => {
     const { state } = useLocation();
@@ -15,10 +16,12 @@ const RRDashboard = () => {
         weight: '',
         quantity: '',
         remarks: '',
-        transporter: '',
+        transporter: [],
     });
 
     const [showMaterialModal, setShowMaterialModal] = useState(false);
+    const [showTransporterModal, setShowTransporterModal] = useState(false);
+
     const [viewResponses, setViewResponses] = useState(false);
 
     const [finalPrices, setFinalPrices] = useState({});
@@ -48,8 +51,16 @@ const RRDashboard = () => {
     ];
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value, options } = e.target;
+
+        if (name === "transporter") {
+            const selected = Array.from(options).filter(option => option.selected).map(option => option.value);
+            setForm({ ...form, [name]: selected });
+        } else {
+            setForm({ ...form, [name]: value });
+        }
     };
+
 
     const handleRemoveMaterial = (indexToRemove) => {
         setForm((prevForm) => ({
@@ -231,21 +242,27 @@ const RRDashboard = () => {
                                         className="w-full border border-gray-300 px-4 py-2 rounded-lg" />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block font-medium mb-1">Select Transporter</label>
-                                    <select
-                                        name="transporter"
-                                        value={form.transporter}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full border border-gray-300 px-4 py-2 rounded-lg"
+                                    <label className="block font-medium mb-1">Select Transporters</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTransporterModal(true)}
+                                        className="w-full border border-gray-300 px-4 py-2 rounded-lg text-left bg-gray-100 hover:bg-gray-200"
                                     >
-                                        <option value="" disabled>Select a transporter</option>
-                                        <option value="RR Logistics">RR Logistics</option>
-                                        <option value="ABC Transports">ABC Transports</option>
-                                        <option value="XYZ Freight">XYZ Freight</option>
-                                        <option value="FastTrack Movers">FastTrack Movers</option>
-                                    </select>
+                                        + Choose Transporters
+                                    </button>
+
+                                    {form.transporter.length > 0 && (
+                                        <div className="mt-4 bg-white shadow-md rounded-lg p-4">
+                                            <h3 className="text-lg font-semibold mb-2">Selected Transporters</h3>
+                                            <ul className="list-disc ml-6 text-gray-700 space-y-1">
+                                                {form.transporter.map((name, idx) => (
+                                                    <li key={idx}>{name}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
+
                                 <div className="col-span-2 text-right">
                                     <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                                         Send Tender
@@ -263,6 +280,17 @@ const RRDashboard = () => {
                             }
                         />
                     )}
+
+                    {showTransporterModal && (
+                        <TransporterModal
+                            selected={form.transporter}
+                            onClose={() => setShowTransporterModal(false)}
+                            onSave={(selectedTransporters) =>
+                                setForm((prev) => ({ ...prev, transporter: selectedTransporters }))
+                            }
+                        />
+                    )}
+
                 </div>
 
             </div>
