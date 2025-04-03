@@ -7,6 +7,8 @@ import SignInPage from './pages/SignInPage';
 import RRDashboard from './pages/RRDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
 import ProtectedRoute from './utils/ProtectedRoute';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   return (
@@ -16,7 +18,8 @@ function App() {
         <Route path="/" element={<SignUpPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signin" element={<SignInPage />} />
-
+        <Route path="/forgot-password" element={<ForgotPasswordPage/>} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage/>} />
         {/* Protected Routes */}
         <Route
           path="/rr/dashboard"
