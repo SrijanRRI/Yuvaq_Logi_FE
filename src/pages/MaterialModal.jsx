@@ -17,7 +17,7 @@ export const MaterialModal = ({ close, onAdd }) => {
   const subItems = item ? materialOptions[item] : []
 
   const handleAdd = () => {
-    if (!item || !weight || !quantity) {
+    if (!item ) {
       alert("Fill required fields")
       return
     }
@@ -91,7 +91,7 @@ export const MaterialModal = ({ close, onAdd }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="weight" className="font-medium">
-                Weight (kg) <span className="text-red-500">*</span>
+                Weight (kg) 
               </label>
               <input
                 type="number"
@@ -104,7 +104,7 @@ export const MaterialModal = ({ close, onAdd }) => {
             </div>
             <div className="space-y-2">
               <label htmlFor="quantity" className="font-medium">
-                Quantity <span className="text-red-500">*</span>
+                Quantity
               </label>
               <input
                 type="number"
