@@ -8,6 +8,11 @@ const API = {
     SIGNIN : `${serverUrl}/api/auth/signin`,
     FORGOTPASSWORD : `${serverUrl}/api/auth/forgotpassword`,
     RESETPASSWORD : `${serverUrl}/api/auth/resetpassword/`,
+
+    //Admin API :
+    ALLAPPROVALREQUEST : `${serverUrl}/admin/pending-approvals`,
+    APPROVEREQUEST : `${serverUrl}/admin/approve-user/`,
+    REJECTREQUEST : `${serverUrl}/admin/reject-user/`,
 }
   
   export default API;
