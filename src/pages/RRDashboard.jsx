@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MaterialModal } from './MaterialModal';
+import Navbar from '../components/Navbar';
 
 const RRDashboard = () => {
     const { state } = useLocation();
@@ -82,22 +83,27 @@ const RRDashboard = () => {
         }
     };
 
+    // Navbar actions for RR Dashboard
+    const navbarActions = (
+        <button
+            onClick={() => setViewResponses(!viewResponses)}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+            {viewResponses ? "Back to Dashboard" : "View Responses"}
+        </button>
+    )
+
     return (
         <>
 
             <div className="min-h-screen bg-gray-100">
-                <nav className="bg-white shadow-md px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-                    <h1 className="text-xl font-bold text-blue-600">RR Dashboard</h1>
-                    <div className="flex items-center gap-4">
-                        <span className="text-gray-800 font-medium">{state?.name || 'RR User'}</span>
-                        <button onClick={() => setViewResponses(!viewResponses)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                            {viewResponses ? 'Back to Dashboard' : 'View Responses'}
-                        </button>
-                        <button onClick={handleLogout} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                            Logout
-                        </button>
-                    </div>
-                </nav>
+
+                <Navbar
+                    title="RR Dashboard"
+                    userName={state?.name || "RR User"}
+                    actions={navbarActions}
+                    onLogout={handleLogout}
+                />
 
                 <div className="py-10 px-4 max-w-6xl mx-auto">
                     {viewResponses ? (
@@ -130,12 +136,17 @@ const RRDashboard = () => {
                                         </div>
                                     ) : (
                                         confirmedIdx === null && (
-                                            <button
-                                                onClick={() => handleConfirm(idx)}
-                                                className="mt-3 px-4 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                                            >
-                                                Confirm Final Price
-                                            </button>
+                                            <>
+                                                <p className="text-md text-red-500 mt-1">
+                                                    * Please enter the final price after negotiation before confirming.
+                                                </p>
+                                                <button
+                                                    onClick={() => handleConfirm(idx)}
+                                                    className="mt-3 px-4 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                                >
+                                                    Confirm Final Price
+                                                </button>
+                                            </>
                                         )
                                     )}
                                 </div>
