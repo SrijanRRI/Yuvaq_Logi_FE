@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import InputField from '../components/InputField';
-import { login } from '../utils/UserSlice'; // import your action
+import { login } from '../utils/UserSlice';
 import API from '../API';
 import axios from 'axios';
 
@@ -18,23 +18,20 @@ const SignInPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-   
-  
+
     try {
-      const res = await axios.post(API.SIGNIN, form); // API.SIGNIN should be defined properly
+      const res = await axios.post(API.SIGNIN, form);
       const { success, message, data, token } = res?.data || {};
-  
+
       if (success) {
         dispatch(login({
           token,
           role: data.role,
           user: data,
         }));
-  
-        // Optional: Store token in localStorage for persistent auth
+
         localStorage.setItem('authToken', token);
-  
-        // Redirect based on role
+
         if (data.role === 'user') {
           navigate('/rr/dashboard');
         } else if (data.role === 'transportUser') {
@@ -49,9 +46,8 @@ const SignInPage = () => {
       console.error('Login Error:', error);
       const errMessage = error?.response?.data?.message || 'Something went wrong. Please try again.';
       alert(errMessage);
-    } 
+    }
   };
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -75,6 +71,16 @@ const SignInPage = () => {
             onChange={handleChange}
             placeholder="******"
           />
+
+          {/* Forgot Password Link */}
+          <div className="text-right mt-2">
+            <span
+              className="text-sm text-blue-600 hover:underline cursor-pointer"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot Password?
+            </span>
+          </div>
 
           <button
             type="submit"
