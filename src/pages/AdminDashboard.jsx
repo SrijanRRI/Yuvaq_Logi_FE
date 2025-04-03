@@ -31,6 +31,33 @@ const mockRRData = [
             },
         ],
     },
+    {
+        rrName: "RR User 1",
+        deliveryDate: "2025-04-10",
+        dispatchLocation: "Warehouse A",
+        address: "123 Steel Lane",
+        pincode: "123456",
+        transporter: "RR Logistics",
+        materials: [
+            { item: "Steel Pipe", subItem: "MS", weight: "200", quantity: "10" },
+        ],
+        customerResponses: [
+            {
+                customer: "Customer A",
+                price: "45000",
+                vehicleNo: "MH12AB1234",
+                attachments: ["invoice.pdf"],
+                finalPrice: "44000",
+            },
+            {
+                customer: "Customer B",
+                price: "46000",
+                vehicleNo: "MH12XY5678",
+                attachments: ["quote.jpg"],
+                finalPrice: null,
+            },
+        ],
+    },
 ];
 
 const AdminDashboard = () => {

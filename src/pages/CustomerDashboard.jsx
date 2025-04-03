@@ -120,7 +120,7 @@ const CustomerDashboard = () => {
         <div className="min-h-screen bg-gray-100">
 
             <Navbar
-                title="Customer Dashboard"
+                title="Transporter Dashboard"
                 userName={customerName}
                 actions={navbarActions}
                 onLogout={handleLogout}
