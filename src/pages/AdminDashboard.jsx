@@ -1,62 +1,114 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ImCross } from "react-icons/im";
 import Navbar from "../components/Navbar";
 import { PiCheckFatFill } from "react-icons/pi";
+import axios from "axios";
+import API from "../API";
 
-const mockRRData = [
-    {
-        rrName: "RR User 1",
-        deliveryDate: "2025-04-10",
-        dispatchLocation: "Warehouse A",
-        address: "123 Steel Lane",
-        pincode: "123456",
-        transporter: "RR Logistics",
-        materials: [
-            { item: "Steel Pipe", subItem: "MS", weight: "200", quantity: "10" },
-        ],
-        customerResponses: [
-            {
-                customer: "Customer A",
-                price: "45000",
-                vehicleNo: "MH12AB1234",
-                attachments: ["invoice.pdf"],
-                finalPrice: "44000",
-            },
-            {
-                customer: "Customer B",
-                price: "46000",
-                vehicleNo: "MH12XY5678",
-                attachments: ["quote.jpg"],
-                finalPrice: null,
-            },
-        ],
-    },
-];
 
 const AdminDashboard = () => {
-    const [data] = useState(mockRRData);
-    const [adminName] = useState("Admin");
-
-    const [requests, setRequests] = useState([
-        { name: 'Customer A', email: 'a@example.com', isApproved: false },
-        { name: 'Customer B', email: 'b@example.com', isApproved: false },
-    ]);
-
+    const [requests, setRequests] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
     const [showRequests, setShowRequests] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const handleApprove = (index) => {
-        const user = requests[index];
-        setApprovedUsers(prev => [...prev, user]);
-        setRequests(prev => prev.filter((_, i) => i !== index));
-    };
+    const [data] = useState([
+        {
+            rrName: "RR User 1",
+            deliveryDate: "2025-04-10",
+            dispatchLocation: "Warehouse A",
+            address: "123 Steel Lane",
+            pincode: "123456",
+            transporter: "RR Logistics",
+            materials: [
+                { item: "Steel Pipe", subItem: "MS", weight: "200", quantity: "10" },
+            ],
+            customerResponses: [
+                {
+                    customer: "Customer A",
+                    price: "45000",
+                    vehicleNo: "MH12AB1234",
+                    attachments: ["invoice.pdf"],
+                    finalPrice: "44000",
+                },
+                {
+                    customer: "Customer B",
+                    price: "46000",
+                    vehicleNo: "MH12XY5678",
+                    attachments: ["quote.jpg"],
+                    finalPrice: null,
+                },
+            ],
+        },
+    ]);
 
-    const handleReject = (index) => {
-        const confirm = window.confirm("Are you sure you want to reject this user?");
-        if (confirm) {
-            setRequests(prev => prev.filter((_, i) => i !== index));
+
+    const fetchPendingUsers = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get(`${API.ALLAPPROVALREQUEST}`); // Replace with actual URL
+            if (res.data.success) {
+                setRequests(res.data.data);
+            } else {
+                setError("Failed to fetch users.");
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+            setError("An error occurred while fetching requests.");
+        } finally {
+            setLoading(false);
         }
     };
+   
+    const handleApprove = async (index) => {
+        const user = requests[index];
+        console.log(user);
+        
+        try {
+          const res = await axios.put(
+            `${API.APPROVEREQUEST}`+ `${user._id}`);
+    
+          if (res.data.success) {
+            alert(`${user.name} approved successfully.`);
+            setApprovedUsers((prev) => [...prev, user]);
+            setRequests((prev) => prev.filter((_, i) => i !== index));
+          } else {
+            alert("Failed to approve user.");
+          }
+        } catch (error) {
+          console.error("Approval error:", error);
+          alert("Something went wrong while approving user.");
+        }
+      };
+
+      const handleReject = async (index) => {
+        const user = requests[index];
+        const confirmReject = window.confirm(`Are you sure you want to reject ${user.name}?`);
+      
+        if (!confirmReject) return;
+      
+        try {
+          const res = await axios.delete(
+            `${API.REJECTREQUEST}`+ `${user._id}`);
+      
+          if (res.data.success) {
+            alert(`${user.name} has been rejected.`);
+            setRequests((prev) => prev.filter((_, i) => i !== index));
+          } else {
+            alert("Failed to reject user: " + (res.data.message || ""));
+          }
+        } catch (error) {
+          console.error("Rejection error:", error);
+          alert("Something went wrong while rejecting user.");
+        }
+      };
+      
+    useEffect(() => {
+        if (showRequests) {
+            fetchPendingUsers();
+        }
+    }, [showRequests]);
 
     const handleLogout = () => {
         window.location.href = '/signin';
@@ -85,7 +137,11 @@ const AdminDashboard = () => {
                     <div className="bg-white p-6 rounded shadow-md">
                         <h2 className="text-xl font-semibold mb-4">Transport User Requests</h2>
 
-                        {requests.length === 0 ? (
+                        {loading ? (
+                            <p className="text-blue-500">Loading requests...</p>
+                        ) : error ? (
+                            <p className="text-red-500">{error}</p>
+                        ) : requests.length === 0 ? (
                             <p className="text-gray-500">No pending requests.</p>
                         ) : (
                             <div className="space-y-4">
@@ -106,7 +162,7 @@ const AdminDashboard = () => {
                                                 onClick={() => handleReject(idx)}
                                                 className="flex items-center gap-1 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                                             >
-                                                <ImCross className="text-sm "/> Reject
+                                                <ImCross className="text-sm" /> Reject
                                             </button>
                                         </div>
                                     </div>
@@ -129,23 +185,15 @@ const AdminDashboard = () => {
                     </div>
                 ) : (
                     <div className="space-y-8">
+                        {/* Dashboard content using mockRRData */}
                         {data.map((entry, idx) => (
-                            <div
-                                key={idx}
-                                className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-                            >
+                            <div key={idx} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                                 <h2 className="text-xl font-semibold text-blue-700 mb-2">
                                     {entry.rrName}
                                 </h2>
-                                <p>
-                                    <strong>Delivery Date:</strong> {entry.deliveryDate} | <strong>Location:</strong> {entry.dispatchLocation}
-                                </p>
-                                <p>
-                                    <strong>Address:</strong> {entry.address} ({entry.pincode})
-                                </p>
-                                <p>
-                                    <strong>Transporter:</strong> {entry.transporter}
-                                </p>
+                                <p><strong>Delivery Date:</strong> {entry.deliveryDate} | <strong>Location:</strong> {entry.dispatchLocation}</p>
+                                <p><strong>Address:</strong> {entry.address} ({entry.pincode})</p>
+                                <p><strong>Transporter:</strong> {entry.transporter}</p>
 
                                 <div className="mt-4">
                                     <h3 className="font-semibold text-gray-800 mb-2">Materials</h3>
@@ -162,22 +210,11 @@ const AdminDashboard = () => {
                                     <h3 className="font-semibold text-gray-800 mb-2">Customer Quotations</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {entry.customerResponses.map((res, rIdx) => (
-                                            <div
-                                                key={rIdx}
-                                                className={`p-4 rounded border ${res.finalPrice ? "bg-green-50 border-green-400" : "bg-yellow-50 border-yellow-400"}`}
-                                            >
-                                                <p>
-                                                    <strong>Customer:</strong> {res.customer}
-                                                </p>
-                                                <p>
-                                                    <strong>Quoted Price:</strong> ₹{res.price}
-                                                </p>
-                                                <p>
-                                                    <strong>Vehicle No:</strong> {res.vehicleNo}
-                                                </p>
-                                                <p>
-                                                    <strong>Attachments:</strong> {res.attachments.join(", ")}
-                                                </p>
+                                            <div key={rIdx} className={`p-4 rounded border ${res.finalPrice ? "bg-green-50 border-green-400" : "bg-yellow-50 border-yellow-400"}`}>
+                                                <p><strong>Customer:</strong> {res.customer}</p>
+                                                <p><strong>Quoted Price:</strong> ₹{res.price}</p>
+                                                <p><strong>Vehicle No:</strong> {res.vehicleNo}</p>
+                                                <p><strong>Attachments:</strong> {res.attachments.join(", ")}</p>
                                                 {res.finalPrice && (
                                                     <p className="mt-2 font-bold text-green-700">
                                                         Final Deal Price: ₹{res.finalPrice}

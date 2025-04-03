@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import InputField from '../components/InputField';
-import { login } from '../utils/UserSlice';
-import API from '../API';
-import axios from 'axios';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import InputField from "../components/InputField";
+import { login } from "../utils/UserSlice";
+import API from "../API";
+import axios from "axios";
 
 const SignInPage = () => {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -24,27 +24,33 @@ const SignInPage = () => {
       const { success, message, data, token } = res?.data || {};
 
       if (success) {
-        dispatch(login({
-          token,
-          role: data.role,
-          user: data,
-        }));
+        dispatch(
+          login({
+            token,
+            role: data.role,
+            user: data,
+          })
+        );
 
-        localStorage.setItem('authToken', token);
+        localStorage.setItem("authToken", token);
 
-        if (data.role === 'user') {
-          navigate('/rr/dashboard');
-        } else if (data.role === 'transportUser') {
-          navigate('/customer/dashboard');
+        if (data.role === "user") {
+          navigate("/rr/dashboard");
+        } else if (data.role === "transportUser") {
+          navigate("/customer/dashboard");
+        } else if (data.role === "admin") {
+          navigate("/admin/dashboard");
         } else {
-          navigate('/signin');
+          navigate("/signin");
         }
       } else {
-        alert(message || 'Login failed. Please try again.');
+        alert(message || "Login failed. Please try again.");
       }
     } catch (error) {
-      console.error('Login Error:', error);
-      const errMessage = error?.response?.data?.message || 'Something went wrong. Please try again.';
+      console.error("Login Error:", error);
+      const errMessage =
+        error?.response?.data?.message ||
+        "Something went wrong. Please try again.";
       alert(errMessage);
     }
   };
@@ -76,7 +82,7 @@ const SignInPage = () => {
           <div className="text-right mt-2">
             <span
               className="text-sm text-blue-600 hover:underline cursor-pointer"
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => navigate("/forgot-password")}
             >
               Forgot Password?
             </span>
@@ -84,18 +90,20 @@ const SignInPage = () => {
 
           <button
             type="submit"
-            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <p className="mt-4 text-sm text-center">
-          Don’t have an account?{' '}
+          Don’t have an account?{" "}
           <span
             className="text-blue-600 cursor-pointer"
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate("/signup")}
           >
             Sign Up
           </span>
