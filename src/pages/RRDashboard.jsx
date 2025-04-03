@@ -60,6 +60,12 @@ const RRDashboard = () => {
 
     const handleSend = (e) => {
         e.preventDefault();
+
+        if (!form.weight && !form.quantity) {
+            alert("Please enter either Total Weight or Total Quantity.");
+            return;
+        }
+
         console.log("Tender Sent", form);
         alert("Tender sent to customer!");
         // Add API call to send this to customer
@@ -210,14 +216,14 @@ const RRDashboard = () => {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block font-medium mb-1">Total Weight</label>
+                                    <label className="block font-medium mb-1">Total Weight <span className="text-red-500">*</span> </label>
                                     <input type="number" name="weight" value={form.weight} onChange={handleChange}
-                                        className="w-full border border-gray-300 px-4 py-2 rounded-lg" required />
+                                        className="w-full border border-gray-300 px-4 py-2 rounded-lg" />
                                 </div>
                                 <div>
-                                    <label className="block font-medium mb-1">Total Quantity</label>
+                                    <label className="block font-medium mb-1">Total Quantity <span className="text-red-500">*</span> </label>
                                     <input type="number" name="quantity" value={form.quantity} onChange={handleChange}
-                                        className="w-full border border-gray-300 px-4 py-2 rounded-lg" required />
+                                        className="w-full border border-gray-300 px-4 py-2 rounded-lg" />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block font-medium mb-1">Remarks (Optional)</label>

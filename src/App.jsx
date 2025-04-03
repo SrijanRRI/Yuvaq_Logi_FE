@@ -7,6 +7,7 @@ import SignInPage from './pages/SignInPage';
 import RRDashboard from './pages/RRDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
 import ProtectedRoute from './utils/ProtectedRoute';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -16,6 +17,8 @@ function App() {
         <Route path="/" element={<SignUpPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signin" element={<SignInPage />} />
+
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
         {/* Protected Routes */}
         <Route

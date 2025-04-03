@@ -1,6 +1,6 @@
 
 
-let serverUrl = "http://localhost:5000"
+let serverUrl = "http://192.168.13.78:5000"
 
 const API = {
 
