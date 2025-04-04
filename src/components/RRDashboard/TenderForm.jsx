@@ -110,7 +110,7 @@ const TenderForm = ({ form, handleChange, handleSend, handleRemoveMaterial, setS
             </div>
 
             {/* Totals */}
-            <div>
+            {/* <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">
                     Total Weight <span className="text-red-500">*</span>
                 </label>
@@ -133,7 +133,7 @@ const TenderForm = ({ form, handleChange, handleSend, handleRemoveMaterial, setS
                     onChange={handleChange}
                     className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-            </div>
+            </div> */}
 
             {/* Remarks */}
             <div className="col-span-2">

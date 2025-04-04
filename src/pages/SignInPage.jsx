@@ -21,7 +21,9 @@ const SignInPage = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(API.SIGNIN, form);
+      const res = await axios.post(API.SIGNIN, form,{
+        withCredentials: true 
+    });
       const { success, message, data, token } = res?.data || {};
 
       if (success) {
