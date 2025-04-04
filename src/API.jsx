@@ -1,5 +1,5 @@
-// let serverUrl = "http://localhost:5000"
-let serverUrl = "http://192.168.13.78:5000"
+let serverUrl = "http://localhost:5000"
+// let serverUrl = "http://192.168.13.78:5000"
 
 const API = {
 
@@ -13,6 +13,9 @@ const API = {
     ALLAPPROVALREQUEST : `${serverUrl}/admin/pending-approvals`,
     APPROVEREQUEST : `${serverUrl}/admin/approve-user/`,
     REJECTREQUEST : `${serverUrl}/admin/reject-user/`,
+
+    //Transport User
+    FETCH_ALL_TRANSPORTER : `${serverUrl}/admin/transport-users`,
 
     //Tenders
     CREATE_TENDER : `${serverUrl}/tenders/create-tender`
