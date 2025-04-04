@@ -9,10 +9,10 @@ const UserToggle = ({ userType, setUserType }) => (
       RR User
     </button>
     <button
-      onClick={() => setUserType('Customer')}
-      className={`px-4 py-2 rounded-full border ${userType === 'Customer' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+      onClick={() => setUserType('Transporter')}
+      className={`px-4 py-2 rounded-full border ${userType === 'Transporter' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
     >
-      Customer
+      Transporter
     </button>
   </div>
 );

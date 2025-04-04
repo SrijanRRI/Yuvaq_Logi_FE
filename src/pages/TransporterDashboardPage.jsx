@@ -46,7 +46,7 @@ const initialTenders = [
     },
 ]
 
-const CustomerDashboard = () => {
+const TransporterDashboardPage = () => {
     const [tenders, setTenders] = useState(initialTenders)
     const [history, setHistory] = useState([])
     const [showModal, setShowModal] = useState(false)
@@ -333,4 +333,4 @@ const CustomerDashboard = () => {
     )
 }
 
-export default CustomerDashboard
+export default TransporterDashboardPage

@@ -17,7 +17,7 @@ const SignUpPage = () => {
   };
 
   const getRoleFromUserType = (type) => {
-    if (type === 'Customer') return 'transportUser';
+    if (type === 'Transporter') return 'transportUser';
     return 'user'; // Default RR user
   };
 
@@ -34,14 +34,14 @@ const SignUpPage = () => {
       name: form.name,
       email: form.email,
       password: form.password,
-      confirmPassword:form.confirmPassword,
+      confirmPassword: form.confirmPassword,
       role,
     };
 
     try {
       setLoading(true);
 
-      const res = await axios.post(`${API.SIGNUP}`, payload); 
+      const res = await axios.post(`${API.SIGNUP}`, payload);
 
       if (res.data.success) {
         alert("Signup successful! Please sign in.");
@@ -100,11 +100,16 @@ const SignUpPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg transition ${
-              loading ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-700'
-            }`}
+            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg transition flex items-center justify-center gap-2 ${loading ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
           >
-            {loading ? 'Registering...' : 'Register'}
+            {loading && (
+              <svg
+                className="animate-spin h-5 w-5 border-4 border-t-transparent border-white rounded-full"
+                viewBox="0 0 24 24"
+              />
+            )}
+            <span>{loading ? 'Registering...' : 'Register'}</span>
           </button>
         </form>
 

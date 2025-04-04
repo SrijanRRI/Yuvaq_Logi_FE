@@ -13,6 +13,9 @@ const API = {
     ALLAPPROVALREQUEST : `${serverUrl}/admin/pending-approvals`,
     APPROVEREQUEST : `${serverUrl}/admin/approve-user/`,
     REJECTREQUEST : `${serverUrl}/admin/reject-user/`,
+
+    //Tenders
+    CREATE_TENDER : `${serverUrl}/tenders/my-tenders`
 }
   
   export default API;
