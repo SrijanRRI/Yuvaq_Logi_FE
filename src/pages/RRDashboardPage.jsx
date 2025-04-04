@@ -167,6 +167,7 @@ const RRDashboardPage = () => {
             setShowMaterialModal={setShowMaterialModal}
             setShowTransporterModal={setShowTransporterModal}
             handleRemoveMaterial={handleRemoveMaterial}
+            selectedTransporters={selectedTransporters}
           />
         )}
       </div>
