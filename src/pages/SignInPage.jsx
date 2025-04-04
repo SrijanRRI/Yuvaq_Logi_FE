@@ -18,6 +18,7 @@ const SignInPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       const res = await axios.post(API.SIGNIN, form);
@@ -37,7 +38,7 @@ const SignInPage = () => {
         if (data.role === "user") {
           navigate("/rr/dashboard");
         } else if (data.role === "transportUser") {
-          navigate("/customer/dashboard");
+          navigate("/transporter/dashboard");
         } else if (data.role === "admin") {
           navigate("/admin/dashboard");
         } else {
@@ -52,6 +53,8 @@ const SignInPage = () => {
         error?.response?.data?.message ||
         "Something went wrong. Please try again.";
       alert(errMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,12 +93,17 @@ const SignInPage = () => {
 
           <button
             type="submit"
-            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 ${loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading && (
+              <svg
+                className="animate-spin h-5 w-5 border-4 border-t-transparent border-white rounded-full"
+                viewBox="0 0 24 24"
+              />
+            )}
+            <span>{loading ? "Logging in..." : "Login"}</span>
           </button>
         </form>
 

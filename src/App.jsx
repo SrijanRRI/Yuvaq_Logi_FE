@@ -4,10 +4,10 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import SignUpPage from './pages/SignUpPage';
 import SignInPage from './pages/SignInPage';
-import RRDashboard from './pages/RRDashboard';
-import CustomerDashboard from './pages/CustomerDashboard';
+import RRDashboardPage from './pages/RRDashboardPage';
+import TransporterDashboardPage from './pages/TransporterDashboardPage';
 import ProtectedRoute from './utils/ProtectedRoute';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
@@ -20,7 +20,7 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signin" element={<SignInPage />} />
 
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
         <Route path="/forgot-password" element={<ForgotPasswordPage/>} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage/>} />
@@ -29,16 +29,16 @@ function App() {
           path="/rr/dashboard"
           element={
             <ProtectedRoute requiredRole="user">
-              <RRDashboard />
+              <RRDashboardPage />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/customer/dashboard"
+          path="/transporter/dashboard"
           element={
             <ProtectedRoute requiredRole="transportUser">
-              <CustomerDashboard />
+              <TransporterDashboardPage />
             </ProtectedRoute>
           }
         />

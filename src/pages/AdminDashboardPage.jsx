@@ -6,7 +6,7 @@ import axios from "axios";
 import API from "../API";
 
 
-const AdminDashboard = () => {
+const AdminDashboardPage = () => {
     const [requests, setRequests] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
     const [showRequests, setShowRequests] = useState(false);
@@ -233,4 +233,4 @@ const AdminDashboard = () => {
     );
 };
 
-export default AdminDashboard;
+export default AdminDashboardPage;
