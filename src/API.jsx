@@ -15,7 +15,7 @@ const API = {
     REJECTREQUEST : `${serverUrl}/admin/reject-user/`,
 
     //Tenders
-    CREATE_TENDER : `${serverUrl}/tenders/my-tenders`
+    CREATE_TENDER : `${serverUrl}/tenders/create-tender`
 }
   
   export default API;
