@@ -1,5 +1,6 @@
 let serverUrl = "http://localhost:5000"
 // let serverUrl = "http://192.168.13.78:5000"
+// let serverUrl = "https://tenderappbe.onrender.com"
 
 const API = {
 
@@ -21,7 +22,9 @@ const API = {
     SEE_QUOTATIONS : `${serverUrl}/tender/quotations`,
 
     //Tenders
-    CREATE_TENDER : `${serverUrl}/tenders/create-tender`
+    CREATE_TENDER : `${serverUrl}/tenders/create-tender`,
+    FETCH_ALL_TENDER_CREATED_BY_RRUSER : `${serverUrl}/tenders/my-tenders`,
+    FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER : `${serverUrl}/tenders/quotations`,
 }
   
   export default API;

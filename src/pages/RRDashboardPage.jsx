@@ -34,33 +34,35 @@ const RRDashboardPage = () => {
   const [transporterList, setTransporterList] = useState([]);
   const [selectedTransporters, setSelectedTransporters] = useState([]);
 
-  //   // Dummy data for demonstration on mount
-  //   useEffect(() => {
-  //     const dummy = {
-  //       deliveryDate: '2025-04-10',
-  //       closingDate: '2025-04-08',
-  //       dispatchLocation: 'Nagpur Yard',
-  //       address: 'Plot 22, Industrial Area, Nagpur',
-  //       pincode: '440001',
-  //       remarks: 'Handle with care',
-  //       materials: [
-  //         { item: 'Pipe', subItem: 'MS', weight: '200', quantity: '50' },
-  //         { item: 'Angle', subItem: 'SS', weight: '100', quantity: '20' },
-  //       ],
-  //       responses: generateDummyResponses(['ABC Logistics', 'XYZ Transport']),
-  //     };
-  //     setTenderHistories([dummy]);
-  //   }, []);
+  useEffect(() => {
+    const fetchTenderHistory = async () => {
+      try {
+        const response = await axios.get(API.FETCH_ALL_TENDER_CREATED_BY_RRUSER, {
+          withCredentials: true,
+        });
+        const data = response.data?.data || [];
+        setTenderHistories(data);
+      } catch (err) {
+        console.error("Failed to fetch tender history", err);
+        alert("Could not fetch tender history. Please try again later.");
+      }
+    };
 
-  //   const generateDummyResponses = (transporters) => {
-  //     return transporters.map((name, index) => ({
-  //       customerName: name,
-  //       price: (Math.random() * 10000 + 40000).toFixed(2),
-  //       vehicleNo: `MH12AB12${index + 1}`,
-  //       attachments: ['invoice.pdf', 'photo1.jpg'],
-  //       finalPrice: null,
-  //     }));
-  //   };
+    if (viewHistory) {
+      fetchTenderHistory();
+    }
+  }, [viewHistory]);
+
+
+  // const generateDummyResponses = (transporters) => {
+  //   return transporters.map((name, index) => ({
+  //     customerName: name,
+  //     price: (Math.random() * 10000 + 40000).toFixed(2),
+  //     vehicleNo: `MH12AB12${index + 1}`,
+  //     attachments: ['invoice.pdf', 'photo1.jpg'],
+  //     finalPrice: null,
+  //   }));
+  // };
 
   const handleChange = (e) => {
     const { name, value, options } = e.target;
@@ -158,7 +160,7 @@ const RRDashboardPage = () => {
 
       <div className="py-10 px-4 max-w-6xl mx-auto">
         {viewHistory ? (
-          <TenderHistoryAccordion tenderHistories={tenderHistories} />
+          <TenderHistoryAccordion tenderHistories={tenderHistories}  transporterList={transporterList}/>
         ) : (
           <TenderForm
             form={form}
