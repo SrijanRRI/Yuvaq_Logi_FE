@@ -75,19 +75,63 @@ const TransporterDashboardPage = () => {
     setResponseForm({ ...responseForm, [e.target.name]: e.target.value });
   };
 
-  const handleSubmitResponse = () => {
-    const approvedEntry = {
-      ...selectedTender,
-      ...responseForm,
+  const handleSubmitResponse = async () => {
+    if (!responseForm.price || !responseForm.vehicleNo) {
+      alert("Price and vehicle number are required.");
+      return;
+    }
+  
+    const payload = {
+      price: responseForm.price,
+      vehicleNumber: responseForm.vehicleNo,
+      files: responseForm.attachments.map((file) =>
+        typeof file === "string" ? file : file.name
+      ),
     };
-    console.log("Approved Tender Response:", approvedEntry);
-    alert("Tender response submitted to RR user.");
-    setTenders((prev) => prev.filter((t) => t.id !== selectedTender.id));
-    setHistory((prev) => [approvedEntry, ...prev]);
-    setShowModal(false);
-    setSelectedTender(null);
-    setResponseForm({ price: "", vehicleNo: "", attachments: [] });
+  
+    try {
+      const res = await fetch(`${API.SUBMIT_QUOTATION}/${selectedTender._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+  
+      const result = await res.json();
+  
+      if (res.ok) {
+        alert("Quotation submitted successfully!");
+        setHistory((prev) => [
+          ...prev,
+          {
+            rrName: selectedTender.rrName,
+            price: responseForm.price,
+            vehicleNo: responseForm.vehicleNo,
+            attachments: payload.files,
+            dispatchLocation: selectedTender.dispatchLocation,
+            materials: selectedTender.materials.map((m) => ({
+              item: m.material,
+              subItem: m.subMaterial,
+              weight: m.weight,
+              quantity: m.quantity,
+            })),
+          },
+        ]);
+        setShowModal(false);
+        setResponseForm({ price: "", vehicleNo: "", attachments: [] });
+      } else {
+        alert(result.message || "Failed to submit quotation.");
+      }
+    } catch (error) {
+      console.error("Quotation Submit Error:", error);
+      alert("An error occurred while submitting your quotation.");
+    }
   };
+  
+  
+  
 
   const handleClearHistory = () => {
     if (window.confirm("Are you sure you want to delete all history?")) {

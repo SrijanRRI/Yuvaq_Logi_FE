@@ -17,6 +17,8 @@ const API = {
     //Transport User
     FETCH_ALL_TRANSPORTER : `${serverUrl}/admin/transport-users`,
     FETCH_ALL_TENDERS : `${serverUrl}/tenders/assigned`,
+    SUBMIT_QUOTATION : `${serverUrl}/quotation/submit`,
+    SEE_QUOTATIONS : `${serverUrl}/tender/quotations`,
 
     //Tenders
     CREATE_TENDER : `${serverUrl}/tenders/create-tender`
