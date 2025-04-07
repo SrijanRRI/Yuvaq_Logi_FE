@@ -26,6 +26,7 @@ createRoot(document.getElementById('root')).render(
           draggable
           pauseOnHover
           theme="colored"
+          style={{ top: '80px' }}
         />
         
       </BrowserRouter>

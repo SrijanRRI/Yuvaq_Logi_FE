@@ -27,7 +27,7 @@ const API = {
     FETCH_ALL_TENDER_CREATED_BY_RRUSER : `${serverUrl}/tenders/my-tenders`,
     FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER : `${serverUrl}/tenders/quotations`,
     FINALIZE_TENDER : `${serverUrl}/tenders/finalize`,
-  
+   
 }
   
   export default API;
