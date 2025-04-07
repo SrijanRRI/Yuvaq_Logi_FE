@@ -12,6 +12,7 @@ import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 import API from "../API";
 import { ConfirmationModal } from "../modals/ConfirmationModal";
+import axios from "axios";
 
 const TransporterDashboardPage = () => {
   const [tenders, setTenders] = useState([]);
@@ -34,6 +35,10 @@ const TransporterDashboardPage = () => {
 
   const [confirmDialog, setConfirmDialog] = useState(null);
 
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
+
+
   useEffect(() => {
     const fetchTenders = async () => {
       try {
@@ -42,10 +47,10 @@ const TransporterDashboardPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // 🔥 This line ensures cookies are sent with request
+          credentials: "include", // This line ensures cookies are sent with request
         });
         const data = await res.json();
-        console.log(data.data);
+        console.log("fetch all tenders : ", data.data);
 
         setTenders(data.data); // Change this if your API returns nested fields (e.g., data.tenders)
       } catch (err) {
@@ -58,12 +63,6 @@ const TransporterDashboardPage = () => {
 
     fetchTenders();
   }, []);
-
-  // const handleReject = (id) => {
-  //   if (window.confirm("Are you sure you want to reject this tender?")) {
-  //     setTenders((prev) => prev.filter((t) => t.id !== id));
-  //   }
-  // };
 
   const handleReject = (id) => {
     setConfirmDialog({
@@ -88,8 +87,7 @@ const TransporterDashboardPage = () => {
       attachments: e.target.files?.[0] ? [e.target.files[0]] : [],
     });
   };
-  
-  
+
 
   const handleResponseChange = (e) => {
     setResponseForm({ ...responseForm, [e.target.name]: e.target.value });
@@ -102,18 +100,18 @@ const TransporterDashboardPage = () => {
 
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("price", responseForm.price);
     formData.append("vehicleNumber", responseForm.vehicleNo);
-  
+
     if (responseForm.attachments.length > 0) {
-      formData.append("file", responseForm.attachments[0]); // ✅ just one file
+      formData.append("file", responseForm.attachments[0]); //  just one file
     }
-    
+
     console.log([...formData.entries()]);
     setIsSubmitting(true);
-    
+
     try {
       const res = await fetch(`${API.SUBMIT_QUOTATION}/${selectedTender._id}`, {
         method: "POST",
@@ -171,13 +169,6 @@ const TransporterDashboardPage = () => {
     });
   };
 
-  // const handleDeleteHistoryItem = (index) => {
-  //   if (window.confirm("Delete this history entry?")) {
-  //     setHistory((prev) => prev.filter((_, idx) => idx !== index));
-  //     // toast.success("History entry deleted.");
-  //   }
-  // };
-
   const handleDeleteHistoryItem = (index) => {
     setConfirmDialog({
       message: "Delete this history entry?",
@@ -194,9 +185,41 @@ const TransporterDashboardPage = () => {
     navigate("/signin");
   };
 
+  const handleToggleView = async () => {
+    if (!view) {
+      // Switching to history view
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const res = await axios.get(API.HISTORY_FOR_QUOTATION_QUOTE, {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        console.log("History response:", res.data);
+        setHistory(res.data.data || []);
+      } catch (err) {
+        console.error("Failed to load history:", err);
+        if (err.response) {
+          console.error("Server responded with:", err.response.status, err.response.data);
+        } else if (err.request) {
+          console.error("No response received:", err.request);
+        }
+        setHistoryError("Failed to load submission history.");
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
+    setView((prev) => !prev);
+  };
+
+
+
   const navbarActions = (
     <button
-      onClick={() => setView(!view)}
+      onClick={handleToggleView}
       className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
     >
       {view ? "Back to Dashboard" : "View History"}
@@ -218,13 +241,17 @@ const TransporterDashboardPage = () => {
         ) : error ? (
           <div className="text-center text-red-600">{error}</div>
         ) : view ? (
-          history.length > 0 ? (
+          historyLoading ? (
+            <div className="text-center text-gray-600">Loading history...</div>
+          ) : historyError ? (
+            <div className="text-center text-red-600">{historyError}</div>
+          ) : history.length > 0 ? (
             <div className="mb-10">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">Submitted History</h3>
                 <button
                   onClick={handleClearHistory}
-                  className="text-red-600 hover:text-white text-sm border-red-600 border border-solid p-2 hover:bg-red-600 rounded-lg"
+                  className="text-red-600 hover:text-white text-sm border-red-600 border p-2 hover:bg-red-600 rounded-lg"
                 >
                   Delete All
                 </button>
@@ -240,41 +267,25 @@ const TransporterDashboardPage = () => {
                       className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                       title="Delete Entry"
                     >
-                      <ImCross className="text-sm mx-1 " />
+                      <ImCross className="text-sm" />
                     </button>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                      <p>
-                        <strong>RR User:</strong> {entry.rrName}
-                      </p>
-                      <p>
-                        <strong>Price:</strong> ₹{entry.price}
-                      </p>
-                      <p>
-                        <strong>Vehicle No:</strong> {entry.vehicleNo}
-                      </p>
-                      <p>
-                        <strong>Location:</strong> {entry.dispatchLocation}
-                      </p>
+                    <div className="grid sm:grid-cols-2 gap-2 text-sm">
+                      <p><strong>RR User:</strong> {entry.rrName}</p>
+                      <p><strong>Price:</strong> ₹{entry.price}</p>
+                      <p><strong>Vehicle No:</strong> {entry.vehicleNo}</p>
+                      <p><strong>Location:</strong> {entry.dispatchLocation}</p>
                     </div>
                     <div className="mt-2 text-sm">
                       <p>
                         <strong>Materials:</strong>{" "}
                         {entry.materials
-                          .map(
-                            (m) =>
-                              `${m.item} (${m.subItem || "-"}) x ${m.quantity
-                              }pcs, ${m.weight}kg`
-                          )
+                          ?.map((m) => `${m.item} (${m.subItem || "-"}) x ${m.quantity}pcs, ${m.weight}kg`)
                           .join("; ")}
                       </p>
                       <p className="mt-1">
                         <strong>Attachments:</strong>{" "}
-                        {entry.attachments.length > 0
-                          ? entry.attachments
-                            .map((file) =>
-                              typeof file === "string" ? file : file.name
-                            )
-                            .join(", ")
+                        {entry.attachments?.length > 0
+                          ? entry.attachments.map((f) => (typeof f === "string" ? f : f.name)).join(", ")
                           : "None"}
                       </p>
                     </div>
@@ -283,13 +294,13 @@ const TransporterDashboardPage = () => {
               </div>
             </div>
           ) : (
-            <div className="flex justify-center items-center h-40">
-              <p className="text-gray-500">No submission history available.</p>
+            <div className="text-center text-gray-500 h-40 flex items-center justify-center">
+              No submission history available.
             </div>
           )
         ) : tenders.length === 0 ? (
-          <div className="flex justify-center items-center h-40">
-            <p className="text-gray-500">No pending tenders.</p>
+          <div className="text-center text-gray-500 h-40 flex items-center justify-center">
+            No pending tenders.
           </div>
         ) : (
           <div className="space-y-6">
@@ -298,39 +309,27 @@ const TransporterDashboardPage = () => {
                 key={tender._id}
                 className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200"
               >
-                <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-800 flex items-center gap-2">
+                <h3 className="text-xl font-semibold mb-3 text-gray-800">
                   Tender from {tender.rrName}
                 </h3>
-                <div className="text-sm sm:text-base text-gray-700 space-y-2">
-                  <p className="flex items-center gap-2">
-                    <BiSolidBox className="text-green-500 text-lg" />{" "}
-                    <strong> Delivery: </strong>
-                    {new Date(tender.dateOfDelivery).toLocaleDateString("en-US", {
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p><BiSolidBox className="inline mr-1 text-green-500" /> <strong>Delivery:</strong>  {new Date(tender.dateOfDelivery).toLocaleDateString(
+                    "en-US",
+                    {
                       year: "numeric",
                       month: "long",
                       day: "numeric",
-                    })}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <FaLocationDot className="text-red-500 text-lg" />{" "}
-                    <strong> Location:</strong> {tender.dispatchLocation}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <IoIosHome className="text-blue-500 text-lg" />{" "}
-                    <strong> Address:</strong> {tender.address}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <IoIosHome className="text-blue-500 text-lg" />{" "}
-                    <strong> Pin Code:</strong> {tender.pincode}
-                  </p>
+                    }
+                  )}</p>
+                  <p><FaLocationDot className="inline mr-1 text-red-500" /> <strong>Location:</strong> {tender.dispatchLocation}</p>
+                  <p><IoIosHome className="inline mr-1 text-blue-500" /> <strong>Address:</strong> {tender.address}</p>
+                  <p><IoIosHome className="inline mr-1 text-blue-500" /> <strong>Pincode:</strong> {tender.pincode}</p>
                 </div>
-                <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg shadow-inner">
-                  <h4 className="text-md sm:text-lg font-semibold mb-3 flex items-center gap-2">
-                    <FaTools className="text-gray-700 text-xl" /> Materials
-                  </h4>
-                  <div className="border border-gray-200 rounded-lg overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-gray-200 text-gray-700">
+                <div className="mt-4 bg-gray-50 p-3 rounded-lg">
+                  <h4 className="font-semibold mb-2 text-gray-700"><FaTools className="inline mr-2" />Materials</h4>
+                  <div className="overflow-x-auto border rounded">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-200">
                         <tr>
                           <th className="p-2">Material</th>
                           <th className="p-2">Sub Item</th>
@@ -338,13 +337,12 @@ const TransporterDashboardPage = () => {
                           <th className="p-2">Quantity</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y">
-                        {tender.materials.map((m, idx) => (
-                          <tr key={m._id} className="hover:bg-gray-100">
+                      <tbody>
+                        {tender.materials.map((m) => (
+                          <tr key={m._id} className="border-t">
                             <td className="p-2">{m.material}</td>
                             <td className="p-2">{m.subMaterial || "-"}</td>
-                            <td className="p-2">{m.weight
-                            } kg</td>
+                            <td className="p-2">{m.weight} kg</td>
                             <td className="p-2">{m.quantity}</td>
                           </tr>
                         ))}
@@ -353,21 +351,21 @@ const TransporterDashboardPage = () => {
                   </div>
                 </div>
                 {tender.remarks && (
-                  <p className="mt-4 p-3 bg-gray-100 rounded-lg text-sm flex items-center gap-2">
-                    <MdLibraryBooks className="text-purple-500 text-lg" />{" "}
+                  <p className="mt-3 text-sm bg-gray-100 p-2 rounded">
+                    <MdLibraryBooks className="inline mr-1 text-purple-500" />
                     <strong> Remarks:</strong> {tender.remarks}
                   </p>
                 )}
-                <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:justify-center">
+                <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
                   <button
                     onClick={() => handleReject(tender.id)}
-                    className="flex items-center justify-center gap-2 bg-red-500 text-white px-6 py-2 rounded-lg w-full sm:w-auto hover:bg-red-600 transition-all"
+                    className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 flex items-center gap-2"
                   >
                     <ImCross className="text-lg" /> Reject
                   </button>
                   <button
                     onClick={() => handleApprove(tender)}
-                    className="flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-2 rounded-lg w-full sm:w-auto hover:bg-green-700 transition-all"
+                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
                   >
                     <PiCheckFatFill className="text-xl" /> Approve
                   </button>
@@ -401,7 +399,7 @@ const TransporterDashboardPage = () => {
               </div>
               <div>
                 <label className="block font-medium mb-1 text-sm">
-                  Vehicle No.
+                  Vehicle Detail
                 </label>
                 <input
                   name="vehicleNo"

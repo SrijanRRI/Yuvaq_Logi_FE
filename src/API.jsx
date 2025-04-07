@@ -20,12 +20,14 @@ const API = {
     FETCH_ALL_TENDERS : `${serverUrl}/tenders/assigned`,
     SUBMIT_QUOTATION : `${serverUrl}/quotation/submit`,
     SEE_QUOTATIONS : `${serverUrl}/tender/quotations`,
+    HISTORY_FOR_QUOTATION_QUOTE : `${serverUrl}/tenders/quotation/history`,
 
     //RR USer Tenders
     CREATE_TENDER : `${serverUrl}/tenders/create-tender`,
     FETCH_ALL_TENDER_CREATED_BY_RRUSER : `${serverUrl}/tenders/my-tenders`,
     FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER : `${serverUrl}/tenders/quotations`,
-    FINALIZE_TENDER : `${serverUrl}/tenders/finalize`
+    FINALIZE_TENDER : `${serverUrl}/tenders/finalize`,
+   
 }
   
   export default API;

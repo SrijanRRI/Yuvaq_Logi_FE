@@ -305,7 +305,7 @@ const TenderHistoryAccordion = ({
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm text-gray-500">
-                                                                    Vehicle No
+                                                                    Vehicle Detail
                                                                 </p>
                                                                 <p className="text-md font-medium text-gray-700">
                                                                     {res.vehicleNumber}
