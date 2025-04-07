@@ -31,8 +31,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
             const response = await axios.get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
                 withCredentials: true,
             });
-            console.log(response);
-            
+            // console.log(response);
 
             setAllResponses((prev) => ({
                 ...prev,
@@ -44,8 +43,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
             alert("Could not load transporter responses. Please try again.");
         }
     };
-    console.log(allResponses);
-    
+    // console.log(allResponses);
+
     const handleConfirm = (tenderId, resIdx) => {
         const finalPrices = finalPricesMap[tenderId] || {};
         setEditingId(`${tenderId}-${resIdx}`);
@@ -56,18 +55,18 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
         const confirm = window.confirm("Are you sure you want to finalize this quotation?");
         if (!confirm) return;
         console.log(tenderId);
-        
+
         const quotation = allResponses[tenderId][resIdx];
         console.log(quotation);
         console.log(priceInput);
-        
+
         const quotationId = quotation._id;
-       
-        
+
+
         const finalPrice = priceInput;
 
-       
-    
+
+
         try {
             await axios.put(
                 `${API.FINALIZE_TENDER}/${tenderId}`, // Assuming correct route
@@ -79,7 +78,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                     withCredentials: true,
                 }
             );
-    
+
             setFinalPricesMap((prev) => ({
                 ...prev,
                 [tenderId]: {
@@ -87,12 +86,12 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                     [resIdx]: finalPrice,
                 },
             }));
-    
+
             setConfirmedIdxMap((prev) => ({
                 ...prev,
                 [tenderId]: resIdx,
             }));
-    
+
             setEditingId(null);
             alert("Tender finalized successfully!");
         } catch (error) {
@@ -100,7 +99,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
             alert("Something went wrong while finalizing. Please try again.");
         }
     };
-    
+
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -184,14 +183,14 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                 </div>
                                 <div className="md:col-span-2 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
                                     <h4 className="text-sm font-semibold text-indigo-800 mb-2">Transporters</h4>
-                                    {Array.isArray(tender.responses) && tender.transporters.length > 0 ? (
+                                    {Array.isArray(tender.transporters) && tender.transporters.length > 0 ? (
                                         <ul className="list-disc ml-6 text-sm text-indigo-900 space-y-1">
                                             {tender.transporters.map((_id, i) => (
                                                 <li key={i}>{getTransporterName(_id)}</li>
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-sm text-gray-500 italic">No responses yet.</p>
+                                        <p className="text-sm text-gray-500 italic">No transporters assigned.</p>
                                     )}
                                 </div>
                             </div>
