@@ -85,9 +85,11 @@ const TransporterDashboardPage = () => {
   const handleFileChange = (e) => {
     setResponseForm({
       ...responseForm,
-      attachments: Array.from(e.target.files),
+      attachments: e.target.files?.[0] ? [e.target.files[0]] : [],
     });
   };
+  
+  
 
   const handleResponseChange = (e) => {
     setResponseForm({ ...responseForm, [e.target.name]: e.target.value });
@@ -100,24 +102,22 @@ const TransporterDashboardPage = () => {
 
       return;
     }
-
-    const payload = {
-      price: responseForm.price,
-      vehicleNumber: responseForm.vehicleNo,
-      files: responseForm.attachments.map((file) =>
-        typeof file === "string" ? file : file.name
-      ),
-    };
-
+  
+    const formData = new FormData();
+    formData.append("price", responseForm.price);
+    formData.append("vehicleNumber", responseForm.vehicleNo);
+  
+    if (responseForm.attachments.length > 0) {
+      formData.append("file", responseForm.attachments[0]); // ✅ just one file
+    }
+    
+    console.log([...formData.entries()]);
     setIsSubmitting(true);
-
+    
     try {
       const res = await fetch(`${API.SUBMIT_QUOTATION}/${selectedTender._id}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: formData,
         credentials: "include",
       });
 
@@ -133,7 +133,7 @@ const TransporterDashboardPage = () => {
             rrName: selectedTender.rrName,
             price: responseForm.price,
             vehicleNo: responseForm.vehicleNo,
-            attachments: payload.files,
+            attachments: result.data.files?.map((f) => f.originalName || f.url) || [],
             dispatchLocation: selectedTender.dispatchLocation,
             materials: selectedTender.materials.map((m) => ({
               item: m.material,
@@ -158,15 +158,6 @@ const TransporterDashboardPage = () => {
       setIsSubmitting(false);
     }
   };
-
-
-
-  // const handleClearHistory = () => {
-  //   if (window.confirm("Are you sure you want to delete all history?")) {
-  //     setHistory([]);
-  //     // toast.info("All history cleared.");
-  //   }
-  // };
 
   const handleClearHistory = () => {
     setConfirmDialog({
