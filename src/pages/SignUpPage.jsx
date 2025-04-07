@@ -30,9 +30,10 @@ const SignUpPage = () => {
     }
 
     const role = getRoleFromUserType(userType);
+    
     const payload = {
       name: form.name,
-      email: form.email,
+      email: form.email.toLowerCase().trim(),
       password: form.password,
       confirmPassword: form.confirmPassword,
       role,

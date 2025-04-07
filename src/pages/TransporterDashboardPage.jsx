@@ -9,7 +9,9 @@ import { FaTools } from "react-icons/fa";
 import { MdLibraryBooks } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { toast } from "react-toastify";
 import API from "../API";
+import { ConfirmationModal } from "../modals/ConfirmationModal";
 
 const TransporterDashboardPage = () => {
   const [tenders, setTenders] = useState([]);
@@ -25,8 +27,12 @@ const TransporterDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const customerName = "Customer Name"; // Replace with actual name if available
   const navigate = useNavigate();
+
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => {
     const fetchTenders = async () => {
@@ -53,10 +59,22 @@ const TransporterDashboardPage = () => {
     fetchTenders();
   }, []);
 
+  // const handleReject = (id) => {
+  //   if (window.confirm("Are you sure you want to reject this tender?")) {
+  //     setTenders((prev) => prev.filter((t) => t.id !== id));
+  //   }
+  // };
+
   const handleReject = (id) => {
-    if (window.confirm("Are you sure you want to reject this tender?")) {
-      setTenders((prev) => prev.filter((t) => t.id !== id));
-    }
+    setConfirmDialog({
+      message: "Are you sure you want to reject this tender?",
+      onConfirm: () => {
+        setTenders((prev) => prev.filter((t) => t.id !== id));
+        toast.info("Tender rejected.");
+        setConfirmDialog(null);
+      },
+      onCancel: () => setConfirmDialog(null),
+    });
   };
 
   const handleApprove = (tender) => {
@@ -79,7 +97,9 @@ const TransporterDashboardPage = () => {
 
   const handleSubmitResponse = async () => {
     if (!responseForm.price || !responseForm.vehicleNo) {
-      alert("Price and vehicle number are required.");
+      // alert("Price and vehicle number are required.");
+      toast.warning("Price and vehicle number are required.");
+
       return;
     }
   
@@ -92,7 +112,7 @@ const TransporterDashboardPage = () => {
     }
     
     console.log([...formData.entries()]);
-
+    setIsSubmitting(true);
     
     try {
       const res = await fetch(`${API.SUBMIT_QUOTATION}/${selectedTender._id}`, {
@@ -100,11 +120,13 @@ const TransporterDashboardPage = () => {
         body: formData,
         credentials: "include",
       });
-  
+
       const result = await res.json();
-  
+
       if (res.ok) {
-        alert("Quotation submitted successfully!");
+        // alert("Quotation submitted successfully!");
+        toast.success("Quotation submitted successfully!");
+
         setHistory((prev) => [
           ...prev,
           {
@@ -121,31 +143,51 @@ const TransporterDashboardPage = () => {
             })),
           },
         ]);
+
         setShowModal(false);
         setResponseForm({ price: "", vehicleNo: "", attachments: [] });
       } else {
-        alert(result.message || "Failed to submit quotation.");
+        // alert(result.message || "Failed to submit quotation.");
+        toast.error(result.message || "Failed to submit quotation.");
       }
     } catch (error) {
       console.error("Quotation Submit Error:", error);
-      alert("An error occurred while submitting your quotation.");
+      // alert("An error occurred while submitting your quotation.");
+      toast.error("An error occurred while submitting your quotation.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  
-  
-  
 
   const handleClearHistory = () => {
-    if (window.confirm("Are you sure you want to delete all history?")) {
-      setHistory([]);
-    }
+    setConfirmDialog({
+      message: "Are you sure you want to delete all history?",
+      onConfirm: () => {
+        setHistory([]);
+        toast.info("All history cleared.");
+        setConfirmDialog(null);
+      },
+      onCancel: () => setConfirmDialog(null),
+    });
   };
 
+  // const handleDeleteHistoryItem = (index) => {
+  //   if (window.confirm("Delete this history entry?")) {
+  //     setHistory((prev) => prev.filter((_, idx) => idx !== index));
+  //     // toast.success("History entry deleted.");
+  //   }
+  // };
+
   const handleDeleteHistoryItem = (index) => {
-    if (window.confirm("Delete this history entry?")) {
-      setHistory((prev) => prev.filter((_, idx) => idx !== index));
-    }
+    setConfirmDialog({
+      message: "Delete this history entry?",
+      onConfirm: () => {
+        setHistory((prev) => prev.filter((_, idx) => idx !== index));
+        toast.success("History entry deleted.");
+        setConfirmDialog(null);
+      },
+      onCancel: () => setConfirmDialog(null),
+    });
   };
 
   const handleLogout = () => {
@@ -220,8 +262,7 @@ const TransporterDashboardPage = () => {
                         {entry.materials
                           .map(
                             (m) =>
-                              `${m.item} (${m.subItem || "-"}) x ${
-                                m.quantity
+                              `${m.item} (${m.subItem || "-"}) x ${m.quantity
                               }pcs, ${m.weight}kg`
                           )
                           .join("; ")}
@@ -230,10 +271,10 @@ const TransporterDashboardPage = () => {
                         <strong>Attachments:</strong>{" "}
                         {entry.attachments.length > 0
                           ? entry.attachments
-                              .map((file) =>
-                                typeof file === "string" ? file : file.name
-                              )
-                              .join(", ")
+                            .map((file) =>
+                              typeof file === "string" ? file : file.name
+                            )
+                            .join(", ")
                           : "None"}
                       </p>
                     </div>
@@ -263,7 +304,12 @@ const TransporterDashboardPage = () => {
                 <div className="text-sm sm:text-base text-gray-700 space-y-2">
                   <p className="flex items-center gap-2">
                     <BiSolidBox className="text-green-500 text-lg" />{" "}
-                    <strong> Delivery:</strong> {tender.dateOfDelivery}
+                    <strong> Delivery: </strong>
+                    {new Date(tender.dateOfDelivery).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </p>
                   <p className="flex items-center gap-2">
                     <FaLocationDot className="text-red-500 text-lg" />{" "}
@@ -296,7 +342,7 @@ const TransporterDashboardPage = () => {
                         {tender.materials.map((m, idx) => (
                           <tr key={m._id} className="hover:bg-gray-100">
                             <td className="p-2">{m.material}</td>
-                            <td className="p-2">{m.subMaterial|| "-"}</td>
+                            <td className="p-2">{m.subMaterial || "-"}</td>
                             <td className="p-2">{m.weight
                             } kg</td>
                             <td className="p-2">{m.quantity}</td>
@@ -393,11 +439,47 @@ const TransporterDashboardPage = () => {
                 onClick={handleSubmitResponse}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 order-1 sm:order-2"
               >
-                Submit Response
+                {isSubmitting ? (
+                  <>
+                    <span className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        ></path>
+                      </svg>
+                      Submitting...
+                    </span>
+                  </>
+                ) : (
+                  "Submit Response"
+                )}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {confirmDialog && (
+        <ConfirmationModal
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={confirmDialog.onCancel}
+        />
       )}
     </div>
   );

@@ -16,8 +16,8 @@ export const TransporterModal = ({ selected, onClose, onSave, setTransporterList
           withCredentials: true,
         });
 
-        console.log(response.data);
-        console.log(response.data.data);
+        // console.log(response.data);
+        // console.log(response.data.data);
 
         const data = Array.isArray(response.data.data)
           ? response.data.data

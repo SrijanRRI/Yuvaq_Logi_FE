@@ -233,7 +233,7 @@ const TenderHistoryAccordion = ({
                   <h4 className="text-sm font-semibold text-indigo-800 mb-2">
                     Transporters
                   </h4>
-                  {Array.isArray(tender.responses) &&
+                  {Array.isArray(tender.transporters) &&
                   tender.transporters.length > 0 ? (
                     <ul className="list-disc ml-6 text-sm text-indigo-900 space-y-1">
                       {tender.transporters.map((_id, i) => (
@@ -242,7 +242,7 @@ const TenderHistoryAccordion = ({
                     </ul>
                   ) : (
                     <p className="text-sm text-gray-500 italic">
-                      No responses yet.
+                      No transporters assigned.
                     </p>
                   )}
                 </div>

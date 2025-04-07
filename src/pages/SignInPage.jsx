@@ -20,8 +20,13 @@ const SignInPage = () => {
     e.preventDefault();
     setLoading(true);
 
+    const payload = {
+      ...form ,
+      email: form.email.toLowerCase().trim(),
+    }
+
     try {
-      const res = await axios.post(API.SIGNIN, form,{
+      const res = await axios.post(API.SIGNIN, payload ,{
         withCredentials: true 
     });
       const { success, message, data, token } = res?.data || {};
