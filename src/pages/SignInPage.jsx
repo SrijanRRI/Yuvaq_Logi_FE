@@ -5,6 +5,7 @@ import InputField from "../components/InputField";
 import { login } from "../utils/UserSlice";
 import API from "../API";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const SignInPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -42,6 +43,8 @@ const SignInPage = () => {
 
         localStorage.setItem("authToken", token);
 
+        toast.success("Login successful!");
+
         if (data.role === "user") {
           navigate("/rr/dashboard");
         } else if (data.role === "transportUser") {
@@ -52,14 +55,15 @@ const SignInPage = () => {
           navigate("/signin");
         }
       } else {
-        alert(message || "Login failed. Please try again.");
+        // alert(message || "Login failed. Please try again.");
+        toast.error(message || "Login failed. Please try again.");
       }
     } catch (error) {
       console.error("Login Error:", error);
       const errMessage =
         error?.response?.data?.message ||
         "Something went wrong. Please try again.";
-      alert(errMessage);
+        toast.error(errMessage);
     } finally {
       setLoading(false);
     }

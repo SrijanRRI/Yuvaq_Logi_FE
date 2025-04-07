@@ -5,6 +5,7 @@ import UserToggle from '../components/UserToggle';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API from '../API';
+import { toast } from 'react-toastify';
 
 const SignUpPage = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
@@ -25,12 +26,12 @@ const SignUpPage = () => {
     e.preventDefault();
 
     if (form.password !== form.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 
     const role = getRoleFromUserType(userType);
-    
+
     const payload = {
       name: form.name,
       email: form.email.toLowerCase().trim(),
@@ -45,14 +46,14 @@ const SignUpPage = () => {
       const res = await axios.post(`${API.SIGNUP}`, payload);
 
       if (res.data.success) {
-        alert("Signup successful! Please sign in.");
+        toast.success("Signup successful! Please sign in.");
         navigate('/signin');
       } else {
-        alert(res.data.message || "Signup failed. Try again.");
+        toast.error(res.data.message || "Signup failed. Try again.");
       }
     } catch (error) {
       console.error("Signup error:", error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
