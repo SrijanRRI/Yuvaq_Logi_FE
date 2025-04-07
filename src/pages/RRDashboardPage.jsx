@@ -58,7 +58,7 @@ const RRDashboardPage = () => {
     }
   }, [viewHistory]);
 
-  // FUnction to see the Transport's Name:
+  // Function to see the Transport's Name:
   const fetchTransporters = async () => {
     try {
       const res = await axios.get(API.FETCH_ALL_TRANSPORTER, { withCredentials: true });
