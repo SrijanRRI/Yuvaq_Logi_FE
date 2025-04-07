@@ -21,7 +21,7 @@ const API = {
     SUBMIT_QUOTATION : `${serverUrl}/quotation/submit`,
     SEE_QUOTATIONS : `${serverUrl}/tender/quotations`,
 
-    //Tenders
+    //RR USer Tenders
     CREATE_TENDER : `${serverUrl}/tenders/create-tender`,
     FETCH_ALL_TENDER_CREATED_BY_RRUSER : `${serverUrl}/tenders/my-tenders`,
     FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER : `${serverUrl}/tenders/quotations`,

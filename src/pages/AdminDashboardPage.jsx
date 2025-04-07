@@ -4,6 +4,8 @@ import Navbar from "../components/Navbar";
 import { PiCheckFatFill } from "react-icons/pi";
 import axios from "axios";
 import API from "../API";
+import { toast } from 'react-toastify';
+import { ConfirmationModal } from "../modals/ConfirmationModal";
 
 
 const AdminDashboardPage = () => {
@@ -12,6 +14,8 @@ const AdminDashboardPage = () => {
     const [showRequests, setShowRequests] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const [approvingIndex, setApprovingIndex] = useState(null);
 
     const [data] = useState([
         {
@@ -52,58 +56,77 @@ const AdminDashboardPage = () => {
                 setRequests(res.data.data);
             } else {
                 setError("Failed to fetch users.");
+                toast.error("Failed to fetch users.");
             }
         } catch (err) {
             console.error("Fetch error:", err);
             setError("An error occurred while fetching requests.");
+            toast.error("An error occurred while fetching requests.");
         } finally {
             setLoading(false);
         }
     };
-   
+
     const handleApprove = async (index) => {
         const user = requests[index];
-        console.log(user);
-        
-        try {
-          const res = await axios.put(
-            `${API.APPROVEREQUEST}`+ `${user._id}`);
-    
-          if (res.data.success) {
-            alert(`${user.name} approved successfully.`);
-            setApprovedUsers((prev) => [...prev, user]);
-            setRequests((prev) => prev.filter((_, i) => i !== index));
-          } else {
-            alert("Failed to approve user.");
-          }
-        } catch (error) {
-          console.error("Approval error:", error);
-          alert("Something went wrong while approving user.");
-        }
-      };
+        // console.log(user);
+        setApprovingIndex(index);
 
-      const handleReject = async (index) => {
-        const user = requests[index];
-        const confirmReject = window.confirm(`Are you sure you want to reject ${user.name}?`);
-      
-        if (!confirmReject) return;
-      
         try {
-          const res = await axios.delete(
-            `${API.REJECTREQUEST}`+ `${user._id}`);
-      
-          if (res.data.success) {
-            alert(`${user.name} has been rejected.`);
-            setRequests((prev) => prev.filter((_, i) => i !== index));
-          } else {
-            alert("Failed to reject user: " + (res.data.message || ""));
-          }
+            const res = await axios.put(
+                `${API.APPROVEREQUEST}` + `${user._id}`);
+
+            if (res.data.success) {
+                // alert(`${user.name} approved successfully.`);
+                toast.success(`${user.name} approved successfully.`);
+                setApprovedUsers((prev) => [...prev, user]);
+                setRequests((prev) => prev.filter((_, i) => i !== index));
+            } else {
+                // alert("Failed to approve user.");
+                toast.error("Failed to approve user.");
+            }
         } catch (error) {
-          console.error("Rejection error:", error);
-          alert("Something went wrong while rejecting user.");
+            console.error("Approval error:", error);
+            alert("Something went wrong while approving user.");
         }
-      };
-      
+        finally {
+            setApprovingIndex(null); // Stop loading state
+        }
+    };
+
+    const handleReject = async (index) => {
+        const user = requests[index];
+        // const confirmReject = window.confirm(`Are you sure you want to reject ${user.name}?`);
+
+        // if (!confirmReject) return;
+
+        setConfirmDialog({
+            message: `Are you sure you want to reject ${user.name}?`,
+            onConfirm: async () => {
+                try {
+                    const res = await axios.delete(
+                        `${API.REJECTREQUEST}` + `${user._id}`);
+
+                    if (res.data.success) {
+                        // alert(`${user.name} has been rejected.`);
+                        toast.success(`${user.name} has been rejected.`);
+                        setRequests((prev) => prev.filter((_, i) => i !== index));
+                    } else {
+                        // alert("Failed to reject user: " + (res.data.message || ""));
+                        toast.error("Failed to reject user: " + (res.data.message || ""));
+                    }
+                } catch (error) {
+                    console.error("Rejection error:", error);
+                    //   alert("Something went wrong while rejecting user.");
+                    toast.error("Something went wrong while rejecting user.");
+                } finally {
+                    setConfirmDialog(null);
+                }
+            },
+            onCancel: () => setConfirmDialog(null),
+        });
+    };
+
     useEffect(() => {
         if (showRequests) {
             fetchPendingUsers();
@@ -154,10 +177,42 @@ const AdminDashboardPage = () => {
                                         <div className="flex gap-3">
                                             <button
                                                 onClick={() => handleApprove(idx)}
-                                                className="flex items-center gap-1 px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                                            >
-                                                <PiCheckFatFill className="text-sm" /> Approve
+                                                disabled={approvingIndex === idx}
+                                                className={`flex items-center gap-2 px-4 py-1 rounded text-white ${approvingIndex === idx ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}>
+
+                                                {approvingIndex === idx ? (
+                                                    <>
+                                                        <span className="flex items-center gap-2">
+                                                            <svg
+                                                                className="animate-spin h-4 w-4 text-white"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <circle
+                                                                    className="opacity-25"
+                                                                    cx="12"
+                                                                    cy="12"
+                                                                    r="10"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="4"
+                                                                ></circle>
+                                                                <path
+                                                                    className="opacity-75"
+                                                                    fill="currentColor"
+                                                                    d="M4 12a8 8 0 018-8v8H4z"
+                                                                ></path>
+                                                            </svg>
+                                                            Approving...
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <PiCheckFatFill className="text-sm" /> Approve
+                                                    </>
+                                                )}
                                             </button>
+
                                             <button
                                                 onClick={() => handleReject(idx)}
                                                 className="flex items-center gap-1 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
@@ -229,7 +284,17 @@ const AdminDashboardPage = () => {
                     </div>
                 )}
             </div>
+
+            {confirmDialog && (
+                <ConfirmationModal
+                    message={confirmDialog.message}
+                    onConfirm={confirmDialog.onConfirm}
+                    onCancel={confirmDialog.onCancel}
+                />
+            )}
         </div>
+
+
     );
 };
 

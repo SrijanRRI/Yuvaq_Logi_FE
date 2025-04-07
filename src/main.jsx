@@ -5,6 +5,8 @@ import App from './App.jsx'
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from 'react-redux'
 import AppStore from './utils/Store.jsx'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 createRoot(document.getElementById('root')).render(
@@ -12,6 +14,20 @@ createRoot(document.getElementById('root')).render(
     <Provider store={AppStore}>
       <BrowserRouter>
         <App />
+
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
+        
       </BrowserRouter>
     </Provider>
   </StrictMode>

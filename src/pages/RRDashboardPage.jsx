@@ -7,6 +7,7 @@ import TenderForm from "../components/RRDashboard/TenderForm";
 import TenderHistoryAccordion from "../components/RRDashboard/TenderHistoryAccordion";
 import API from "../API";
 import axios from "axios";
+import { toast } from 'react-toastify';
 
 const RRDashboardPage = () => {
   const { state } = useLocation();
@@ -41,28 +42,32 @@ const RRDashboardPage = () => {
           withCredentials: true,
         });
         const data = response.data?.data || [];
+        // console.log(response.data);
         setTenderHistories(data);
       } catch (err) {
         console.error("Failed to fetch tender history", err);
-        alert("Could not fetch tender history. Please try again later.");
+        // alert("Could not fetch tender history. Please try again later.");
+        toast.error("Could not fetch tender history. Please try again later.");
+
       }
     };
 
     if (viewHistory) {
       fetchTenderHistory();
+      fetchTransporters();
     }
   }, [viewHistory]);
 
+  // FUnction to see the Transport's Name:
+  const fetchTransporters = async () => {
+    try {
+      const res = await axios.get(API.FETCH_ALL_TRANSPORTER, { withCredentials: true });
+      setTransporterList(res.data?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch transporters", error);
+    }
+  };
 
-  // const generateDummyResponses = (transporters) => {
-  //   return transporters.map((name, index) => ({
-  //     customerName: name,
-  //     price: (Math.random() * 10000 + 40000).toFixed(2),
-  //     vehicleNo: `MH12AB12${index + 1}`,
-  //     attachments: ['invoice.pdf', 'photo1.jpg'],
-  //     finalPrice: null,
-  //   }));
-  // };
 
   const handleChange = (e) => {
     const { name, value, options } = e.target;
@@ -117,7 +122,9 @@ const RRDashboardPage = () => {
         withCredentials: true,
       });
       setTenderHistories((prev) => [response.data, ...prev]);
-      alert("Tender submitted successfully!");
+      // alert("Tender submitted successfully!");
+      toast.success("Tender submitted successfully!");
+
       setForm({
         deliveryDate: "",
         closingDate: "",
@@ -132,7 +139,8 @@ const RRDashboardPage = () => {
       const errMessage =
         error?.response?.data?.message ||
         "Something went wrong. Please try again.";
-      alert(errMessage);
+      // alert(errMessage);
+      toast.error(errMessage);
     }
   };
 
@@ -160,7 +168,7 @@ const RRDashboardPage = () => {
 
       <div className="py-10 px-4 max-w-6xl mx-auto">
         {viewHistory ? (
-          <TenderHistoryAccordion tenderHistories={tenderHistories}  transporterList={transporterList}/>
+          <TenderHistoryAccordion tenderHistories={tenderHistories} transporterList={transporterList} />
         ) : (
           <TenderForm
             form={form}
