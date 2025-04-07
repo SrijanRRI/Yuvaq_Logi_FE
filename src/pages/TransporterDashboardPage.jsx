@@ -88,8 +88,6 @@ const TransporterDashboardPage = () => {
       attachments: e.target.files?.[0] ? [e.target.files[0]] : [],
     });
   };
-  
-  
 
   const handleResponseChange = (e) => {
     setResponseForm({ ...responseForm, [e.target.name]: e.target.value });
@@ -102,18 +100,18 @@ const TransporterDashboardPage = () => {
 
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("price", responseForm.price);
     formData.append("vehicleNumber", responseForm.vehicleNo);
-  
+
     if (responseForm.attachments.length > 0) {
       formData.append("file", responseForm.attachments[0]); // ✅ just one file
     }
-    
+
     console.log([...formData.entries()]);
     setIsSubmitting(true);
-    
+
     try {
       const res = await fetch(`${API.SUBMIT_QUOTATION}/${selectedTender._id}`, {
         method: "POST",
@@ -133,7 +131,8 @@ const TransporterDashboardPage = () => {
             rrName: selectedTender.rrName,
             price: responseForm.price,
             vehicleNo: responseForm.vehicleNo,
-            attachments: result.data.files?.map((f) => f.originalName || f.url) || [],
+            attachments:
+              result.data.files?.map((f) => f.originalName || f.url) || [],
             dispatchLocation: selectedTender.dispatchLocation,
             materials: selectedTender.materials.map((m) => ({
               item: m.material,
@@ -262,7 +261,8 @@ const TransporterDashboardPage = () => {
                         {entry.materials
                           .map(
                             (m) =>
-                              `${m.item} (${m.subItem || "-"}) x ${m.quantity
+                              `${m.item} (${m.subItem || "-"}) x ${
+                                m.quantity
                               }pcs, ${m.weight}kg`
                           )
                           .join("; ")}
@@ -271,10 +271,10 @@ const TransporterDashboardPage = () => {
                         <strong>Attachments:</strong>{" "}
                         {entry.attachments.length > 0
                           ? entry.attachments
-                            .map((file) =>
-                              typeof file === "string" ? file : file.name
-                            )
-                            .join(", ")
+                              .map((file) =>
+                                typeof file === "string" ? file : file.name
+                              )
+                              .join(", ")
                           : "None"}
                       </p>
                     </div>
@@ -300,16 +300,24 @@ const TransporterDashboardPage = () => {
               >
                 <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-800 flex items-center gap-2">
                   Tender from {tender.rrName}
+                  {tender.hasQuoted && (
+                    <span className="ml-2 text-xs px-2 py-1 bg-yellow-200 text-yellow-800 rounded-full">
+                      Already Quoted
+                    </span>
+                  )}
                 </h3>
                 <div className="text-sm sm:text-base text-gray-700 space-y-2">
                   <p className="flex items-center gap-2">
                     <BiSolidBox className="text-green-500 text-lg" />{" "}
                     <strong> Delivery: </strong>
-                    {new Date(tender.dateOfDelivery).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {new Date(tender.dateOfDelivery).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
                   </p>
                   <p className="flex items-center gap-2">
                     <FaLocationDot className="text-red-500 text-lg" />{" "}
@@ -343,8 +351,7 @@ const TransporterDashboardPage = () => {
                           <tr key={m._id} className="hover:bg-gray-100">
                             <td className="p-2">{m.material}</td>
                             <td className="p-2">{m.subMaterial || "-"}</td>
-                            <td className="p-2">{m.weight
-                            } kg</td>
+                            <td className="p-2">{m.weight} kg</td>
                             <td className="p-2">{m.quantity}</td>
                           </tr>
                         ))}
@@ -367,7 +374,12 @@ const TransporterDashboardPage = () => {
                   </button>
                   <button
                     onClick={() => handleApprove(tender)}
-                    className="flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-2 rounded-lg w-full sm:w-auto hover:bg-green-700 transition-all"
+                    disabled={tender.hasQuoted}
+                    className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg w-full sm:w-auto transition-all ${
+                      tender.hasQuoted
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-green-600 text-white hover:bg-green-700"
+                    }`}
                   >
                     <PiCheckFatFill className="text-xl" /> Approve
                   </button>
