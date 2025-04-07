@@ -5,7 +5,7 @@ import axios from "axios";
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) => {
     const [openIdx, setOpenIdx] = useState(null);
-    const [editingIdx, setEditingIdx] = useState(null);
+    const [editingId, setEditingId] = useState(null); // Format: tenderId-responseIdx
     const [priceInput, setPriceInput] = useState("");
     const [confirmedIdxMap, setConfirmedIdxMap] = useState({});
     const [finalPricesMap, setFinalPricesMap] = useState({});
@@ -17,53 +17,90 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
     };
 
     const toggleResponses = async (idx, tenderId) => {
-
         if (openIdx === idx) {
             setOpenIdx(null);
             return;
         }
 
-        setOpenIdx(openIdx === idx ? null : idx);
-        setEditingIdx(null);
-        setPriceInput("");
+        if (allResponses[tenderId]) {
+            setOpenIdx(idx);
+            return;
+        }
 
-        // Fetch quotations only if not already fetched
-        if (!allResponses[tenderId]) {
-            try {
-                const res = await axios.get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
-                    withCredentials: true,
-                });
-                console.log(res.data);
-                setAllResponses((prev) => ({ ...prev, [tenderId]: res.data?.data || [] }));
-            } catch (error) {
-                console.error("Failed to fetch quotations for tender:", tenderId, error);
-                setAllResponses((prev) => ({ ...prev, [tenderId]: [] }));
-            }
+        try {
+            const response = await axios.get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
+                withCredentials: true,
+            });
+            console.log(response);
+            
+
+            setAllResponses((prev) => ({
+                ...prev,
+                [tenderId]: response.data.quotations,
+            }));
+            setOpenIdx(idx);
+        } catch (error) {
+            console.error("Failed to fetch responses:", error);
+            alert("Could not load transporter responses. Please try again.");
         }
     };
-
-    const handleConfirm = (tenderIdx, resIdx) => {
-        setEditingIdx(`${tenderIdx}-${resIdx}`);
-        setPriceInput(finalPricesMap[tenderIdx]?.[resIdx] || "");
+    console.log(allResponses);
+    
+    const handleConfirm = (tenderId, resIdx) => {
+        const finalPrices = finalPricesMap[tenderId] || {};
+        setEditingId(`${tenderId}-${resIdx}`);
+        setPriceInput(finalPrices[resIdx] || "");
     };
 
-    const handleDone = (tenderIdx, resIdx) => {
+    const handleDone = async (tenderId, resIdx) => {
         const confirm = window.confirm("Are you sure you want to finalize this quotation?");
-        if (confirm) {
+        if (!confirm) return;
+        console.log(tenderId);
+        
+        const quotation = allResponses[tenderId][resIdx];
+        console.log(quotation);
+        console.log(priceInput);
+        
+        const quotationId = quotation._id;
+       
+        
+        const finalPrice = priceInput;
+
+       
+    
+        try {
+            await axios.put(
+                `${API.FINALIZE_TENDER}/${tenderId}`, // Assuming correct route
+                {
+                    quotationId,
+                    finalPrice: Number(finalPrice),
+                },
+                {
+                    withCredentials: true,
+                }
+            );
+    
             setFinalPricesMap((prev) => ({
                 ...prev,
-                [tenderIdx]: {
-                    ...prev[tenderIdx],
-                    [resIdx]: priceInput,
+                [tenderId]: {
+                    ...prev[tenderId],
+                    [resIdx]: finalPrice,
                 },
             }));
+    
             setConfirmedIdxMap((prev) => ({
                 ...prev,
-                [tenderIdx]: resIdx,
+                [tenderId]: resIdx,
             }));
-            setEditingIdx(null);
+    
+            setEditingId(null);
+            alert("Tender finalized successfully!");
+        } catch (error) {
+            console.error("Error finalizing tender:", error);
+            alert("Something went wrong while finalizing. Please try again.");
         }
     };
+    
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -73,88 +110,78 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                 <p className="text-gray-500 text-sm italic">No Tender History Available.</p>
             ) : (
                 tenderHistories.map((tender, idx) => {
-                    // console.log(tenderHistories)
-                    const confirmedIdx = confirmedIdxMap[idx];
-                    const finalPrices = finalPricesMap[idx] || {};
-                    const responses = allResponses[tender._id] || [];
+                    const tenderId = tender._id;
+                    const confirmedIdx = confirmedIdxMap[tenderId];
+                    const finalPrices = finalPricesMap[tenderId] || [];
+                    const responsesForThisTender = allResponses[tenderId] || [];
 
                     return (
-                        <div key={idx} className="border rounded-xl mb-6 p-4 shadow-sm bg-gray-50">
-                            {/* Tender Summary Box */}
+                        <div key={tenderId} className="border rounded-xl mb-6 p-4 shadow-sm bg-gray-50">
+                            {/* Summary Box */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-6 border rounded-xl bg-white shadow-lg ring-1 ring-gray-100">
-                                {/* Section: Dates */}
                                 <div className="space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">Delivery Date</h4>
-                                    <p className="text-lg font-semibold text-gray-800"> {new Date(tender.dateOfDelivery).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric"
-                                    })}</p>
+                                    <p className="text-lg font-semibold text-gray-800">
+                                        {new Date(tender.dateOfDelivery).toLocaleDateString("en-US", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                        })}
+                                    </p>
                                 </div>
                                 <div className="space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">Closing Date</h4>
-                                    <p className="text-lg font-semibold text-gray-800"> {new Date(tender.closeDate || "N/A").toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric"
-                                    })}
+                                    <p className="text-lg font-semibold text-gray-800">
+                                        {new Date(tender.closeDate || "N/A").toLocaleDateString("en-US", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                        })}
                                     </p>
                                 </div>
-
-                                {/* Section: Location */}
                                 <div className="space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">Dispatch Location</h4>
                                     <p className="text-md text-gray-700">{tender.dispatchLocation}</p>
                                 </div>
-
-                                {/* Section: Address */}
                                 <div className="md:col-span-2 space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">Address</h4>
                                     <p className="text-md text-gray-700">{tender.address}</p>
                                 </div>
-
                                 <div className="space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">Pincode</h4>
                                     <p className="text-md text-gray-700">{tender.pincode}</p>
                                 </div>
-
-                                {/* Section: Remarks */}
                                 <div className="md:col-span-2 space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">Remarks</h4>
                                     <p className="text-md text-gray-700">{tender.remarks || "None"}</p>
                                 </div>
-
-                                {/* Divider */}
                                 <div className="md:col-span-2 border-t pt-4 mt-2">
                                     <h4 className="font-semibold text-md mb-2 text-indigo-700">Materials</h4>
                                     <ul className="list-disc ml-6 text-sm text-gray-700 space-y-1">
-                                        {Array.isArray(tender.materials) && tender.materials.map((mat, i) => (
-                                            <li key={i}>
-                                                {mat.material} {mat.subMaterial && `(${mat.subMaterial})`} - {mat.weight}kg × {mat.quantity} pcs
-                                            </li>
-                                        ))}
+                                        {Array.isArray(tender.materials) &&
+                                            tender.materials.map((mat, i) => (
+                                                <li key={i}>
+                                                    {mat.material} {mat.subMaterial && `(${mat.subMaterial})`} - {mat.weight}kg × {mat.quantity} pcs
+                                                </li>
+                                            ))}
                                     </ul>
                                 </div>
-
-                                {/* Totals */}
                                 <div className="bg-gray-50 p-4 rounded-lg shadow-inner space-y-1">
                                     <h4 className="text-sm font-medium text-gray-600">Total Weight</h4>
                                     <p className="text-lg font-bold text-gray-800">
-                                        {Array.isArray(tender.materials)
-                                            ? tender.materials.reduce((acc, mat) => acc + Number(mat.weight || 0), 0)
-                                            : 0} kg
+                                        {tender.materials?.reduce(
+                                            (acc, mat) => acc + Number(mat.weight || 0) * Number(mat.quantity || 0),
+                                            0
+                                        )}{" "}
+                                        kg
                                     </p>
                                 </div>
                                 <div className="bg-gray-50 p-4 rounded-lg shadow-inner space-y-1">
                                     <h4 className="text-sm font-medium text-gray-600">Total Quantity</h4>
                                     <p className="text-lg font-bold text-gray-800">
-                                        {Array.isArray(tender.materials)
-                                            ? tender.materials.reduce((acc, mat) => acc + Number(mat.quantity || 0), 0)
-                                            : 0} pcs
+                                        {tender.materials?.reduce((acc, mat) => acc + Number(mat.quantity || 0), 0)} pcs
                                     </p>
                                 </div>
-
-                                {/* Transporters */}
                                 <div className="md:col-span-2 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
                                     <h4 className="text-sm font-semibold text-indigo-800 mb-2">Transporters</h4>
                                     {Array.isArray(tender.responses) && tender.transporters.length > 0 ? (
@@ -169,11 +196,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                 </div>
                             </div>
 
-
-
-                            {/* Toggle Button */}
                             <button
-                                onClick={() => toggleResponses(idx, tender._id)}
+                                onClick={() => toggleResponses(idx, tenderId)}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-full shadow-md hover:bg-indigo-700 hover:shadow-lg transition duration-200"
                             >
                                 {openIdx === idx ? (
@@ -187,16 +211,15 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                 )}
                             </button>
 
-                            {/* Accordion Details */}
                             {openIdx === idx && (
                                 <div className="mt-6">
                                     <h4 className="text-xl font-semibold mb-4 text-indigo-800">Transporter Responses</h4>
 
-                                    {responses.length > 0 ? (
+                                    {responsesForThisTender.length > 0 ? (
                                         <div className="space-y-4">
-                                            {responses.map((res, rIdx) => {
-                                                const uniqueKey = `${idx}-${rIdx}`;
-                                                const isEditing = editingIdx === uniqueKey;
+                                            {responsesForThisTender.map((res, rIdx) => {
+                                                const uniqueKey = `${tenderId}-${rIdx}`;
+                                                const isEditing = editingId === uniqueKey;
                                                 const isDimmed = confirmedIdx !== undefined && confirmedIdx !== rIdx;
 
                                                 return (
@@ -215,11 +238,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm text-gray-500">Vehicle No</p>
-                                                                <p className="text-md font-medium text-gray-700">{res.vehicleNo}</p>
+                                                                <p className="text-md font-medium text-gray-700">{res.vehicleNumber}</p>
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm text-gray-500">Attachments</p>
-                                                                <p className="text-sm text-gray-700">{res.attachments.join(", ")}</p>
+                                                                <p className="text-sm text-gray-700">
+                                                                    {res?.files?.length > 0 ? res.files.join(", ") : "No attachments"}
+                                                                </p>
                                                             </div>
                                                         </div>
 
@@ -238,7 +263,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                                                         placeholder="Final Price"
                                                                     />
                                                                     <button
-                                                                        onClick={() => handleDone(idx, rIdx)}
+                                                                        onClick={() => handleDone(tenderId, rIdx)}
                                                                         className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
                                                                     >
                                                                         Done
@@ -251,7 +276,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                                                             * Please enter the final price after negotiation before confirming.
                                                                         </p>
                                                                         <button
-                                                                            onClick={() => handleConfirm(idx, rIdx)}
+                                                                            onClick={() => handleConfirm(tenderId, rIdx)}
                                                                             className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
                                                                         >
                                                                             Confirm Final Price
@@ -269,7 +294,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                     )}
                                 </div>
                             )}
-
                         </div>
                     );
                 })
