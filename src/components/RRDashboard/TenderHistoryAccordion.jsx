@@ -241,7 +241,7 @@ const TenderHistoryAccordion = ({
                                     {Array.isArray(tender.transporters) &&
                                         tender.transporters.length > 0 ? (
                                         <ul className="list-disc ml-6 text-sm text-indigo-900 space-y-1">
-                                            {tender.transporters.map((_id, i) => (
+                                            {tender.transporters.map((_id) => (
                                                 <li key={i}>{getTransporterName(_id)}</li>
                                             ))}
                                         </ul>

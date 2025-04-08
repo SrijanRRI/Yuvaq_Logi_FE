@@ -8,10 +8,14 @@ import TenderHistoryAccordion from "../components/RRDashboard/TenderHistoryAccor
 import API from "../API";
 import axios from "axios";
 import { toast } from 'react-toastify';
+import { useSelector } from "react-redux";
 
 const RRDashboardPage = () => {
-  const { state } = useLocation();
   const navigate = useNavigate();
+
+  const userInfo = useSelector((state) => state.auth?.userInfo);
+  const userName = userInfo?.name || "RR User";
+  console.log(userName);
 
   const [viewHistory, setViewHistory] = useState(false);
   const [tenderHistories, setTenderHistories] = useState([]);
@@ -177,7 +181,7 @@ const RRDashboardPage = () => {
         "Something went wrong. Please try again.";
       // alert(errMessage);
       toast.error(errMessage);
-    }finally {
+    } finally {
       setLoading(false); // Stop loading whether success or error
     }
   };
@@ -199,7 +203,7 @@ const RRDashboardPage = () => {
     <div className="min-h-screen bg-gray-100">
       <Navbar
         title="RR Dashboard"
-        userName={state?.name || "RR User"}
+        userName={userName || "RR User hello this is default"}
         actions={navbarActions}
         onLogout={handleLogout}
       />
