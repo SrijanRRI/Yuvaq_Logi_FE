@@ -1,6 +1,8 @@
 let serverUrl = "http://localhost:5000"
 // let serverUrl = "http://192.168.13.78:5000"
 // let serverUrl = "https://tenderappbe.onrender.com"
+// let serverUrl = "https://logiyatrabe.rrispat.in"
+
 
 const API = {
 
@@ -9,12 +11,13 @@ const API = {
     SIGNIN : `${serverUrl}/api/auth/signin`,
     FORGOTPASSWORD : `${serverUrl}/api/auth/forgotpassword`,
     RESETPASSWORD : `${serverUrl}/api/auth/resetpassword/`,
+    GETUSERBYID : `${serverUrl}/api/auth/user`,
 
     //Admin API :
     ALLAPPROVALREQUEST : `${serverUrl}/admin/pending-approvals`,
     APPROVEREQUEST : `${serverUrl}/admin/approve-user/`,
     REJECTREQUEST : `${serverUrl}/admin/reject-user/`,
-
+    
     //Transport User
     FETCH_ALL_TRANSPORTER : `${serverUrl}/admin/transport-users`,
     FETCH_ALL_TENDERS : `${serverUrl}/tenders/assigned`,
