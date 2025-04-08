@@ -38,6 +38,9 @@ const TransporterDashboardPage = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
 
+  const [transporters, setTransporters] = useState([]);
+  const [transporterMap, setTransporterMap] = useState({});
+
 
   useEffect(() => {
     const fetchTenders = async () => {
@@ -63,6 +66,26 @@ const TransporterDashboardPage = () => {
 
     fetchTenders();
   }, []);
+
+  const fetchTransporters = async () => {
+    try {
+      const res = await axios.get(API.FETCH_ALL_TRANSPORTER, {
+        withCredentials: true,
+      });
+      const list = res.data?.data || [];
+      console.log("transporter's name : ", res.data);
+      setTransporters(list);
+
+      // create a map for quick lookup
+      const map = {};
+      list.forEach((t) => {
+        map[t._id] = t.name;
+      });
+      setTransporterMap(map);
+    } catch (err) {
+      console.error("Error fetching transporter list:", err);
+    }
+  };
 
   const handleReject = (id) => {
     setConfirmDialog({
@@ -191,6 +214,7 @@ const TransporterDashboardPage = () => {
       setHistoryLoading(true);
       setHistoryError(null);
       try {
+        await fetchTransporters();
         const res = await axios.get(API.HISTORY_FOR_QUOTATION_QUOTE, {
           withCredentials: true,
           headers: {
@@ -199,7 +223,16 @@ const TransporterDashboardPage = () => {
         });
 
         console.log("History response:", res.data);
-        setHistory(res.data.data || []);
+
+        const enriched = res.data.data.map((entry) => {
+          return {
+            ...entry,
+            transporterName: transporterMap[entry.tenderId] || "Unknown Transporter",
+          };
+        });
+
+        setHistory(enriched);
+
       } catch (err) {
         console.error("Failed to load history:", err);
         if (err.response) {
@@ -215,7 +248,10 @@ const TransporterDashboardPage = () => {
     setView((prev) => !prev);
   };
 
-
+  const getTransporterName = (id) => {
+    const found = transporterList.find((t) => t._id === id);
+    return found ? found.name || found.email : id;
+  };
 
   const navbarActions = (
     <button
@@ -259,7 +295,7 @@ const TransporterDashboardPage = () => {
               <div className="grid gap-4">
                 {history.map((entry, idx) => (
                   <div
-                    key={idx}
+                    key={entry._id || idx}
                     className="bg-white p-4 rounded shadow border relative"
                   >
                     <button
@@ -269,23 +305,75 @@ const TransporterDashboardPage = () => {
                     >
                       <ImCross className="text-sm" />
                     </button>
+
                     <div className="grid sm:grid-cols-2 gap-2 text-sm">
-                      <p><strong>RR User:</strong> {entry.rrName}</p>
+                      {/* <p><strong>Tender ID:</strong> {transporterMap[entry.tenderId] || entry.tenderId} </p>
+                      <p><strong>Tender:</strong> {entry.tender?.rrName || entry.tenderId}</p>
+
+                      <p><strong>Transporter Name dfasdfsd:</strong> {transporterMap[entry.tenderId] || "Unknown Transporter"}</p> */}
+
+                      <p><strong>RR User Name:</strong> {entry.tenderId || "Unknown RR User"}</p>
+                      {/* <p><strong>RR User Name:</strong> {getTransporterName(entry.tenderId )}</p> */}
+
+
                       <p><strong>Price:</strong> ₹{entry.price}</p>
-                      <p><strong>Vehicle No:</strong> {entry.vehicleNo}</p>
-                      <p><strong>Location:</strong> {entry.dispatchLocation}</p>
+                      <p><strong>Vehicle No:</strong> {entry.vehicleNumber}</p>
+                      <p><strong>Delivery Date : </strong>
+                        {new Date(entry.tender?.dateOfDelivery).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          }
+                        )}
+                      </p>
+                      <p><strong>Submitted On : </strong>
+                        {new Date(entry.createdAt).toLocaleString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </p>
+                      <p><strong>Location:</strong> {entry.tender?.dispatchLocation}</p>
+                      <p><strong>Address:</strong> {entry.tender?.address}</p>
                     </div>
+
+                    {entry.tender?.remarks && (
+                      <p className="text-sm bg-gray-100 rounded p-2">
+                        <MdLibraryBooks className="inline-block mr-1 text-purple-500" />
+                        <strong>Remarks:</strong> {entry.tender.remarks}
+                      </p>
+                    )}
+
+                    {entry.tender?.materials?.length > 0 && (
+                      <div className="mt-3 bg-gray-50 p-3 rounded-lg">
+                        <h4 className="text-sm font-semibold mb-1 flex items-center gap-1">
+                          <FaTools className="text-gray-600" /> Materials
+                        </h4>
+                        <ul className="list-disc list-inside text-sm text-gray-700">
+                          {entry.tender.materials.map((m, i) => (
+                            <li key={m._id || i}>
+                              {m.material} ({m.subMaterial || "-"}) : {m.quantity} pcs, {m.weight} kg
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     <div className="mt-2 text-sm">
                       <p>
-                        <strong>Materials:</strong>{" "}
-                        {entry.materials
-                          ?.map((m) => `${m.item} (${m.subItem || "-"}) x ${m.quantity}pcs, ${m.weight}kg`)
-                          .join("; ")}
-                      </p>
-                      <p className="mt-1">
                         <strong>Attachments:</strong>{" "}
-                        {entry.attachments?.length > 0
-                          ? entry.attachments.map((f) => (typeof f === "string" ? f : f.name)).join(", ")
+                        {entry.files?.length > 0
+                          ? entry.files.map((f, i) =>
+                            f.originalName || f.url || f.name || `File ${i + 1}`
+                          ).join(", ")
                           : "None"}
                       </p>
                     </div>

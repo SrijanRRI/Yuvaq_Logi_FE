@@ -140,20 +140,22 @@ const TenderHistoryAccordion = ({
                             {/* Summary Box */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-6 border rounded-xl bg-white shadow-lg ring-1 ring-gray-100">
                                 <div className="space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">
-                                        Delivery Date
-                                    </h4>
+                                    <h4 className="text-gray-500 text-sm uppercase">Delivery Window</h4>
                                     <p className="text-lg font-semibold text-gray-800">
-                                        {new Date(tender.dateOfDelivery).toLocaleDateString(
-                                            "en-US",
-                                            {
+                                        {tender.deliveryWindow?.from
+                                            ? `${new Date(tender.deliveryWindow.from).toLocaleDateString("en-US", {
                                                 year: "numeric",
-                                                month: "long",
+                                                month: "short",
                                                 day: "numeric",
-                                            }
-                                        )}
+                                            })} to ${new Date(tender.deliveryWindow.to).toLocaleDateString("en-US", {
+                                                year: "numeric",
+                                                month: "short",
+                                                day: "numeric",
+                                            })}`
+                                            : "N/A"}
                                     </p>
                                 </div>
+
                                 <div className="space-y-1">
                                     <h4 className="text-gray-500 text-sm uppercase">
                                         Closing Date
