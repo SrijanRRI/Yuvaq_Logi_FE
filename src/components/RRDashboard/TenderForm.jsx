@@ -235,7 +235,7 @@ const TenderForm = ({
           type="submit"
           disabled={loading}
           className={`px-6 py-2 rounded-lg shadow-md transition-all 
-          ${loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}>
+          ${loading ? "bg-indigo-400 cursor-not-allowed" : "bg-[#c4000e] text-white"}`}>
             
           {loading ? "Sending..." : "Send Tender"}
         </button>

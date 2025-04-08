@@ -115,7 +115,6 @@ const TransporterDashboardPage = () => {
     });
   };
 
-
   const handleResponseChange = (e) => {
     setResponseForm({ ...responseForm, [e.target.name]: e.target.value });
   };
@@ -158,7 +157,8 @@ const TransporterDashboardPage = () => {
             rrName: selectedTender.rrName,
             price: responseForm.price,
             vehicleNo: responseForm.vehicleNo,
-            attachments: result.data.files?.map((f) => f.originalName || f.url) || [],
+            attachments:
+              result.data.files?.map((f) => f.originalName || f.url) || [],
             dispatchLocation: selectedTender.dispatchLocation,
             materials: selectedTender.materials.map((m) => ({
               item: m.material,

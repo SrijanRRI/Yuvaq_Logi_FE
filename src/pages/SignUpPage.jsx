@@ -60,19 +60,32 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-gray-100">
+      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+        {/* Logo Section */}
+        <div className="flex justify-center ">
+        <div className="w-60 h-24 flex items-center justify-center ">
+            <img
+              src="/assets/LogiYatraLogo.png"
+              alt="Company Logo"
+              className="w-60 h-28 object-contain"
+            />
+          </div>
+        </div>
+        
+       
+        <p className="text-center text-gray-500 mb-6">Join us and start your journey</p>
 
         <UserToggle userType={userType} setUserType={setUserType} />
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <InputField
             label="Full Name"
             name="name"
             value={form.name}
             onChange={handleChange}
             placeholder="John Doe"
+            className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
             label="Email"
@@ -81,6 +94,7 @@ const SignUpPage = () => {
             value={form.email}
             onChange={handleChange}
             placeholder="johndoe@example.com"
+            className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
             label="Password"
@@ -89,6 +103,7 @@ const SignUpPage = () => {
             value={form.password}
             onChange={handleChange}
             placeholder="******"
+            className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
             label="Confirm Password"
@@ -97,33 +112,45 @@ const SignUpPage = () => {
             value={form.confirmPassword}
             onChange={handleChange}
             placeholder="******"
+            className="focus:ring-red-700 focus:border-red-800"
           />
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full mt-4 py-2 bg-blue-600 text-white rounded-lg transition flex items-center justify-center gap-2 ${loading ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-700'
-              }`}
+            className={`w-full mt-8 py-3 bg-[#c4000e] text-white font-medium rounded-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 ${loading ? 'opacity-60 cursor-not-allowed' : ' hover:shadow-md'}`}
           >
-            {loading && (
-              <svg
-                className="animate-spin h-5 w-5 border-4 border-t-transparent border-white rounded-full"
-                viewBox="0 0 24 24"
-              />
+            {loading ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 border-4 border-t-transparent border-white rounded-full"
+                  viewBox="0 0 24 24"
+                />
+                <span>Creating Account...</span>
+              </>
+            ) : (
+              <span>Create Account</span>
             )}
-            <span>{loading ? 'Registering...' : 'Register'}</span>
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-center">
-          Already have an account?{' '}
-          <span
-            className="text-blue-600 cursor-pointer"
-            onClick={() => navigate('/signin')}
-          >
-            Sign In
-          </span>
-        </p>
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <span
+              className="text-blue-600 font-medium hover:text-blue-800 cursor-pointer transition-colors"
+              onClick={() => navigate('/signin')}
+            >
+              Sign In
+            </span>
+          </p>
+        </div>
+        
+        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-500">
+            By signing up, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </div>
       </div>
     </div>
   );
