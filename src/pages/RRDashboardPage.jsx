@@ -17,16 +17,17 @@ const RRDashboardPage = () => {
   const [tenderHistories, setTenderHistories] = useState([]);
 
   const [form, setForm] = useState({
-    deliveryDate: "",
+    deliveryWindow: { from: "", to: "" },
     closingDate: "",
     dispatchLocation: "",
     address: "",
     pincode: "",
     materials: [],
-    // weight: '',
-    // quantity: '',
+    weight: '',
+    quantity: '',
     remarks: "",
     transporter: [],
+    isManualTotals: false,
   });
 
   const [showMaterialModal, setShowMaterialModal] = useState(false);
@@ -34,6 +35,8 @@ const RRDashboardPage = () => {
 
   const [transporterList, setTransporterList] = useState([]);
   const [selectedTransporters, setSelectedTransporters] = useState([]);
+
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchTenderHistory = async () => {
@@ -71,24 +74,41 @@ const RRDashboardPage = () => {
 
   const handleChange = (e) => {
     const { name, value, options } = e.target;
+
     if (name === "transporter") {
       const selected = Array.from(options)
         .filter((option) => option.selected)
         .map((option) => option.value);
       setForm({ ...form, [name]: selected });
+    } else if (name === "weight" || name === "quantity") {
+      setForm({ ...form, [name]: value, isManualTotals: true });
     } else {
       setForm({ ...form, [name]: value });
     }
   };
 
+
   const handleRemoveMaterial = (indexToRemove) => {
-    setForm((prevForm) => ({
-      ...prevForm,
-      materials: prevForm.materials.filter(
-        (_, index) => index !== indexToRemove
-      ),
-    }));
+    setForm((prev) => {
+      const updatedMaterials = prev.materials.filter((_, idx) => idx !== indexToRemove);
+
+      let weight = prev.weight;
+      let quantity = prev.quantity;
+
+      if (!prev.isManualTotals) {
+        weight = updatedMaterials.reduce((acc, mat) => acc + Number(mat.weight || 0), 0).toFixed(2);
+        quantity = updatedMaterials.reduce((acc, mat) => acc + Number(mat.quantity || 0), 0);
+      }
+
+      return {
+        ...prev,
+        materials: updatedMaterials,
+        weight,
+        quantity,
+      };
+    });
   };
+
 
   const handleTransporterSave = (selectedIds) => {
     setForm((prev) => ({ ...prev, transporter: selectedIds }));
@@ -100,13 +120,26 @@ const RRDashboardPage = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    if (form.materials.length > 0) {
+      if (!form.weight || !form.quantity) {
+        alert("Please enter total weight and quantity.");
+        return;
+      }
+    }
 
     const payload = {
-      dateOfDelivery: form.deliveryDate,
+      deliveryWindow: {
+        from: form.deliveryWindow.from,
+        to: form.deliveryWindow.to,
+      },
       closeDate: form.closingDate,
       dispatchLocation: form.dispatchLocation,
       address: form.address,
       pincode: form.pincode,
+      totalWeight: form.weight ? parseFloat(form.weight) : null,
+      totalQuantity: form.quantity ? parseInt(form.quantity) : null,
       remarks: form.remarks,
       transporters: form.transporter,
       materials: form.materials.map((mat) => ({
@@ -126,14 +159,17 @@ const RRDashboardPage = () => {
       toast.success("Tender submitted successfully!");
 
       setForm({
-        deliveryDate: "",
+        deliveryWindow: { from: "", to: "" },
         closingDate: "",
         dispatchLocation: "",
         address: "",
         pincode: "",
         materials: [],
+        weight: "",
+        quantity: "",
         remarks: "",
         transporter: [],
+        isManualTotals: false,
       });
     } catch (error) {
       const errMessage =
@@ -141,6 +177,8 @@ const RRDashboardPage = () => {
         "Something went wrong. Please try again.";
       // alert(errMessage);
       toast.error(errMessage);
+    }finally {
+      setLoading(false); // Stop loading whether success or error
     }
   };
 
@@ -172,12 +210,14 @@ const RRDashboardPage = () => {
         ) : (
           <TenderForm
             form={form}
+            setForm={setForm}
             handleChange={handleChange}
             handleSend={handleSend}
             setShowMaterialModal={setShowMaterialModal}
             setShowTransporterModal={setShowTransporterModal}
             handleRemoveMaterial={handleRemoveMaterial}
             selectedTransporters={selectedTransporters}
+            loading={loading}
           />
         )}
       </div>
@@ -185,12 +225,31 @@ const RRDashboardPage = () => {
       {showMaterialModal && (
         <MaterialModal
           close={() => setShowMaterialModal(false)}
-          onAdd={(newMaterial) =>
-            setForm((prev) => ({
-              ...prev,
-              materials: [...prev.materials, newMaterial],
-            }))
-          }
+          onAdd={(newMaterial) => {
+            setForm((prev) => {
+              const updatedMaterials = [...prev.materials, newMaterial];
+              let weight = prev.weight;
+              let quantity = prev.quantity;
+
+              if (!prev.isManualTotals) {
+                weight = updatedMaterials.reduce(
+                  (sum, mat) => sum + parseFloat(mat.weight || 0),
+                  0
+                ).toFixed(2);
+                quantity = updatedMaterials.reduce(
+                  (sum, mat) => sum + parseInt(mat.quantity || 0),
+                  0
+                );
+              }
+
+              return {
+                ...prev,
+                materials: updatedMaterials,
+                weight,
+                quantity,
+              };
+            });
+          }}
         />
       )}
 

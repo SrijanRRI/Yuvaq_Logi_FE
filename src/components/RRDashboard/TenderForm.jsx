@@ -2,32 +2,60 @@ import React from "react";
 
 const TenderForm = ({
   form,
+  setForm,
   handleChange,
   handleSend,
   handleRemoveMaterial,
   setShowMaterialModal,
   setShowTransporterModal,
   selectedTransporters,
+  loading,
 }) => {
+
   return (
     <form
       onSubmit={handleSend}
       className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow-lg ring-1 ring-gray-100"
     >
       {/* Delivery Date */}
-      <div>
+      <div className="col-span-2 sm:col-span-1">
         <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Date of Delivery
+          Delivery Start Date
         </label>
         <input
           type="date"
-          name="deliveryDate"
-          value={form.deliveryDate}
-          onChange={handleChange}
+          name="deliveryStart"
+          value={form.deliveryWindow.from}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              deliveryWindow: { ...prev.deliveryWindow, from: e.target.value },
+            }))
+          }
           className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           required
         />
       </div>
+
+      <div className="col-span-2 sm:col-span-1">
+        <label className="block text-sm font-semibold text-gray-600 mb-1">
+          Delivery End Date
+        </label>
+        <input
+          type="date"
+          name="deliveryEnd"
+          value={form.deliveryWindow.to}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              deliveryWindow: { ...prev.deliveryWindow, to: e.target.value },
+            }))
+          }
+          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          required
+        />
+      </div>
+
 
       {/* Closing Date */}
       <div>
@@ -136,30 +164,30 @@ const TenderForm = ({
       </div>
 
       {/* Totals */}
-      {/* <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    Total Weight <span className="text-red-500">*</span>
-                </label>
-                <input
-                    type="number"
-                    name="weight"
-                    value={form.weight}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    Total Quantity <span className="text-red-500">*</span>
-                </label>
-                <input
-                    type="number"
-                    name="quantity"
-                    value={form.quantity}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-            </div> */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 mb-1">
+          Total Weight <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          name="weight"
+          value={form.weight}
+          onChange={handleChange}
+          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 mb-1">
+          Total Quantity <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          name="quantity"
+          value={form.quantity}
+          onChange={handleChange}
+          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
 
       {/* Remarks */}
       <div className="col-span-2">
@@ -205,9 +233,11 @@ const TenderForm = ({
       <div className="col-span-2 text-right">
         <button
           type="submit"
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-all"
-        >
-          Send Tender
+          disabled={loading}
+          className={`px-6 py-2 rounded-lg shadow-md transition-all 
+          ${loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}>
+            
+          {loading ? "Sending..." : "Send Tender"}
         </button>
       </div>
     </form>
