@@ -305,13 +305,14 @@ const TransporterDashboardPage = () => {
                   <FileText className="h-6 w-6 text-teal-600" />
                   Submission History
                 </h3>
-                <button
+
+                {/* <button
                   onClick={handleClearHistory}
-                  className=" bg-red-100 flex items-center gap-2 px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
-                >
+                  className=" bg-red-100 flex items-center gap-2 px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200">
                   <XCircle className="h-4 w-4" />
                   Clear All
-                </button>
+                </button> */}
+
               </div>
               <div className="grid gap-6">
                 {history.map((entry, idx) => (
@@ -320,16 +321,15 @@ const TransporterDashboardPage = () => {
                     className="relative bg-white border border-slate-200 rounded-xl shadow-sm p-6 transition-all duration-200 hover:shadow-md"
                   >
                     {/* Delete Button */}
-                    <button
+                    {/* <button
                       onClick={() => handleDeleteHistoryItem(idx)}
                       className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors duration-200"
-                      title="Delete Entry"
-                    >
+                      title="Delete Entry">
                       <XCircle className="h-5 w-5" />
-                    </button>
+                    </button> */}
 
                     {/* Header with status badge */}
-                    <div className="mb-4 pb-4 border-b border-slate-100 mx-5">
+                    <div className="mb-4 pb-4 border-b border-slate-100 ">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <h4 className="text-lg font-semibold text-slate-800">Quotation #{idx + 1}</h4>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
@@ -722,13 +722,13 @@ const TransporterDashboardPage = () => {
                 />
               </div>
               <div>
-                <label className="block font-medium mb-1.5 text-sm text-slate-700">Vehicle Number</label>
+                <label className="block font-medium mb-1.5 text-sm text-slate-700">Vehicle Details</label>
                 <input
                   name="vehicleNo"
                   value={responseForm.vehicleNo}
                   onChange={handleResponseChange}
                   type="text"
-                  placeholder="Enter vehicle number"
+                  placeholder="Enter vehicle details"
                   className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   required
                 />

@@ -92,7 +92,14 @@ export const MaterialModal = ({ close, onAdd }) => {
       alert("Fill required fields")
       return
     }
+
+    if (subItems.length > 0 && !subItem) {
+      alert("Please select a sub material.")
+      return
+    }
+
     onAdd({ item, subItem, weight, quantity })
+    
     close()
   }
 
@@ -139,7 +146,7 @@ export const MaterialModal = ({ close, onAdd }) => {
           {subItems.length > 0 && (
             <div className="space-y-2">
               <label htmlFor="subItem" className="block text-sm font-medium text-slate-700">
-                Sub Material
+                Sub Material <span className="text-red-500">*</span>
               </label>
               <select
                 id="subItem"

@@ -167,9 +167,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                     <div className="flex items-center gap-3">
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                          tender.status === "CLOSED"
-                            ? "bg-red-100 text-red-800"
-                            : tender.status === "COMPLETED"
+                          tender.status === "finalized"
                               ? "bg-green-100 text-green-800"
                               : "bg-amber-100 text-amber-800"
                         }`}
@@ -341,7 +339,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                                 originalName: file.originalName || `Attachment ${idx + 1}`,
                                               })
                                             }
-                                            className="text-emerald-600 hover:underline block text-left flex items-center gap-1"
+                                            className="text-emerald-600 hover:underline text-left flex items-center gap-1"
                                           >
                                             <FileText className="h-3.5 w-3.5" />
                                             {file.originalName || `Attachment ${idx + 1}`}
