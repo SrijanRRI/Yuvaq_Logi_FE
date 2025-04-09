@@ -6,6 +6,7 @@ import axios from "axios";
 import API from "../API";
 import { toast } from 'react-toastify';
 import { ConfirmationModal } from "../modals/ConfirmationModal";
+import { useSelector } from "react-redux";
 
 
 const AdminDashboardPage = () => {
@@ -16,6 +17,10 @@ const AdminDashboardPage = () => {
     const [error, setError] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState(null);
     const [approvingIndex, setApprovingIndex] = useState(null);
+
+    const userInfo = useSelector((state) => state.User?.userInfo);
+    const userName = userInfo?.name || "RR User";
+    // console.log(userName);
 
     const [data] = useState([
         {
@@ -150,7 +155,7 @@ const AdminDashboardPage = () => {
         <div className="min-h-screen bg-gray-100">
             <Navbar
                 title="Admin Dashboard"
-                userName="Admin"
+                userName={ userName || "Admin" }
                 actions={navbarActions}
                 onLogout={handleLogout}
             />

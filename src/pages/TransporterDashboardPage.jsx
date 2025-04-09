@@ -16,10 +16,6 @@ import { useSelector } from "react-redux";
 
 const TransporterDashboardPage = () => {
 
-  const userInfo = useSelector((state) => state.auth?.userInfo);
-  const userName = userInfo?.name 
-  console.log(userName);
-
   const [tenders, setTenders] = useState([]);
   const [history, setHistory] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -44,6 +40,10 @@ const TransporterDashboardPage = () => {
 
   const [transporters, setTransporters] = useState([]);
   const [transporterMap, setTransporterMap] = useState({});
+
+  const userInfo = useSelector((state) => state.User?.userInfo);
+  const userName = userInfo?.name || "RR User";
+  // console.log(userName);
 
 
   useEffect(() => {
@@ -252,11 +252,6 @@ const TransporterDashboardPage = () => {
     setView((prev) => !prev);
   };
 
-  const getTransporterName = (id) => {
-    const found = transporterList.find((t) => t._id === id);
-    return found ? found.name || found.email : id;
-  };
-
   const navbarActions = (
     <button
       onClick={handleToggleView}
@@ -270,7 +265,7 @@ const TransporterDashboardPage = () => {
     <div className="min-h-screen bg-gray-100">
       <Navbar
         title="Transporter Dashboard"
-        userName={userName || "Transport User this is default"}
+        userName={ userName || "Transport User" }
         actions={navbarActions}
         onLogout={handleLogout}
       />

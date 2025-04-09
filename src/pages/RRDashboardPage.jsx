@@ -13,10 +13,6 @@ import { useSelector } from "react-redux";
 const RRDashboardPage = () => {
   const navigate = useNavigate();
 
-  const userInfo = useSelector((state) => state.auth?.userInfo);
-  const userName = userInfo?.name || "RR User";
-  console.log(userName);
-
   const [viewHistory, setViewHistory] = useState(false);
   const [tenderHistories, setTenderHistories] = useState([]);
 
@@ -41,6 +37,10 @@ const RRDashboardPage = () => {
   const [selectedTransporters, setSelectedTransporters] = useState([]);
 
   const [loading, setLoading] = useState(false);
+
+  const userInfo = useSelector((state) => state.User?.userInfo);
+  const userName = userInfo?.name || "RR User";
+  // console.log(userName);
 
   useEffect(() => {
     const fetchTenderHistory = async () => {
@@ -203,7 +203,7 @@ const RRDashboardPage = () => {
     <div className="min-h-screen bg-gray-100">
       <Navbar
         title="RR Dashboard"
-        userName={userName || "RR User hello this is default"}
+        userName={userName || "RR User "}
         actions={navbarActions}
         onLogout={handleLogout}
       />

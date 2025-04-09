@@ -11,7 +11,7 @@ const API = {
     SIGNIN : `${serverUrl}/api/auth/signin`,
     FORGOTPASSWORD : `${serverUrl}/api/auth/forgotpassword`,
     RESETPASSWORD : `${serverUrl}/api/auth/resetpassword/`,
-    GETUSERBYID : `${serverUrl}/api/auth/user`,
+    // GETUSERBYID : `${serverUrl}/api/auth/user`,
 
     //Admin API :
     ALLAPPROVALREQUEST : `${serverUrl}/admin/pending-approvals`,
