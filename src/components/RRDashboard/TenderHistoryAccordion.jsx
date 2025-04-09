@@ -1,464 +1,470 @@
-import React, { useEffect, useState } from "react";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import API from "../../API";
-import axios from "axios";
-import { toast } from "react-toastify";
-import { ConfirmationModal } from "../../modals/ConfirmationModal";
+import { useState } from "react"
+import { toast } from "react-toastify"
+import axios from "axios"
+import {
+  ChevronDown,
+  ChevronUp,
+  Package,
+  FileText,
+  Truck,
+  Users,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Download,
+  X,
+} from "lucide-react"
+import { ConfirmationModal } from "../../modals/ConfirmationModal"
+import API from "../../API"
 
-const TenderHistoryAccordion = ({
-    tenderHistories = [],
-    transporterList = [],
-}) => {
-    const [openIdx, setOpenIdx] = useState(null);
-    const [editingId, setEditingId] = useState(null); // Format: tenderId-responseIdx
-    const [priceInput, setPriceInput] = useState("");
-    const [confirmedIdxMap, setConfirmedIdxMap] = useState({});
-    const [finalPricesMap, setFinalPricesMap] = useState({});
-    const [allResponses, setAllResponses] = useState({});
-    const [previewFile, setPreviewFile] = useState(null);
-    const [confirmDialog, setConfirmDialog] = useState(null);
+const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) => {
+  const [openIdx, setOpenIdx] = useState(null)
+  const [editingId, setEditingId] = useState(null) // Format: tenderId-responseIdx
+  const [priceInput, setPriceInput] = useState("")
+  const [confirmedIdxMap, setConfirmedIdxMap] = useState({})
+  const [finalPricesMap, setFinalPricesMap] = useState({})
+  const [allResponses, setAllResponses] = useState({})
+  const [previewFile, setPreviewFile] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
 
+  const getTransporterName = (id) => {
+    const found = transporterList.find((t) => t._id === id)
+    return found ? found.name || found.email : id
+  }
 
-    useEffect(() => {
-        const onKeyDown = (e) => {
-            if (e.key === "Escape") setPreviewFile(null);
-        };
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-    }, []);
+  const toggleResponses = async (idx, tenderId) => {
+    if (openIdx === idx) {
+      setOpenIdx(null)
+      return
+    }
 
-    const getTransporterName = (id) => {
-        const found = transporterList.find((t) => t._id === id);
-        return found ? found.name || found.email : id;
-    };
+    if (allResponses[tenderId]) {
+      setOpenIdx(idx)
+      return
+    }
 
-    const toggleResponses = async (idx, tenderId) => {
-        if (openIdx === idx) {
-            setOpenIdx(null);
-            return;
-        }
+    try {
+      const response = await axios.get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
+        withCredentials: true,
+      })
 
-        if (allResponses[tenderId]) {
-            setOpenIdx(idx);
-            return;
-        }
+      setAllResponses((prev) => ({
+        ...prev,
+        [tenderId]: response.data.quotations,
+      }))
+      setOpenIdx(idx)
+    } catch (error) {
+      console.error("Failed to fetch responses:", error)
+      toast.error("Could not load transporter responses. Please try again.")
+    }
+  }
+
+  const handleConfirm = (tenderId, resIdx) => {
+    const finalPrices = finalPricesMap[tenderId] || {}
+    setEditingId(`${tenderId}-${resIdx}`)
+    setPriceInput(finalPrices[resIdx] || "")
+  }
+
+  const handleDone = (tenderId, resIdx) => {
+    setConfirmDialog({
+      message: "Are you sure you want to finalize this quotation?",
+      onConfirm: async () => {
+        const quotation = allResponses[tenderId][resIdx]
+        const quotationId = quotation._id
+        const finalPrice = priceInput
 
         try {
-            const response = await axios.get(
-                `${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`,
-                {
-                    withCredentials: true,
-                }
-            );
-            //   console.log(response);
-
-            setAllResponses((prev) => ({
-                ...prev,
-                [tenderId]: response.data.quotations,
-            }));
-            setOpenIdx(idx);
-        } catch (error) {
-            console.error("Failed to fetch responses:", error);
-            // alert("Could not load transporter responses. Please try again.");
-            toast.error("Could not load transporter responses. Please try again.");
-        }
-    };
-    // console.log(allResponses);
-
-    const handleConfirm = (tenderId, resIdx) => {
-        const finalPrices = finalPricesMap[tenderId] || {};
-        setEditingId(`${tenderId}-${resIdx}`);
-        setPriceInput(finalPrices[resIdx] || "");
-    };
-
-    const handleDone = (tenderId, resIdx) => {
-        setConfirmDialog({
-            message: "Are you sure you want to finalize this quotation?",
-            onConfirm: async () => {
-                const quotation = allResponses[tenderId][resIdx];
-                const quotationId = quotation._id;
-                const finalPrice = priceInput;
-
-                try {
-                    await axios.put(
-                        `${API.FINALIZE_TENDER}/${tenderId}`,
-                        {
-                            quotationId,
-                            finalPrice: Number(finalPrice),
-                        },
-                        {
-                            withCredentials: true,
-                        }
-                    );
-
-                    setFinalPricesMap((prev) => ({
-                        ...prev,
-                        [tenderId]: {
-                            ...prev[tenderId],
-                            [resIdx]: finalPrice,
-                        },
-                    }));
-
-                    setConfirmedIdxMap((prev) => ({
-                        ...prev,
-                        [tenderId]: resIdx,
-                    }));
-
-                    setEditingId(null);
-                    toast.success("Tender finalized successfully!");
-                } catch (error) {
-                    console.error("Error finalizing tender:", error);
-                    toast.error("Something went wrong while finalizing. Please try again.");
-                } finally {
-                    setConfirmDialog(null); // Close modal
-                }
+          await axios.put(
+            `${API.FINALIZE_TENDER}/${tenderId}`,
+            {
+              quotationId,
+              finalPrice: Number(finalPrice),
             },
-            onCancel: () => setConfirmDialog(null),
-        });
-    };
+            {
+              withCredentials: true,
+            },
+          )
 
-    return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4">Tender History</h2>
+          setFinalPricesMap((prev) => ({
+            ...prev,
+            [tenderId]: {
+              ...prev[tenderId],
+              [resIdx]: finalPrice,
+            },
+          }))
 
-            {tenderHistories.length === 0 ? (
-                <p className="text-gray-500 text-sm italic">
-                    No Tender History Available.
-                </p>
-            ) : (
-                tenderHistories.map((tender, idx) => {
-                    const tenderId = tender._id;
-                    const confirmedIdx = confirmedIdxMap[tenderId];
-                    const finalPrices = finalPricesMap[tenderId] || [];
-                    const responsesForThisTender = allResponses[tenderId] || [];
+          setConfirmedIdxMap((prev) => ({
+            ...prev,
+            [tenderId]: resIdx,
+          }))
 
-                    return (
-                        <div
-                            key={tenderId}
-                            className="border rounded-xl mb-6 p-4 shadow-sm bg-gray-50"
-                        >
-                            {/* Summary Box */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-6 border rounded-xl bg-white shadow-lg ring-1 ring-gray-100">
-                                <div className="space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">Delivery Window</h4>
-                                    <p className="text-lg font-semibold text-gray-800">
-                                        {tender.deliveryWindow?.from
-                                            ? `${new Date(tender.deliveryWindow.from).toLocaleDateString("en-US", {
-                                                year: "numeric",
-                                                month: "short",
-                                                day: "numeric",
-                                            })} to ${new Date(tender.deliveryWindow.to).toLocaleDateString("en-US", {
-                                                year: "numeric",
-                                                month: "short",
-                                                day: "numeric",
-                                            })}`
-                                            : "N/A"}
-                                    </p>
-                                </div>
+          setEditingId(null)
+          toast.success("Tender finalized successfully!")
+        } catch (error) {
+          console.error("Error finalizing tender:", error)
+          toast.error("Something went wrong while finalizing. Please try again.")
+        } finally {
+          setConfirmDialog(null)
+        }
+      },
+      onCancel: () => setConfirmDialog(null),
+    })
+  }
 
-                                <div className="space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">
-                                        Closing Date
-                                    </h4>
-                                    <p className="text-lg font-semibold text-gray-800">
-                                        {new Date(tender.closeDate || "N/A").toLocaleDateString(
-                                            "en-US",
-                                            {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                            }
-                                        )}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">
-                                        Dispatch Location
-                                    </h4>
-                                    <p className="text-md text-gray-700">
-                                        {tender.dispatchLocation}
-                                    </p>
-                                </div>
-                                <div className="md:col-span-2 space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">Address</h4>
-                                    <p className="text-md text-gray-700">{tender.address}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">Pincode</h4>
-                                    <p className="text-md text-gray-700">{tender.pincode}</p>
-                                </div>
-                                <div className="md:col-span-2 space-y-1">
-                                    <h4 className="text-gray-500 text-sm uppercase">Remarks</h4>
-                                    <p className="text-md text-gray-700">
-                                        {tender.remarks || "None"}
-                                    </p>
-                                </div>
-                                <div className="md:col-span-2 border-t pt-4 mt-2">
-                                    <h4 className="font-semibold text-md mb-2 text-indigo-700">
-                                        Materials
-                                    </h4>
-                                    <ul className="list-disc ml-6 text-sm text-gray-700 space-y-1">
-                                        {Array.isArray(tender.materials) &&
-                                            tender.materials.map((mat, i) => (
-                                                <li key={i}>
-                                                    {mat.material}{" "}
-                                                    {mat.subMaterial && `(${mat.subMaterial})`} -{" "}
-                                                    {mat.weight}kg × {mat.quantity} pcs
-                                                </li>
-                                            ))}
-                                    </ul>
-                                </div>
-                                <div className="bg-gray-50 p-4 rounded-lg shadow-inner space-y-1">
-                                    <h4 className="text-sm font-medium text-gray-600">
-                                        Total Weight
-                                    </h4>
-                                    <p className="text-lg font-bold text-gray-800">
-                                        {tender.materials?.reduce(
-                                            (acc, mat) =>
-                                                acc +
-                                                Number(mat.weight || 0) * Number(mat.quantity || 0),
-                                            0
-                                        )}{" "}
-                                        kg
-                                    </p>
-                                </div>
-                                <div className="bg-gray-50 p-4 rounded-lg shadow-inner space-y-1">
-                                    <h4 className="text-sm font-medium text-gray-600">
-                                        Total Quantity
-                                    </h4>
-                                    <p className="text-lg font-bold text-gray-800">
-                                        {tender.materials?.reduce(
-                                            (acc, mat) => acc + Number(mat.quantity || 0),
-                                            0
-                                        )}{" "}
-                                        pcs
-                                    </p>
-                                </div>
-                                <div className="md:col-span-2 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
-                                    <h4 className="text-sm font-semibold text-indigo-800 mb-2">
-                                        Transporters
-                                    </h4>
-                                    {Array.isArray(tender.transporters) &&
-                                        tender.transporters.length > 0 ? (
-                                        <ul className="list-disc ml-6 text-sm text-indigo-900 space-y-1">
-                                            {tender.transporters.map((_id) => (
-                                                <li key={_id}>{getTransporterName(_id)}</li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 italic">
-                                            No transporters assigned.
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A"
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
 
-                            <button
-                                onClick={() => toggleResponses(idx, tenderId)}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-full shadow-md hover:bg-indigo-700 hover:shadow-lg transition duration-200"
-                            >
-                                {openIdx === idx ? (
-                                    <>
-                                        <FaChevronUp className="text-sm" /> Hide Responses
-                                    </>
-                                ) : (
-                                    <>
-                                        <FaChevronDown className="text-sm" /> Show Responses
-                                    </>
-                                )}
-                            </button>
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <Clock className="h-6 w-6 text-emerald-600" />
+        Tender History
+      </h1>
 
-                            {openIdx === idx && (
-                                <div className="mt-6">
-                                    <h4 className="text-xl font-semibold mb-4 text-indigo-800">
-                                        Transporter Responses
-                                    </h4>
-
-                                    {responsesForThisTender.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {responsesForThisTender.map((res, rIdx) => {
-                                                const uniqueKey = `${tenderId}-${rIdx}`;
-                                                const isEditing = editingId === uniqueKey;
-                                                const isDimmed =
-                                                    confirmedIdx !== undefined && confirmedIdx !== rIdx;
-
-                                                return (
-                                                    <div
-                                                        key={rIdx}
-                                                        className={`border-l-4 p-5 rounded-lg shadow-md transition duration-300 ${isDimmed
-                                                            ? "border-gray-300 bg-gray-100 opacity-60"
-                                                            : "border-indigo-500 bg-white"
-                                                            }`}
-                                                    >
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div>
-                                                                <p className="text-sm text-gray-500">
-                                                                    Transporter
-                                                                </p>
-                                                                <p className="text-lg font-semibold text-gray-800">
-                                                                    {getTransporterName(res.transportUser)}
-                                                                </p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm text-gray-500">Price</p>
-                                                                <p className="text-lg font-semibold text-green-700">
-                                                                    ₹{res.price}
-                                                                </p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm text-gray-500">
-                                                                    Vehicle Detail
-                                                                </p>
-                                                                <p className="text-md font-medium text-gray-700">
-                                                                    {res.vehicleNumber}
-                                                                </p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm text-gray-500">
-                                                                    Attachments
-                                                                </p>
-                                                                <div className="text-sm text-gray-700 space-y-1">
-                                                                    {res?.files?.length > 0 ? (
-                                                                        res.files.map((file, idx) => (
-                                                                            <button
-                                                                                key={idx}
-                                                                                onClick={() =>
-                                                                                    setPreviewFile({
-                                                                                        url: file.url || file,
-                                                                                        mimetype: file.mimetype || "",
-                                                                                        originalName:
-                                                                                            file.originalName ||
-                                                                                            `Attachment ${idx + 1}`,
-                                                                                    })
-                                                                                }
-                                                                                className="text-blue-600 hover:underline block text-left"
-                                                                            >
-                                                                                📎{" "}
-                                                                                {file.originalName ||
-                                                                                    `Attachment ${idx + 1}`}
-                                                                            </button>
-                                                                        ))
-                                                                    ) : (
-                                                                        <p>No attachments</p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="mt-4">
-                                                            {finalPrices[rIdx] ? (
-                                                                <div className="text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
-                                                                    Final Deal Price: ₹{finalPrices[rIdx]}
-                                                                </div>
-                                                            ) : isEditing ? (
-                                                                <div className="mt-3 flex gap-3 items-center">
-                                                                    <input
-                                                                        type="number"
-                                                                        value={priceInput}
-                                                                        onChange={(e) =>
-                                                                            setPriceInput(e.target.value)
-                                                                        }
-                                                                        className="border border-gray-300 px-3 py-2 rounded w-40 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                                                        placeholder="Final Price"
-                                                                    />
-                                                                    <button
-                                                                        onClick={() => handleDone(tenderId, rIdx)}
-                                                                        className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-                                                                    >
-                                                                        Done
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                confirmedIdx === undefined && (
-                                                                    <div className="mt-3 space-y-2">
-                                                                        <p className="text-sm text-red-500">
-                                                                            * Please enter the final price after
-                                                                            negotiation before confirming.
-                                                                        </p>
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                handleConfirm(tenderId, rIdx)
-                                                                            }
-                                                                            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
-                                                                        >
-                                                                            Confirm Final Price
-                                                                        </button>
-                                                                    </div>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 mt-2 italic">
-                                            No responses yet.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })
-            )}
-
-            {previewFile && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
-                        <button
-                            onClick={() => setPreviewFile(null)}
-                            className="absolute top-3 right-3 text-red-500 hover:text-red-700"
-                        >
-                            ✕
-                        </button>
-
-                        <h3 className="text-lg font-semibold mb-4">
-                            {previewFile.originalName}
-                        </h3>
-
-                        {previewFile.mimetype.startsWith("image/") ? (
-                            <img
-                                src={previewFile.url}
-                                alt={previewFile.originalName}
-                                className="w-full max-h-[70vh] object-contain rounded"
-                            />
-                        ) : previewFile.mimetype === "application/pdf" ? (
-                            <iframe
-                                src={previewFile.url}
-                                className="w-full h-[70vh] rounded"
-                                title="PDF Preview"
-                            />
-                        ) : (
-                            <p className="text-gray-500">
-                                Preview not supported for this file type.
-                            </p>
-                        )}
-
-                        <div className="mt-4 flex justify-end">
-                            <a
-                                href={previewFile.url}
-                                download={previewFile.originalName}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                                Download
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {confirmDialog && (
-                <ConfirmationModal
-                    message={confirmDialog.message}
-                    onConfirm={confirmDialog.onConfirm}
-                    onCancel={confirmDialog.onCancel}
-                />
-            )}
-
+      {tenderHistories.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+          <Package className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 text-lg">No tender history available</p>
         </div>
-    );
-};
-export default TenderHistoryAccordion;
+      ) : (
+        <div className="space-y-6">
+          {tenderHistories.map((tender, idx) => {
+            const tenderId = tender._id
+            const confirmedIdx = confirmedIdxMap[tenderId]
+            const finalPrices = finalPricesMap[tenderId] || []
+            const responsesForThisTender = allResponses[tenderId] || []
+
+            return (
+              <div
+                key={tenderId}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-200"
+              >
+                {/* Tender Header */}
+                <div
+                  className="p-5 cursor-pointer hover:bg-slate-50 transition-colors duration-200"
+                  onClick={() => toggleResponses(idx, tenderId)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
+                        <Package className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-800">
+                          Tender for {tender.dispatchLocation || "Unknown Location"}
+                        </h3>
+                        <p className="text-sm text-slate-500">
+                          Created on {formatDate(tender.createdAt)} • {tender.materials?.length || 0} materials
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                          tender.status === "CLOSED"
+                            ? "bg-red-100 text-red-800"
+                            : tender.status === "COMPLETED"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {tender.status || "PENDING"}
+                      </span>
+                      {openIdx === idx ? (
+                        <ChevronUp className="h-5 w-5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-slate-400" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tender Details - Visible when expanded */}
+                {openIdx === idx && (
+                  <div className="border-t border-slate-200 p-5">
+                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                      {/* Left Column */}
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-500 mb-1">Delivery Window</h4>
+                          <p className="font-medium text-slate-800">
+                            {tender.deliveryWindow?.from && tender.deliveryWindow?.to
+                              ? `${formatDate(tender.deliveryWindow.from)} to ${formatDate(tender.deliveryWindow.to)}`
+                              : "Not specified"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-500 mb-1">Closing Date</h4>
+                          <p className="font-medium text-slate-800">{formatDate(tender.closeDate)}</p>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-500 mb-1">Location Details</h4>
+                          <p className="text-slate-800">
+                            {tender.dispatchLocation}
+                            {tender.address ? `, ${tender.address}` : ""}
+                            {tender.pincode ? ` - ${tender.pincode}` : ""}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-500 mb-1">Totals</h4>
+                          <div className="flex gap-4">
+                            <span className="bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-md text-sm">
+                              <span className="text-slate-600">Weight:</span>{" "}
+                              <span className="font-medium text-emerald-700">{tender.totalWeight || 0} kg</span>
+                            </span>
+                            <span className="bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-md text-sm">
+                              <span className="text-slate-600">Quantity:</span>{" "}
+                              <span className="font-medium text-emerald-700">{tender.totalQuantity || 0} pcs</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {tender.remarks && (
+                          <div>
+                            <h4 className="text-sm font-medium text-slate-500 mb-1">Remarks</h4>
+                            <p className="text-slate-800 bg-slate-50 p-2 rounded-md">{tender.remarks}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="space-y-4">
+                        {/* Materials */}
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-500 mb-1">Materials</h4>
+                          {tender.materials?.length > 0 ? (
+                            <div className="bg-slate-50 rounded-lg p-3">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="text-slate-600">
+                                    <th className="px-2 py-1 text-left">Material</th>
+                                    <th className="px-2 py-1 text-left">Sub Item</th>
+                                    <th className="px-2 py-1 text-right">Weight</th>
+                                    <th className="px-2 py-1 text-right">Quantity</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {tender.materials.map((material, idx) => (
+                                    <tr key={idx} className="border-t border-slate-200">
+                                      <td className="px-2 py-1.5 font-medium">{material.material}</td>
+                                      <td className="px-2 py-1.5">{material.subMaterial || "-"}</td>
+                                      <td className="px-2 py-1.5 text-right">{material.weight} kg</td>
+                                      <td className="px-2 py-1.5 text-right">{material.quantity} pcs</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="text-slate-500 italic">No materials added</p>
+                          )}
+                        </div>
+
+                        {/* Transporters */}
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-500 mb-1">Selected Transporters</h4>
+                          {tender.transporters?.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {tender.transporters.map((transporterId) => (
+                                <div
+                                  key={transporterId}
+                                  className="bg-slate-100 px-3 py-1 rounded-md text-sm flex items-center gap-1.5"
+                                >
+                                  <Users className="h-3.5 w-3.5 text-emerald-600" />
+                                  {getTransporterName(transporterId)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-slate-500 italic">No transporters selected</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Responses Section */}
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <h4 className="text-lg font-semibold mb-4 text-slate-700 flex items-center gap-2">
+                        <Truck className="h-5 w-5 text-emerald-600" />
+                        Transporter Responses
+                      </h4>
+
+                      {responsesForThisTender.length > 0 ? (
+                        <div className="space-y-4">
+                          {responsesForThisTender.map((res, rIdx) => {
+                            const uniqueKey = `${tenderId}-${rIdx}`
+                            const isEditing = editingId === uniqueKey
+                            const isDimmed = confirmedIdx !== undefined && confirmedIdx !== rIdx
+
+                            return (
+                              <div
+                                key={rIdx}
+                                className={`border-l-4 p-5 rounded-lg shadow-sm transition duration-300 ${
+                                  isDimmed ? "border-slate-300 bg-slate-100 opacity-60" : "border-emerald-500 bg-white"
+                                }`}
+                              >
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-slate-500">Transporter</p>
+                                    <p className="text-lg font-semibold text-slate-800">
+                                      {getTransporterName(res.transportUser)}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-slate-500">Price</p>
+                                    <p className="text-lg font-semibold text-green-700">₹{res.price}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-slate-500">Vehicle Detail</p>
+                                    <p className="text-md font-medium text-slate-700">{res.vehicleNumber}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-slate-500">Attachments</p>
+                                    <div className="text-sm text-slate-700 space-y-1">
+                                      {res?.files?.length > 0 ? (
+                                        res.files.map((file, idx) => (
+                                          <button
+                                            key={idx}
+                                            onClick={() =>
+                                              setPreviewFile({
+                                                url: file.url || file,
+                                                mimetype: file.mimetype || "",
+                                                originalName: file.originalName || `Attachment ${idx + 1}`,
+                                              })
+                                            }
+                                            className="text-emerald-600 hover:underline block text-left flex items-center gap-1"
+                                          >
+                                            <FileText className="h-3.5 w-3.5" />
+                                            {file.originalName || `Attachment ${idx + 1}`}
+                                          </button>
+                                        ))
+                                      ) : (
+                                        <p>No attachments</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="mt-4">
+                                  {finalPrices[rIdx] ? (
+                                    <div className="text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200 flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Final Deal Price: ₹{finalPrices[rIdx]}
+                                    </div>
+                                  ) : isEditing ? (
+                                    <div className="mt-3 flex gap-3 items-center">
+                                      <input
+                                        type="number"
+                                        value={priceInput}
+                                        onChange={(e) => setPriceInput(e.target.value)}
+                                        className="border border-slate-300 px-3 py-2 rounded-md w-40 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                        placeholder="Final Price"
+                                      />
+                                      <button
+                                        onClick={() => handleDone(tenderId, rIdx)}
+                                        className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200"
+                                      >
+                                        Confirm
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    confirmedIdx === undefined && (
+                                      <div className="mt-3 space-y-2">
+                                        <p className="text-sm text-amber-600 flex items-center gap-1">
+                                          <AlertCircle className="h-4 w-4" />
+                                          Please enter the final price after negotiation before confirming.
+                                        </p>
+                                        <button
+                                          onClick={() => handleConfirm(tenderId, rIdx)}
+                                          className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200"
+                                        >
+                                          Set Final Price
+                                        </button>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center">
+                          <Truck className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+                          <p className="text-slate-500">No responses received yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
+            <button
+              onClick={() => setPreviewFile(null)}
+              className="absolute top-3 right-3 text-slate-500 hover:text-red-500 transition-colors duration-200"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-lg font-semibold mb-4 pr-8">{previewFile.originalName}</h3>
+
+            {previewFile.mimetype.startsWith("image/") ? (
+              <img
+                src={previewFile.url || "/placeholder.svg"}
+                alt={previewFile.originalName}
+                className="w-full max-h-[70vh] object-contain rounded-md"
+              />
+            ) : previewFile.mimetype === "application/pdf" ? (
+              <iframe src={previewFile.url} className="w-full h-[70vh] rounded-md" title="PDF Preview" />
+            ) : (
+              <div className="bg-slate-50 p-8 rounded-md text-center">
+                <FileText className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 mb-4">Preview not supported for this file type.</p>
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <a
+                href={previewFile.url}
+                download={previewFile.originalName}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" /> Download
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {confirmDialog && (
+        <ConfirmationModal
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={confirmDialog.onCancel}
+        />
+      )}
+    </div>
+  )
+}
+
+export default TenderHistoryAccordion

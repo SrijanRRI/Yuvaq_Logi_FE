@@ -1,4 +1,4 @@
-import React from "react";
+import { Calendar, MapPin, Package, FileText, Truck, Users, Plus, Trash2, Send } from "lucide-react"
 
 const TenderForm = ({
   form,
@@ -11,237 +11,305 @@ const TenderForm = ({
   selectedTransporters,
   loading,
 }) => {
-
   return (
-    <form
-      onSubmit={handleSend}
-      className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow-lg ring-1 ring-gray-100"
-    >
-      {/* Delivery Date */}
-      <div className="col-span-2 sm:col-span-1">
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Delivery Start Date
-        </label>
-        <input
-          type="date"
-          name="deliveryStart"
-          value={form.deliveryWindow.from}
-          onChange={(e) =>
-            setForm((prev) => ({
-              ...prev,
-              deliveryWindow: { ...prev.deliveryWindow, from: e.target.value },
-            }))
-          }
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-      </div>
+    <form onSubmit={handleSend} className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+      <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <Package className="h-6 w-6 text-emerald-600" />
+        Create New Tender
+      </h1>
 
-      <div className="col-span-2 sm:col-span-1">
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Delivery End Date
-        </label>
-        <input
-          type="date"
-          name="deliveryEnd"
-          value={form.deliveryWindow.to}
-          onChange={(e) =>
-            setForm((prev) => ({
-              ...prev,
-              deliveryWindow: { ...prev.deliveryWindow, to: e.target.value },
-            }))
-          }
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-      </div>
-
-
-      {/* Closing Date */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Date of Closing Tender
-        </label>
-        <input
-          type="date"
-          name="closingDate"
-          value={form.closingDate}
-          onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-      </div>
-
-      {/* Dispatch Location */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Dispatch Location
-        </label>
-        <input
-          type="text"
-          name="dispatchLocation"
-          value={form.dispatchLocation}
-          onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-      </div>
-
-      {/* Address */}
-      <div className="col-span-2">
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Address
-        </label>
-        <textarea
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-      </div>
-
-      {/* Pincode */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Pin Code
-        </label>
-        <input
-          type="number"
-          name="pincode"
-          value={form.pincode}
-          onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-      </div>
-
-      {/* Material Section */}
-      <div className="col-span-2">
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Material Details
-        </label>
-        <button
-          type="button"
-          onClick={() => setShowMaterialModal(true)}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg text-left bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-indigo-500"
-        >
-          + Add Material
-        </button>
-
-        {form.materials.length > 0 && (
-          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="text-md font-semibold mb-3 text-indigo-700">
-              Added Materials
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {form.materials.map((mat, index) => (
-                <div
-                  key={index}
-                  className="border p-3 rounded-lg bg-white flex justify-between items-start shadow-sm"
-                >
-                  <div>
-                    <p className="font-semibold text-gray-800">{mat.item}</p>
-                    {mat.subItem && (
-                      <p className="text-sm text-gray-500">➝ {mat.subItem}</p>
-                    )}
-                    <p className="text-sm text-gray-700">
-                      {mat.weight}kg × {mat.quantity} pcs
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMaterial(index)}
-                    className="text-red-500 hover:text-red-700 text-lg"
-                  >
-                    ❌
-                  </button>
-                </div>
-              ))}
+      {/* Delivery Window & Closing Date */}
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-emerald-600" />
+            Delivery Window
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">From</label>
+              <input
+                type="date"
+                name="deliveryStart"
+                value={form.deliveryWindow.from}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    deliveryWindow: { ...prev.deliveryWindow, from: e.target.value },
+                  }))
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                required
+              />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">To</label>
+              <input
+                type="date"
+                name="deliveryEnd"
+                value={form.deliveryWindow.to}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    deliveryWindow: { ...prev.deliveryWindow, to: e.target.value },
+                  }))
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-emerald-600" />
+            Closing Date
+          </h2>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tender Closing Date</label>
+            <input
+              type="date"
+              name="closingDate"
+              value={form.closingDate}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Location Details */}
+      <div className="pt-4 border-t border-slate-200 mb-8">
+        <h2 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-emerald-600" />
+          Location Details
+        </h2>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Dispatch Location</label>
+            <input
+              type="text"
+              name="dispatchLocation"
+              value={form.dispatchLocation}
+              onChange={handleChange}
+              placeholder="Enter location name"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+            <textarea
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="Enter full address"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent h-[38px]"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
+            <input
+              type="number"
+              name="pincode"
+              value={form.pincode}
+              onChange={handleChange}
+              placeholder="Enter pincode"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Materials Section */}
+      <div className="pt-4 border-t border-slate-200 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+            <Package className="h-5 w-5 text-emerald-600" />
+            Materials
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowMaterialModal(true)}
+            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 transition-colors duration-200 flex items-center gap-1.5 text-sm font-medium"
+          >
+            <Plus className="h-4 w-4" /> Add Material
+          </button>
+        </div>
+
+        {form.materials.length > 0 ? (
+          <div className="bg-slate-50 rounded-lg p-4 mb-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-600">
+                    <th className="px-4 py-2 text-left rounded-l-md">Material</th>
+                    <th className="px-4 py-2 text-left">Sub Item</th>
+                    <th className="px-4 py-2 text-right">Weight (Kg)</th>
+                    <th className="px-4 py-2 text-right">Quantity</th>
+                    <th className="px-4 py-2 text-center rounded-r-md">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {form.materials.map((material, index) => (
+                    <tr
+                      key={index}
+                      className={`${index % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-slate-100 transition-colors duration-150`}
+                    >
+                      <td className="px-4 py-2 font-medium">{material.item}</td>
+                      <td className="px-4 py-2">{material.subItem || "-"}</td>
+                      <td className="px-4 py-2 text-right">{material.weight}</td>
+                      <td className="px-4 py-2 text-right">{material.quantity}</td>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMaterial(index)}
+                          className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Weight (Kg)</label>
+                <input
+                  type="number"
+                  name="weight"
+                  value={form.weight}
+                  onChange={handleChange}
+                  placeholder="Total weight"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Quantity</label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={form.quantity}
+                  onChange={handleChange}
+                  placeholder="Total quantity"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center mb-4">
+            <Package className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-slate-500">No materials added yet</p>
+            <button
+              type="button"
+              onClick={() => setShowMaterialModal(true)}
+              className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 inline-flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> Add Material
+            </button>
           </div>
         )}
       </div>
 
-      {/* Totals */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Total Weight <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="number"
-          name="weight"
-          value={form.weight}
-          onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Total Quantity <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="number"
-          name="quantity"
-          value={form.quantity}
-          onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+      {/* Transporters Section */}
+      <div className="pt-4 border-t border-slate-200 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+            <Truck className="h-5 w-5 text-emerald-600" />
+            Transporters
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowTransporterModal(true)}
+            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 transition-colors duration-200 flex items-center gap-1.5 text-sm font-medium"
+          >
+            <Plus className="h-4 w-4" /> Select Transporters
+          </button>
+        </div>
+
+        {selectedTransporters.length > 0 ? (
+          <div className="bg-slate-50 rounded-lg p-4 mb-4">
+            <div className="flex flex-wrap gap-2">
+              {selectedTransporters.map((transporter) => (
+                <div
+                  key={transporter._id}
+                  className="bg-white px-3 py-1.5 rounded-md border border-slate-200 text-sm flex items-center gap-1.5"
+                >
+                  <Users className="h-3.5 w-3.5 text-emerald-600" />
+                  {transporter.name || transporter.email}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center mb-4">
+            <Truck className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-slate-500">No transporters selected</p>
+            <button
+              type="button"
+              onClick={() => setShowTransporterModal(true)}
+              className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 inline-flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> Select Transporters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Remarks */}
-      <div className="col-span-2">
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Remarks (Optional)
+      <div className="pt-4 border-t border-slate-200 mb-8">
+        <label className="block text-lg font-semibold text-slate-700 mb-2 flex items-center gap-2">
+          <FileText className="h-5 w-5 text-emerald-600" />
+          Remarks
         </label>
         <textarea
           name="remarks"
           value={form.remarks}
           onChange={handleChange}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-
-      {/* Transporters */}
-      <div className="col-span-2">
-        <label className="block text-sm font-semibold text-gray-600 mb-1">
-          Select Transporters
-        </label>
-        <button
-          type="button"
-          onClick={() => setShowTransporterModal(true)}
-          className="w-full border border-gray-300 px-4 py-2 rounded-lg text-left bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-indigo-500"
-        >
-          + Choose Transporters
-        </button>
-
-        {form.transporter.length > 0 && (
-          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="text-md font-semibold mb-2 text-indigo-700">
-              Selected Transporters
-            </h3>
-            <ul className="list-disc ml-6 text-gray-700 space-y-1 text-sm">
-              {selectedTransporters.map((t, idx) => (
-                <li key={idx}>{t.name || t.email}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+          placeholder="Add any additional information or special instructions"
+          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[100px]"
+        ></textarea>
       </div>
 
       {/* Submit Button */}
-      <div className="col-span-2 text-right">
+      <div className="pt-6 border-t border-slate-200 flex justify-end">
         <button
           type="submit"
           disabled={loading}
-          className={`px-6 py-2 rounded-lg shadow-md transition-all 
-          ${loading ? "bg-indigo-400 cursor-not-allowed" : "bg-[#c4000e] text-white"}`}>
-            
-          {loading ? "Sending..." : "Send Tender"}
+          className="px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              Sending...
+            </>
+          ) : (
+            <>
+              <Send className="h-5 w-5" /> Send Tender
+            </>
+          )}
         </button>
       </div>
     </form>
-  );
-};
+  )
+}
 
-export default TenderForm;
+export default TenderForm
