@@ -84,11 +84,11 @@ const TenderForm = ({
       <div className="pt-4 border-t border-slate-200 mb-8">
         <h2 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
           <MapPin className="h-5 w-5 text-emerald-600" />
-          Location Details
+           Dispatch Location Details
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Dispatch Location</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1"> Location </label>
             <input
               type="text"
               name="dispatchLocation"
@@ -100,7 +100,7 @@ const TenderForm = ({
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1"> Address </label>
             <textarea
               name="address"
               value={form.address}
@@ -268,7 +268,7 @@ const TenderForm = ({
 
       {/* Remarks */}
       <div className="pt-4 border-t border-slate-200 mb-8">
-        <label className="block text-lg font-semibold text-slate-700 mb-2 flex items-center gap-2">
+        <label className="text-lg font-semibold text-slate-700 mb-2 flex items-center gap-2">
           <FileText className="h-5 w-5 text-emerald-600" />
           Remarks
         </label>
