@@ -17,7 +17,7 @@ import {
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
 import API from "../../API"
 
-const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) => {
+const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory }) => {
   const [openIdx, setOpenIdx] = useState(null)
   const [editingId, setEditingId] = useState(null) // Format: tenderId-responseIdx
   const [priceInput, setPriceInput] = useState("")
@@ -48,6 +48,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
         withCredentials: true,
       })
 
+      // console.log("Transporter's quotation", response.data);
+
       setAllResponses((prev) => ({
         ...prev,
         [tenderId]: response.data.quotations,
@@ -69,7 +71,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
     setConfirmDialog({
       message: "Are you sure you want to finalize this quotation?",
       onConfirm: async () => {
-        const quotation = allResponses[tenderId][resIdx]
+        const responsesForThisTender = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price)
+        const quotation =  responsesForThisTender[resIdx]
         const quotationId = quotation._id
         const finalPrice = priceInput
 
@@ -100,6 +103,10 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
 
           setEditingId(null)
           toast.success("Tender finalized successfully!")
+
+           // Refresh data from server
+           if (fetchTenderHistory) await fetchTenderHistory()
+
         } catch (error) {
           console.error("Error finalizing tender:", error)
           toast.error("Something went wrong while finalizing. Please try again.")
@@ -138,7 +145,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
             const tenderId = tender._id
             const confirmedIdx = confirmedIdxMap[tenderId]
             const finalPrices = finalPricesMap[tenderId] || []
-            const responsesForThisTender = allResponses[tenderId] || []
+            const responsesForThisTender = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price)
+
+            // const selectedQuotationId = tender.selectedQuotation?.$oid || tender.selectedQuotation
+            // const finalPrice = tender.finalPrice
+
+            const selectedQuotationId = tender.selectedQuotation?._id
+            const selectedFinalPrice = tender.finalPrice || tender.selectedQuotation?.price
 
             return (
               <div
@@ -166,11 +179,10 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                     </div>
                     <div className="flex items-center gap-3">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                          tender.status === "finalized"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-amber-100 text-amber-800"
-                        }`}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${tender.status === "finalized"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-amber-100 text-amber-800"
+                          }`}
                       >
                         {tender.status || "PENDING"}
                       </span>
@@ -300,21 +312,33 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                         <div className="space-y-4">
                           {responsesForThisTender.map((res, rIdx) => {
                             const uniqueKey = `${tenderId}-${rIdx}`
-                            const isEditing = editingId === uniqueKey
-                            const isDimmed = confirmedIdx !== undefined && confirmedIdx !== rIdx
+                            // const isEditing = editingId === uniqueKey
+                            // // const isDimmed = confirmedIdx !== undefined && confirmedIdx !== rIdx
+                            // const isDimmed = tender.status === "finalized" && confirmedIdx !== undefined && confirmedIdx !== rIdx
+
+                            // const isSelected = res._id === selectedQuotationId
+                            const isSelected = res._id?.toString() === selectedQuotationId?.toString()
+                            const isDimmed = tender.status === "finalized" && !isSelected
+                            const isEditing = editingId === `${tenderId}-${rIdx}`
 
                             return (
                               <div
                                 key={rIdx}
-                                className={`border-l-4 p-5 rounded-lg shadow-sm transition duration-300 ${
-                                  isDimmed ? "border-slate-300 bg-slate-100 opacity-60" : "border-emerald-500 bg-white"
-                                }`}
+                                className={`border-l-4 p-5 rounded-lg shadow-sm transition duration-300 ${isDimmed ? "border-slate-300 bg-slate-100 opacity-60" : "border-emerald-500 bg-white"
+                                  }`}
                               >
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
                                     <p className="text-sm text-slate-500">Transporter</p>
                                     <p className="text-lg font-semibold text-slate-800">
                                       {getTransporterName(res.transportUser)}
+
+                                      {isSelected && tender.status === "finalized" && (
+                                        <span className="ml-2 bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                                          Finalized
+                                        </span>
+                                      )}
+
                                     </p>
                                   </div>
                                   <div>
@@ -352,13 +376,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                   </div>
                                 </div>
 
-                                <div className="mt-4">
+                                {/* <div className="mt-4">
                                   {finalPrices[rIdx] ? (
                                     <div className="text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200 flex items-center gap-2">
                                       <CheckCircle className="h-4 w-4" />
                                       Final Deal Price: ₹{finalPrices[rIdx]}
                                     </div>
-                                  ) : isEditing ? (
+                                  ) : tender.status !== "finalized" && isEditing ? (
                                     <div className="mt-3 flex gap-3 items-center">
                                       <input
                                         type="number"
@@ -375,7 +399,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                       </button>
                                     </div>
                                   ) : (
-                                    confirmedIdx === undefined && (
+                                    tender.status !== "finalized" && confirmedIdx === undefined && (
                                       <div className="mt-3 space-y-2">
                                         <p className="text-sm text-amber-600 flex items-center gap-1">
                                           <AlertCircle className="h-4 w-4" />
@@ -385,6 +409,32 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [] }) 
                                           onClick={() => handleConfirm(tenderId, rIdx)}
                                           className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200"
                                         >
+                                          Set Final Price
+                                        </button>
+                                      </div>
+                                    )
+                                  )}
+                                </div> */}
+
+                                <div className="mt-4">
+                                  {isSelected && tender.status === "finalized" ? (
+                                    <div className="text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200 flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Final Deal Price: ₹{selectedFinalPrice}
+                                    </div>
+                                  ) : tender.status !== "finalized" && isEditing ? (
+                                    <div className="mt-3 flex gap-3 items-center">
+                                      <input type="number" value={priceInput} onChange={(e) => setPriceInput(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-md w-40 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Final Price" />
+                                      <button onClick={() => handleDone(tenderId, rIdx)} className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200">Confirm</button>
+                                    </div>
+                                  ) : (
+                                    tender.status !== "finalized" && confirmedIdxMap[tenderId] === undefined && (
+                                      <div className="mt-3 space-y-2">
+                                        <p className="text-sm text-amber-600 flex items-center gap-1">
+                                          <AlertCircle className="h-4 w-4" />
+                                          Please enter the final price after negotiation before confirming.
+                                        </p>
+                                        <button onClick={() => handleConfirm(tenderId, rIdx)} className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200">
                                           Set Final Price
                                         </button>
                                       </div>
