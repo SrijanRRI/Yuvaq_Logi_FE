@@ -43,19 +43,22 @@ const RRDashboardPage = () => {
   const userInfo = useSelector((state) => state.User?.userInfo)
   const userName = userInfo?.name || "RR User"
 
-  useEffect(() => {
-    const fetchTenderHistory = async () => {
-      try {
-        const response = await axios.get(API.FETCH_ALL_TENDER_CREATED_BY_RRUSER, {
-          withCredentials: true,
-        })
-        const data = response.data?.data || []
-        setTenderHistories(data)
-      } catch (err) {
-        console.error("Failed to fetch tender history", err)
-        toast.error("Could not fetch tender history. Please try again later.")
-      }
+  const fetchTenderHistory = async () => {
+    try {
+      const response = await axios.get(API.FETCH_ALL_TENDER_CREATED_BY_RRUSER, {
+        withCredentials: true,
+      })
+      const data = response.data?.data || []
+
+      // console.log("Tender's responses : ", response.data)
+      setTenderHistories(data)
+    } catch (err) {
+      console.error("Failed to fetch tender history", err)
+      toast.error("Could not fetch tender history. Please try again later.")
     }
+  }
+
+  useEffect(() => {
 
     if (viewHistory) {
       fetchTenderHistory()
@@ -169,7 +172,7 @@ const RRDashboardPage = () => {
       })
 
       setSelectedTransporters([])
-      
+
     } catch (error) {
       const errMessage = error?.response?.data?.message || "Something went wrong. Please try again."
       toast.error(errMessage)
@@ -205,7 +208,7 @@ const RRDashboardPage = () => {
 
       <div className="py-8 px-4 max-w-6xl mx-auto">
         {viewHistory ? (
-          <TenderHistoryAccordion tenderHistories={tenderHistories} transporterList={transporterList} />
+          <TenderHistoryAccordion tenderHistories={tenderHistories} transporterList={transporterList} fetchTenderHistory={fetchTenderHistory} />
         ) : (
           <TenderForm
             form={form}
