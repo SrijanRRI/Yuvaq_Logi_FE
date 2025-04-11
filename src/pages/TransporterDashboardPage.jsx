@@ -16,6 +16,8 @@ import {
   Truck,
   DollarSign,
   FileUp,
+  CheckCheck,
+  Award
 } from "lucide-react"
 import Navbar from "../components/Navbar"
 import { ConfirmationModal } from "../modals/ConfirmationModal"
@@ -45,27 +47,47 @@ const TransporterDashboardPage = () => {
   const userInfo = useSelector((state) => state.User?.userInfo)
   const userName = userInfo?.name || "RR User"
 
-  useEffect(() => {
-    const fetchTenders = async () => {
-      try {
-        const res = await fetch(`${API.FETCH_ALL_TENDERS}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
+  const fetchTenders = async () => {
+    try {
+      const res = await fetch(`${API.FETCH_ALL_TENDERS}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      })
+
+      const data = await res.json()
+      // console.log("fetch all tenders : ", data.data)
+
+      const userId = userInfo?._id
+
+      // Mark tenders where this user has submitted a quotation
+      const updatedTenders = (data.data || []).map((tender) => {
+        const hasUserQuoted = (tender.quotations || []).some((q) => {
+          if (typeof q === 'object' && q.transportUser?._id) {
+            return q.transportUser._id === userId
+          }
+          return false
         })
-        const data = await res.json()
-        console.log("fetch all tenders : ", data.data)
-        // console.log("fetch all tenders : ", data.data)
-        setTenders(data.data)
-      } catch (err) {
-        console.error("Fetch error:", err)
-        setError("Failed to load tenders.")
-      } finally {
-        setLoading(false)
-      }
+
+        return {
+          ...tender,
+          hasUserQuoted,
+        }
+      })
+
+      setTenders(updatedTenders);
+
+    } catch (err) {
+      console.error("Fetch error:", err)
+      setError("Failed to load tenders.")
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
 
     fetchTenders()
   }, [])
@@ -166,6 +188,10 @@ const TransporterDashboardPage = () => {
 
         setShowModal(false)
         setResponseForm({ price: "", vehicleNo: "", attachments: [] })
+
+        // Refresh tender list to reflect quotation
+        await fetchTenders()
+
       } else {
         toast.error(result.message || "Failed to submit quotation.")
       }
@@ -177,29 +203,29 @@ const TransporterDashboardPage = () => {
     }
   }
 
-  const handleClearHistory = () => {
-    setConfirmDialog({
-      message: "Are you sure you want to delete all history?",
-      onConfirm: () => {
-        setHistory([])
-        toast.info("All history cleared.")
-        setConfirmDialog(null)
-      },
-      onCancel: () => setConfirmDialog(null),
-    })
-  }
+  // const handleClearHistory = () => {
+  //   setConfirmDialog({
+  //     message: "Are you sure you want to delete all history?",
+  //     onConfirm: () => {
+  //       setHistory([])
+  //       toast.info("All history cleared.")
+  //       setConfirmDialog(null)
+  //     },
+  //     onCancel: () => setConfirmDialog(null),
+  //   })
+  // }
 
-  const handleDeleteHistoryItem = (index) => {
-    setConfirmDialog({
-      message: "Delete this history entry?",
-      onConfirm: () => {
-        setHistory((prev) => prev.filter((_, idx) => idx !== index))
-        toast.success("History entry deleted.")
-        setConfirmDialog(null)
-      },
-      onCancel: () => setConfirmDialog(null),
-    })
-  }
+  // const handleDeleteHistoryItem = (index) => {
+  //   setConfirmDialog({
+  //     message: "Delete this history entry?",
+  //     onConfirm: () => {
+  //       setHistory((prev) => prev.filter((_, idx) => idx !== index))
+  //       toast.success("History entry deleted.")
+  //       setConfirmDialog(null)
+  //     },
+  //     onCancel: () => setConfirmDialog(null),
+  //   })
+  // }
 
   const handleLogout = () => {
     navigate("/signin")
@@ -566,9 +592,16 @@ const TransporterDashboardPage = () => {
                       </h3>
                       <p className="text-sm text-slate-500">{tender.createdBy?.email || "Email not available"}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* <div className="flex items-center gap-2">
                       <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
                         Pending Response
+                      </span>
+                    </div> */}
+
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${tender.hasUserQuoted ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
+                        {tender.hasUserQuoted ? "Quotation Submitted" : "Pending Response"}
                       </span>
                     </div>
                   </div>
@@ -680,20 +713,34 @@ const TransporterDashboardPage = () => {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
-                    <button
-                      onClick={() => handleReject(tender.id)}
-                      className="bg-white border border-slate-300 text-slate-700 px-6 py-2.5 rounded-lg hover:bg-slate-50 transition-colors duration-200 flex items-center justify-center gap-2 shadow-sm"
-                    >
-                      <XCircle className="h-5 w-5 text-red-500" /> Reject
-                    </button>
-                    <button
-                      onClick={() => handleApprove(tender)}
-                      className="bg-teal-600 text-white px-6 py-2.5 rounded-lg hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center gap-2 shadow-sm"
-                    >
-                      <CheckCircle className="h-5 w-5" /> Approve
-                    </button>
-                  </div>
+                  {tender.hasUserQuoted ? (
+                    <div className="flex justify-center mt-4 animate-fadeIn">
+                      <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-50 to-emerald-50 text-emerald-700 font-medium text-sm border border-emerald-200 rounded-lg shadow-sm">
+                        <Award className="h-5 w-5 text-emerald-500" />
+                        <span>Quotation Submitted</span>
+                        <CheckCheck className="h-5 w-5 text-emerald-500 ml-1" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+                      {/* <button
+                        onClick={() => handleReject(tender._id)}
+                        className="bg-white border border-slate-300 text-slate-700 px-6 py-2.5 rounded-lg hover:bg-slate-50 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                      >
+                        <XCircle className="h-5 w-5 text-red-500" />
+                        <span>Reject</span>
+                      </button> */}
+
+                      <button
+                        onClick={() => handleApprove(tender)}
+                        className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-6 py-2.5 rounded-lg hover:from-teal-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                      >
+                        <CheckCircle className="h-5 w-5" />
+                        <span>Approve</span>
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               ))}
             </div>

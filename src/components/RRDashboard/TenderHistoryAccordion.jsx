@@ -143,12 +143,9 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         <div className="space-y-6">
           {tenderHistories.map((tender, idx) => {
             const tenderId = tender._id
-            const confirmedIdx = confirmedIdxMap[tenderId]
-            const finalPrices = finalPricesMap[tenderId] || []
+            // const confirmedIdx = confirmedIdxMap[tenderId]
+            // const finalPrices = finalPricesMap[tenderId] || []
             const responsesForThisTender = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price)
-
-            // const selectedQuotationId = tender.selectedQuotation?.$oid || tender.selectedQuotation
-            // const finalPrice = tender.finalPrice
 
             const selectedQuotationId = tender.selectedQuotation?._id
             const selectedFinalPrice = tender.finalPrice || tender.selectedQuotation?.price
@@ -375,46 +372,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                                     </div>
                                   </div>
                                 </div>
-
-                                {/* <div className="mt-4">
-                                  {finalPrices[rIdx] ? (
-                                    <div className="text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200 flex items-center gap-2">
-                                      <CheckCircle className="h-4 w-4" />
-                                      Final Deal Price: ₹{finalPrices[rIdx]}
-                                    </div>
-                                  ) : tender.status !== "finalized" && isEditing ? (
-                                    <div className="mt-3 flex gap-3 items-center">
-                                      <input
-                                        type="number"
-                                        value={priceInput}
-                                        onChange={(e) => setPriceInput(e.target.value)}
-                                        className="border border-slate-300 px-3 py-2 rounded-md w-40 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                                        placeholder="Final Price"
-                                      />
-                                      <button
-                                        onClick={() => handleDone(tenderId, rIdx)}
-                                        className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200"
-                                      >
-                                        Confirm
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    tender.status !== "finalized" && confirmedIdx === undefined && (
-                                      <div className="mt-3 space-y-2">
-                                        <p className="text-sm text-amber-600 flex items-center gap-1">
-                                          <AlertCircle className="h-4 w-4" />
-                                          Please enter the final price after negotiation before confirming.
-                                        </p>
-                                        <button
-                                          onClick={() => handleConfirm(tenderId, rIdx)}
-                                          className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200"
-                                        >
-                                          Set Final Price
-                                        </button>
-                                      </div>
-                                    )
-                                  )}
-                                </div> */}
 
                                 <div className="mt-4">
                                   {isSelected && tender.status === "finalized" ? (
