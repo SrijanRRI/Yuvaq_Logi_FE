@@ -24,7 +24,7 @@ function App() {
         const { data, role } = res.data;
         dispatch(login({ user: data, role }));
       } catch (err) {
-        console.log(err)
+        // console.log(err)
         console.log("User not authenticated");
       } finally {
         setCheckingAuth(false);

@@ -12,8 +12,12 @@ import TenderForm from "../components/RRDashboard/TenderForm"
 import TenderHistoryAccordion from "../components/RRDashboard/TenderHistoryAccordion"
 import API from "../API"
 
+import { useDispatch } from "react-redux"
+import { logout } from "../utils/UserSlice"
+
 const RRDashboardPage = () => {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const [viewHistory, setViewHistory] = useState(false)
   const [tenderHistories, setTenderHistories] = useState([])
@@ -24,6 +28,10 @@ const RRDashboardPage = () => {
     dispatchLocation: "",
     address: "",
     pincode: "",
+    projectName: "",
+    projectCode: "",
+    purchaseOrder: "",
+    projectRemark: "",
     materials: [],
     weight: "",
     quantity: "",
@@ -138,6 +146,10 @@ const RRDashboardPage = () => {
       dispatchLocation: form.dispatchLocation,
       address: form.address,
       pincode: form.pincode,
+      projectName: form.projectName,
+      projectCode: form.projectCode,
+      purchaseOrder: form.purchaseOrder,
+      projectRemark: form.projectRemark,
       totalWeight: form.weight ? Number.parseFloat(form.weight) : null,
       totalQuantity: form.quantity ? Number.parseInt(form.quantity) : null,
       remarks: form.remarks,
@@ -163,6 +175,10 @@ const RRDashboardPage = () => {
         dispatchLocation: "",
         address: "",
         pincode: "",
+        projectName: "",
+        projectCode: "",
+        purchaseOrder: "",
+        projectRemark: "",
         materials: [],
         weight: "",
         quantity: "",
@@ -181,9 +197,19 @@ const RRDashboardPage = () => {
     }
   }
 
-  const handleLogout = () => {
-    navigate("/signin")
+  const handleLogout = async () => {
+    try {
+      await axios.post(API.LOGOUT_USER, {}, { withCredentials: true })
+      dispatch(logout())
+      toast.success("Logged out successfully!")
+    } catch (err) {
+      console.error("Logout failed:", err)
+      toast.error("Logout failed. Please try again.")
+    } finally {
+      navigate("/signin")
+    }
   }
+  
 
   const navbarActions = (
     <button

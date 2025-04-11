@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Package, FileText, Truck, Users, Plus, Trash2, Send } from "lucide-react"
+import { Calendar, MapPin, Package, FileText, Truck, Users, Plus, Trash2, Send, Briefcase } from "lucide-react"
 
 const TenderForm = ({
   form,
@@ -80,15 +80,71 @@ const TenderForm = ({
         </div>
       </div>
 
+      {/* Project Details */}
+      <div className="pt-4 border-t border-slate-200 mb-8">
+        <h2 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <Briefcase className="h-5 w-5 text-emerald-600" />
+          Project Details
+        </h2>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
+            <input
+              type="text"
+              name="projectName"
+              value={form.projectName || ""}
+              onChange={handleChange}
+              placeholder="Enter project name"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Project Code</label>
+            <input
+              type="text"
+              name="projectCode"
+              value={form.projectCode || ""}
+              onChange={handleChange}
+              placeholder="Enter project code"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Purchase Order</label>
+            <input
+              type="text"
+              name="purchaseOrder"
+              value={form.purchaseOrder || ""}
+              onChange={handleChange}
+              placeholder="Enter purchase order"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Project Remark</label>
+            <textarea
+              name="projectRemark"
+              value={form.projectRemark || ""}
+              onChange={handleChange}
+              placeholder="Enter project remarks or additional information"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent h-[60px]"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Location Details */}
       <div className="pt-4 border-t border-slate-200 mb-8">
         <h2 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
           <MapPin className="h-5 w-5 text-emerald-600" />
-           Dispatch Location Details
+          Dispatch Location Details
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1"> Location </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
             <input
               type="text"
               name="dispatchLocation"
@@ -100,7 +156,7 @@ const TenderForm = ({
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1"> Address </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
             <textarea
               name="address"
               value={form.address}

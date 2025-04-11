@@ -21,6 +21,15 @@ export const TransporterModal = ({ selected, onClose, onSave, setTransporterList
 
         setTransporterList(data)
         updateParentTransporterList?.(data)
+
+        //  Auto-select all if no initial selection
+        if (!selected || selected.length === 0) {
+          const allIds = data.map((t) => t._id)
+          setLocalSelection(allIds)
+        } else {
+          setLocalSelection(selected)
+        }
+
       } catch (error) {
         console.error("Failed to fetch transporters:", error)
       } finally {
@@ -29,7 +38,7 @@ export const TransporterModal = ({ selected, onClose, onSave, setTransporterList
     }
 
     fetchTransporters()
-    setLocalSelection(selected || [])
+    // setLocalSelection(selected || [])
   }, [selected, updateParentTransporterList])
 
   const handleCheckboxChange = (transporter) => {
@@ -38,10 +47,21 @@ export const TransporterModal = ({ selected, onClose, onSave, setTransporterList
     )
   }
 
+  const toggleSelectAll = () => {
+    if (localSelection.length === transporterList.length) {
+      setLocalSelection([]) // Unselect all
+    } else {
+      setLocalSelection(transporterList.map((t) => t._id))
+    }
+  }
+
   const handleSave = () => {
     onSave(localSelection)
     onClose()
   }
+
+  const isAllSelected = transporterList.length > 0 && localSelection.length === transporterList.length
+  const isPartiallySelected = localSelection.length > 0 && localSelection.length < transporterList.length
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
@@ -59,6 +79,39 @@ export const TransporterModal = ({ selected, onClose, onSave, setTransporterList
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {!loading && transporterList.length > 0 && (
+          <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={toggleSelectAll}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-5 h-5 rounded transition-colors duration-200 flex items-center justify-center
+                    ${isAllSelected ? "bg-emerald-600 border-emerald-600" :
+                      isPartiallySelected ? "bg-emerald-200 border-emerald-300" : "border-slate-300 bg-white"}
+                    border`}
+                >
+                  {(isAllSelected || isPartiallySelected) && (
+                    <Check className={`h-3.5 w-3.5 ${isAllSelected ? "text-white" : "text-emerald-600"}`} />
+                  )}
+                </div>
+              </div>
+              <div>
+                <span className="font-medium text-slate-800">
+                  {isAllSelected ? "Deselect All" : "Select All Transporters"}
+                </span>
+                <p className="text-sm text-slate-500">
+                  {localSelection.length} of {transporterList.length} selected
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
 
         <div className="space-y-2 min-h-[200px] flex flex-col justify-center">
           {loading ? (
@@ -80,11 +133,10 @@ export const TransporterModal = ({ selected, onClose, onSave, setTransporterList
                       className="sr-only"
                     />
                     <div
-                      className={`w-5 h-5 rounded border ${
-                        localSelection.includes(transporter._id)
-                          ? "bg-emerald-600 border-emerald-600"
-                          : "border-slate-300"
-                      } flex items-center justify-center`}
+                      className={`w-5 h-5 rounded border ${localSelection.includes(transporter._id)
+                        ? "bg-emerald-600 border-emerald-600"
+                        : "border-slate-300"
+                        } flex items-center justify-center`}
                     >
                       {localSelection.includes(transporter._id) && <Check className="h-3.5 w-3.5 text-white" />}
                     </div>

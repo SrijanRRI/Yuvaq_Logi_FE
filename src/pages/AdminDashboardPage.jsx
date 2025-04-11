@@ -6,10 +6,15 @@ import axios from "axios";
 import API from "../API";
 import { toast } from 'react-toastify';
 import { ConfirmationModal } from "../modals/ConfirmationModal";
-import { useSelector } from "react-redux";
-
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../utils/UserSlice"
 
 const AdminDashboardPage = () => {
+
+    const navigate = useNavigate()
+    const dispatch = useDispatch()
+
     const [requests, setRequests] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
     const [showRequests, setShowRequests] = useState(false);
@@ -138,9 +143,19 @@ const AdminDashboardPage = () => {
         }
     }, [showRequests]);
 
-    const handleLogout = () => {
-        window.location.href = '/signin';
-    };
+    const handleLogout = async () => {
+        try {
+            await axios.post(API.LOGOUT_USER, {}, { withCredentials: true })
+            dispatch(logout()) // Clear Redux state
+            toast.success("Logged out successfully!")
+        } catch (err) {
+            console.error("Logout failed:", err)
+            toast.error("Logout failed. Please try again.")
+        } finally {
+            navigate("/signin")
+        }
+    }
+
 
     const navbarActions = (
         <button
@@ -155,7 +170,7 @@ const AdminDashboardPage = () => {
         <div className="min-h-screen bg-gray-100">
             <Navbar
                 title="Admin Dashboard"
-                userName={ userName || "Admin" }
+                userName={userName || "Admin"}
                 actions={navbarActions}
                 onLogout={handleLogout}
             />

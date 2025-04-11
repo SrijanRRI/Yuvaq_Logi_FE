@@ -23,6 +23,9 @@ import Navbar from "../components/Navbar"
 import { ConfirmationModal } from "../modals/ConfirmationModal"
 import API from "../API"
 
+import { useDispatch } from "react-redux"
+import { logout } from "../utils/UserSlice"
+
 const TransporterDashboardPage = () => {
   const [tenders, setTenders] = useState([])
   const [history, setHistory] = useState([])
@@ -44,6 +47,9 @@ const TransporterDashboardPage = () => {
   const [transporterMap, setTransporterMap] = useState({})
 
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+
   const userInfo = useSelector((state) => state.User?.userInfo)
   const userName = userInfo?.name || "RR User"
 
@@ -112,17 +118,17 @@ const TransporterDashboardPage = () => {
     }
   }
 
-  const handleReject = (id) => {
-    setConfirmDialog({
-      message: "Are you sure you want to reject this tender?",
-      onConfirm: () => {
-        setTenders((prev) => prev.filter((t) => t.id !== id))
-        toast.info("Tender rejected.")
-        setConfirmDialog(null)
-      },
-      onCancel: () => setConfirmDialog(null),
-    })
-  }
+  // const handleReject = (id) => {
+  //   setConfirmDialog({
+  //     message: "Are you sure you want to reject this tender?",
+  //     onConfirm: () => {
+  //       setTenders((prev) => prev.filter((t) => t.id !== id))
+  //       toast.info("Tender rejected.")
+  //       setConfirmDialog(null)
+  //     },
+  //     onCancel: () => setConfirmDialog(null),
+  //   })
+  // }
 
   const handleApprove = (tender) => {
     setSelectedTender(tender)
@@ -227,9 +233,19 @@ const TransporterDashboardPage = () => {
   //   })
   // }
 
-  const handleLogout = () => {
-    navigate("/signin")
+  const handleLogout = async () => {
+    try {
+      await axios.post(API.LOGOUT_USER, {}, { withCredentials: true })
+      dispatch(logout())
+      toast.success("Logged out successfully!")
+    } catch (err) {
+      console.error("Logout failed:", err)
+      toast.error("Logout failed. Please try again.")
+    } finally {
+      navigate("/signin")
+    }
   }
+  
 
   const handleToggleView = async () => {
     if (!view) {
