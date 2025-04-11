@@ -14,9 +14,15 @@ import {
   Download,
   X,
   Briefcase,
+  Search,
+  Filter,
+  Calendar,
+  XCircle,
 } from "lucide-react"
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
 import API from "../../API"
+import TenderSearchFilter from "../TenderSearchFilter"
+
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory }) => {
   const [openIdx, setOpenIdx] = useState(null)
@@ -27,6 +33,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [allResponses, setAllResponses] = useState({})
   const [previewFile, setPreviewFile] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [dateRange, setDateRange] = useState({ from: "", to: "" })
 
   const getTransporterName = (id) => {
     const found = transporterList.find((t) => t._id === id)
@@ -128,6 +141,49 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     })
   }
 
+  const clearSearch = () => {
+    setSearchQuery("")
+  }
+
+  const clearFilters = () => {
+    setStatusFilter("all")
+    setDateRange({ from: "", to: "" })
+  }
+
+  // Filter tenders based on search query and filters
+  const filteredTenders = tenderHistories.filter((tender) => {
+    // Search by project name or location
+    const searchMatch =
+      (tender.projectName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tender.dispatchLocation || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tender.projectCode || "").toLowerCase().includes(searchQuery.toLowerCase())
+
+    // Filter by status
+    const statusMatch =
+      statusFilter === "all" ||
+      (statusFilter === "finalized" && tender.status === "finalized") ||
+      (statusFilter === "Open" && tender.status !== "finalized")
+
+    // Strict delivery window match
+    let dateMatch = true
+    if (dateRange.from && dateRange.to) {
+      const selectedFrom = new Date(dateRange.from)
+      const selectedTo = new Date(dateRange.to)
+      selectedTo.setHours(23, 59, 59, 999) // include the whole end day
+
+      const deliveryFrom = tender.deliveryWindow?.from ? new Date(tender.deliveryWindow.from) : null
+      const deliveryTo = tender.deliveryWindow?.to ? new Date(tender.deliveryWindow.to) : null
+
+      if (deliveryFrom && deliveryTo) {
+        dateMatch = deliveryFrom >= selectedFrom && deliveryTo <= selectedTo
+      } else {
+        dateMatch = false // if delivery window is missing, exclude it
+      }
+    }
+
+    return searchMatch && statusMatch && dateMatch
+  })
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -135,14 +191,44 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         Tender History
       </h1>
 
-      {tenderHistories.length === 0 ? (
+      {/* Enhanced Search and Filter Section */}
+      <TenderSearchFilter
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        searchFocused={searchFocused}
+        setSearchFocused={setSearchFocused}
+        filterOpen={filterOpen}
+        setFilterOpen={setFilterOpen}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        clearSearch={clearSearch}
+        clearFilters={clearFilters}
+      />
+
+      {/* Search Results Stats */}
+      <div className="mb-4 flex justify-between items-center">
+        <p className="text-sm text-slate-500">
+          {filteredTenders.length === 0
+            ? "No results found"
+            : `Showing ${filteredTenders.length} of ${tenderHistories.length} tenders`}
+        </p>
+        {searchQuery && (
+          <p className="text-sm text-slate-500">
+            Search results for: <span className="font-medium text-emerald-600">{searchQuery}</span>
+          </p>
+        )}
+      </div>
+
+      {filteredTenders.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
           <Package className="h-12 w-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500 text-lg">No tender history available</p>
         </div>
       ) : (
         <div className="space-y-6">
-          {tenderHistories.map((tender, idx) => {
+          {filteredTenders.map((tender, idx) => {
             const tenderId = tender._id
             // const confirmedIdx = confirmedIdxMap[tenderId]
             // const finalPrices = finalPricesMap[tenderId] || []
@@ -168,7 +254,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                       </div>
                       <div>
                         <h3 className="font-semibold text-slate-800">
-                        Tender : {tender.projectName
+                          Tender : {tender.projectName
                             ? tender.projectName
                             : `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
                         </h3>
