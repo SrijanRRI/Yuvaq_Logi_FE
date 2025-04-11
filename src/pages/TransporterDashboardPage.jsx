@@ -56,6 +56,7 @@ const TransporterDashboardPage = () => {
           credentials: "include",
         })
         const data = await res.json()
+        console.log("fetch all tenders : ", data.data)
         // console.log("fetch all tenders : ", data.data)
         setTenders(data.data)
       } catch (err) {

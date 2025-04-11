@@ -41,13 +41,12 @@ const SignInPage = () => {
       if (success) {
         dispatch(
           login({
-            token,
             role: data.role,
             user: data,
           })
         );
 
-        localStorage.setItem("authToken", token);
+     
 
         toast.success("Login successful!");
 
