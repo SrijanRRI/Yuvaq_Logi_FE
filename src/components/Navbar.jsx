@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { User, LogOut, Menu, X } from "lucide-react";
 
 const Navbar = ({ title, userName, actions, onLogout }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,7 +14,6 @@ const Navbar = ({ title, userName, actions, onLogout }) => {
   return (
     <nav className="bg-white shadow-md px-4 sm:px-6 py-4 sticky top-0 z-10">
       <div className="flex justify-between items-center">
-     
         <h1 className="text-xl font-bold text-[#c4000e]">{title}</h1>
 
         {/* Mobile menu button */}
@@ -22,48 +22,28 @@ const Navbar = ({ title, userName, actions, onLogout }) => {
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? (
-            // Cross icon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <X className="h-6 w-6" />
           ) : (
-            // Hamburger icon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+            <Menu className="h-6 w-6" />
           )}
         </button>
 
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-4">
-          <span className="text-gray-800 font-medium">{userName}</span>
+          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2.5 rounded-full border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="bg-white p-1.5 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-300">
+              <User className="h-4 w-4 text-indigo-600" />
+            </div>
+            <span className="text-gray-700 font-medium tracking-wide pr-1">{userName}</span>
+          </div>
+
           {actions}
+
           <button
             onClick={onLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
+            className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-2"
           >
+            <LogOut className="h-4 w-4" />
             Logout
           </button>
         </div>
@@ -73,7 +53,10 @@ const Navbar = ({ title, userName, actions, onLogout }) => {
       {mobileMenuOpen && (
         <div className="md:hidden mt-3 pt-3 border-t border-gray-200">
           <div className="flex flex-col space-y-2 pb-3">
-            <span className="text-gray-800 font-medium px-2">{userName}</span>
+            <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full mx-2">
+              <User className="h-5 w-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">{userName}</span>
+            </div>
             {React.Children.map(actions, (action) =>
               React.cloneElement(action, {
                 className: action.props.className + " w-full justify-center",
@@ -82,8 +65,9 @@ const Navbar = ({ title, userName, actions, onLogout }) => {
             )}
             <button
               onClick={onLogout}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-2 justify-center mx-2"
             >
+              <LogOut className="h-4 w-4" />
               Logout
             </button>
           </div>

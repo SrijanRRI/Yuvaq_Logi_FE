@@ -13,13 +13,14 @@ import {
   AlertCircle,
   Download,
   X,
+  Briefcase,
 } from "lucide-react"
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
 import API from "../../API"
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory }) => {
   const [openIdx, setOpenIdx] = useState(null)
-  const [editingId, setEditingId] = useState(null) // Format: tenderId-responseIdx
+  const [editingId, setEditingId] = useState(null)
   const [priceInput, setPriceInput] = useState("")
   const [confirmedIdxMap, setConfirmedIdxMap] = useState({})
   const [finalPricesMap, setFinalPricesMap] = useState({})
@@ -72,7 +73,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       message: "Are you sure you want to finalize this quotation?",
       onConfirm: async () => {
         const responsesForThisTender = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price)
-        const quotation =  responsesForThisTender[resIdx]
+        const quotation = responsesForThisTender[resIdx]
         const quotationId = quotation._id
         const finalPrice = priceInput
 
@@ -104,8 +105,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           setEditingId(null)
           toast.success("Tender finalized successfully!")
 
-           // Refresh data from server
-           if (fetchTenderHistory) await fetchTenderHistory()
+          // Refresh data from server
+          if (fetchTenderHistory) await fetchTenderHistory()
 
         } catch (error) {
           console.error("Error finalizing tender:", error)
@@ -167,10 +168,14 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                       </div>
                       <div>
                         <h3 className="font-semibold text-slate-800">
-                          Tender for {tender.dispatchLocation || "Unknown Location"}
+                        Tender : {tender.projectName
+                            ? tender.projectName
+                            : `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
                         </h3>
+
                         <p className="text-sm text-slate-500">
                           Created on {formatDate(tender.createdAt)} • {tender.materials?.length || 0} materials
+                          {tender.projectCode && ` • Project Code: ${tender.projectCode}`}
                         </p>
                       </div>
                     </div>
@@ -198,6 +203,43 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
                       {/* Left Column */}
                       <div className="space-y-4">
+                        {/* Project Details */}
+                        {(tender.projectName || tender.projectCode || tender.purchaseOrder) && (
+                          <div>
+                            <h4 className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
+                              <Briefcase className="h-4 w-4 text-emerald-600" /> Project Details
+                            </h4>
+                            <div className="bg-slate-50 rounded-lg p-3">
+                              <div className="grid grid-cols-2 gap-2">
+                                {tender.projectName && (
+                                  <div>
+                                    <span className="text-xs text-slate-500">Project Name:</span>
+                                    <p className="font-medium text-slate-800">{tender.projectName}</p>
+                                  </div>
+                                )}
+                                {tender.projectCode && (
+                                  <div>
+                                    <span className="text-xs text-slate-500">Project Code:</span>
+                                    <p className="font-medium text-slate-800">{tender.projectCode}</p>
+                                  </div>
+                                )}
+                                {tender.purchaseOrder && (
+                                  <div>
+                                    <span className="text-xs text-slate-500">Purchase Code:</span>
+                                    <p className="font-medium text-slate-800">{tender.purchaseOrder}</p>
+                                  </div>
+                                )}
+                              </div>
+                              {tender.projectRemark && (
+                                <div className="mt-2">
+                                  <span className="text-xs text-slate-500">Project Remark:</span>
+                                  <p className="text-slate-700 text-sm">{tender.projectRemark}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div>
                           <h4 className="text-sm font-medium text-slate-500 mb-1">Delivery Window</h4>
                           <p className="font-medium text-slate-800">
@@ -308,7 +350,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                       {responsesForThisTender.length > 0 ? (
                         <div className="space-y-4">
                           {responsesForThisTender.map((res, rIdx) => {
-                            const uniqueKey = `${tenderId}-${rIdx}`
+                            // const uniqueKey = `${tenderId}-${rIdx}`
                             // const isEditing = editingId === uniqueKey
                             // // const isDimmed = confirmedIdx !== undefined && confirmedIdx !== rIdx
                             // const isDimmed = tender.status === "finalized" && confirmedIdx !== undefined && confirmedIdx !== rIdx
