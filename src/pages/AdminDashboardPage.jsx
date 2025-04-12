@@ -56,7 +56,7 @@ const AdminDashboardPage = () => {
             setAllTenders(tenders)
             setActiveTab("tenders")
 
-            console.log('All tenders : ', res.data);
+            // console.log('All tenders : ', res.data);
         } catch (err) {
             // console.log("error" , err);
             toast.error("Error fetching tenders.")
@@ -69,7 +69,7 @@ const AdminDashboardPage = () => {
         setLoading(true)
         try {
             const res = await axios.get(`${API.ALLAPPROVALREQUEST}`)
-            console.log(res);
+            // console.log(res);
             
             if (res.data.success) {
                 setRequests(res.data.data)
