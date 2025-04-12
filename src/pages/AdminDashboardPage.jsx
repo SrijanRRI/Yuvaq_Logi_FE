@@ -69,12 +69,16 @@ const AdminDashboardPage = () => {
         setLoading(true)
         try {
             const res = await axios.get(`${API.ALLAPPROVALREQUEST}`)
+            console.log(res);
+            
             if (res.data.success) {
                 setRequests(res.data.data)
             } else {
                 setError("Failed to fetch users.")
                 toast.error("Failed to fetch users.")
             }
+            
+            
         } catch (err) {
             console.error("Fetch error:", err)
             setError("An error occurred while fetching requests.")
