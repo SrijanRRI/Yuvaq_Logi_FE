@@ -10,12 +10,13 @@ const API = {
   FORGOTPASSWORD: `${serverUrl}/api/auth/forgotpassword`,
   RESETPASSWORD: `${serverUrl}/api/auth/resetpassword/`,
   LOGOUT_USER : `${serverUrl}/api/auth/logout`,
-  // GETUSERBYID : `${serverUrl}/api/auth/user`,
+  GETALLUSER : `${serverUrl}/api/auth/user/all`,
 
-  //Admin API :
-  ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
-  APPROVEREQUEST: `${serverUrl}/admin/approve-user/`,
-  REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
+ //Admin API :
+ ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
+ APPROVEREQUEST: `${serverUrl}/admin/approve-user/`,
+ REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
+ GETALLTENDER : `${serverUrl}/admin/all-tender`,
 
   //Transport User
   FETCH_ALL_TRANSPORTER: `${serverUrl}/admin/transport-users`,

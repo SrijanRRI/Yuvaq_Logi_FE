@@ -145,8 +145,8 @@ const SignInPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="flex items-center justify-end">
+            {/* <div className="flex items-center">
               <input
                 id="remember-me"
                 name="remember-me"
@@ -159,7 +159,7 @@ const SignInPage = () => {
               >
                 Remember me
               </label>
-            </div>
+            </div> */}
             <div>
               <span
                 className="text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer"
