@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import SignUpPage from './pages/SignUpPage';
-import SignInPage from './pages/SignInPage';
-import RRDashboardPage from './pages/RRDashboardPage';
-import TransporterDashboardPage from './pages/TransporterDashboardPage';
-import ProtectedRoute from './utils/ProtectedRoute';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import { useDispatch } from 'react-redux';
-import API from './API';
-import axios from 'axios';
-import { login } from './utils/UserSlice';
+import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import SignUpPage from "./pages/SignUpPage";
+import SignInPage from "./pages/SignInPage";
+import RRDashboardPage from "./pages/RRDashboardPage";
+import TransporterDashboardPage from "./pages/TransporterDashboardPage";
+import ProtectedRoute from "./utils/ProtectedRoute";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import { useDispatch } from "react-redux";
+import API from "./API";
+import axios from "axios";
+import { login } from "./utils/UserSlice";
 
 function App() {
   const dispatch = useDispatch();
@@ -33,7 +33,8 @@ function App() {
     checkSession();
   }, [dispatch]);
 
-  if (checkingAuth) return <div className="text-center mt-10">Checking session...</div>;
+  if (checkingAuth)
+    return <div className="text-center mt-10">Checking session...</div>;
 
   return (
     <Routes>
@@ -43,7 +44,14 @@ function App() {
       <Route path="/signin" element={<SignInPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Protected Routes */}
       <Route
@@ -66,5 +74,4 @@ function App() {
   );
 }
 
-
-export default App
+export default App;
