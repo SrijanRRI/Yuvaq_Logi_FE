@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle, XCircle, Loader2, UserPlus, Mail, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, UserPlus, Mail, AlertCircle,User} from 'lucide-react';
 
 const AdminRequests = ({
   requests = [],
@@ -13,7 +13,7 @@ const AdminRequests = ({
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <UserPlus className="text-white h-5 w-5" />
-          <h2 className="text-xl font-bold text-white">Transport User Requests</h2>
+          <h2 className="text-xl font-bold text-white">Transporters & Users Requests</h2>
         </div>
         <div className="text-white text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
           {requests.length} {requests.length === 1 ? 'Request' : 'Requests'}
@@ -48,6 +48,10 @@ const AdminRequests = ({
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 text-lg">{user.name}</h3>
+                      <div className="flex items-center text-gray-500 text-sm">
+                        <User className="h-3 w-3 mr-1" />
+                        <span>{user.role}</span>
+                      </div>
                       <div className="flex items-center text-gray-500 text-sm">
                         <Mail className="h-3 w-3 mr-1" />
                         <span>{user.email}</span>
