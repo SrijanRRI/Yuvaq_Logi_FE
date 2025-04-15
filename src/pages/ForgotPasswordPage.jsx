@@ -2,17 +2,19 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import axios from 'axios';
 import API from '../API';
+import { Mail } from 'lucide-react';
 
 function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-
-
-  async function handleForgotpassword(e) {
-    e.preventDefault(); // event.preventDefault() method to prevent the default behavior of an HTML form submission
-
+  async function handleForgotPassword(e) {
+    e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
+    
     try {
       const response = await axios({
         method: 'post',
@@ -21,87 +23,126 @@ function ForgotPasswordPage() {
       });
 
       if (response.data.success) {
-        // navigate('/reset-password/' + response.data.token);
-        alert(response.data.message);
+        setSuccess(true);
       }
       
-      setLoading(false);
     } catch (error) {
-      alert(error.response.data.message);
+      setErrorMessage(error.response?.data?.message || 'Something went wrong. Please try again.');
+    } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="w-full max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-6 md:p-8 dark:bg-gray-800 dark:border-gray-700 m-4">
-      <form className="space-y-6" onSubmit={(e) => handleForgotpassword(e)}>
-        <h5 className="text-xl font-medium text-gray-900 dark:text-white">
-          Forgot password
-        </h5>
-        {/* email  */}
-        <div>
-          <label
-            htmlFor="email"
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Your email
-          </label>
-          <input
-            type="email"
-            name="email"
-            id="email"
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-            placeholder="name@company.com"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-100">
+      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
+        <div className="flex flex-col items-center mb-8">
+          {/* Logo */}
+          <div className="w-60 h-24 flex items-center justify-center">
+            <img
+              src="/assets/LogiYatraLogo.png"
+              alt="LogiYatra Logo"
+              className="w-60 h-28 object-contain"
+            />
+          </div>
+          
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">Forgot Password</h2>
+          <p className="text-gray-500 mt-1 text-center">
+            Enter your email address and we'll send you a link to reset your password
+          </p>
         </div>
-        {/* email end */}
 
-        {/*  signIn button  */}
-        <button
-          type="submit"
-          className="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        >
-          Submit
-          {/* loading */}
-          {loading ? (
-            <svg
-              aria-hidden="true"
-              role="status"
-              className="inline w-4 h-4 mr-3 text-white animate-spin ml-2"
-              viewBox="0 0 100 101"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+        {success ? (
+          <div className="text-center">
+            <div className="bg-green-50 text-green-700 p-5 rounded-lg mb-6 border border-green-100">
+              <svg className="w-12 h-12 mx-auto mb-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <h3 className="text-lg font-medium mb-2">Email Sent Successfully!</h3>
+              <p>Password reset link has been sent to your email. Please check your inbox.</p>
+            </div>
+            <Link 
+              to="/signin" 
+              className="inline-block text-center w-full py-3 px-4 bg-[#ca000e] hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 shadow-md"
             >
-              <path
-                d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                fill="#E5E7EB"
-              />
-              <path
-                d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                fill="currentColor"
-              />
-            </svg>
-          ) : null}
-          {/* loading end */}
-        </button>
-        {/* signIn button end */}
+              Return to Sign In
+            </Link>
+          </div>
+        ) : (
+          <form className="space-y-5" onSubmit={handleForgotPassword}>
+            {errorMessage && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm border border-red-100">
+                {errorMessage}
+              </div>
+            )}
+            
+            <div className="relative">
+              <label 
+                htmlFor="email" 
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Email Address
+              </label>
+              <div className="relative flex items-center">
+                <Mail className="w-5 h-5 text-gray-400 absolute left-3" />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  className="pl-10 w-full py-2.5 px-4 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+            </div>
 
-        {/* signIn  */}
-        <div className="text-sm font-medium text-gray-500 dark:text-gray-300">
-          Go to{' '}
-          <Link
-            to="/signin"
-            className="text-blue-700 hover:underline dark:text-blue-500"
-          >
-            Sign in
-          </Link>{' '}
-          page
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 px-4 flex items-center justify-center rounded-lg font-medium transition duration-200 shadow-md ${
+                loading 
+                  ? 'bg-red-300 cursor-not-allowed' 
+                  : 'bg-[#ca000e] hover:bg-red-700'
+              } text-white`}
+            >
+              {loading ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2 border-2 border-t-transparent border-white rounded-full"
+                    viewBox="0 0 24 24"
+                  />
+                  Sending Reset Link...
+                </>
+              ) : (
+                'Send Reset Link'
+              )}
+            </button>
+
+            <div className="text-center pt-4">
+              <Link
+                to="/signin"
+                className="text-[#ca000e] hover:text-red-700 text-sm font-medium transition duration-200"
+              >
+                Remember your password? Sign in
+              </Link>
+            </div>
+          </form>
+        )}
+
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <p className="text-center text-gray-600">
+            Don't have an account?{" "}
+            <Link
+              to="/signup"
+              className="text-[#ca000e] font-medium hover:underline cursor-pointer"
+            >
+              Create Account
+            </Link>
+          </p>
         </div>
-        {/* singIn */}
-      </form>
+      </div>
     </div>
   );
 }

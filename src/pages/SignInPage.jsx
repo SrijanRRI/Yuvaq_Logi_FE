@@ -137,9 +137,9 @@ const SignInPage = () => {
                 className="absolute right-3 text-gray-500 focus:outline-none"
               >
                 {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
                   <Eye className="w-5 h-5" />
+                ) : (
+                  <EyeOff className="w-5 h-5" />
                 )}
               </button>
             </div>
