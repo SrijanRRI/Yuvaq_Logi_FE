@@ -811,11 +811,10 @@ const TransporterDashboardPage = () => {
                 <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50">
                   <input
                     type="file"
-                    accept=".jpg, .jpeg, image/jpeg"
+                    accept=".jpg,.jpeg,image/jpeg"
                     onChange={handleFileChange}
                     className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
                   />
-                  {/* <p className="text-xs text-slate-500 mt-2">Upload relevant documents (optional)</p> */}
                   <p className="text-xs text-slate-500 mt-2">
                     Only upload <strong>.jpg</strong> or <strong>.jpeg</strong> files
                   </p>

@@ -29,6 +29,8 @@ const AdminDashboardPage = () => {
 
     const [activeTab, setActiveTab] = useState("dashboard")
 
+    const [isRejecting, setIsRejecting] = useState(false)
+
     const userInfo = useSelector((state) => state.User?.userInfo)
     const userName = userInfo?.name || "Admin User"
 
@@ -70,15 +72,15 @@ const AdminDashboardPage = () => {
         try {
             const res = await axios.get(`${API.ALLAPPROVALREQUEST}`)
             // console.log(res);
-            
+
             if (res.data.success) {
                 setRequests(res.data.data)
             } else {
                 setError("Failed to fetch users.")
                 toast.error("Failed to fetch users.")
             }
-            
-            
+
+
         } catch (err) {
             console.error("Fetch error:", err)
             setError("An error occurred while fetching requests.")
@@ -116,6 +118,9 @@ const AdminDashboardPage = () => {
         setConfirmDialog({
             message: `Are you sure you want to reject ${user.name}?`,
             onConfirm: async () => {
+
+                setIsRejecting(true);
+
                 try {
                     const res = await axios.delete(`${API.REJECTREQUEST}${user._id}`)
 
@@ -129,6 +134,7 @@ const AdminDashboardPage = () => {
                     console.error("Rejection error:", error)
                     toast.error("Something went wrong while rejecting user.")
                 } finally {
+                    setIsRejecting(false);
                     setConfirmDialog(null)
                 }
             },
@@ -383,6 +389,7 @@ const AdminDashboardPage = () => {
                     message={confirmDialog.message}
                     onConfirm={confirmDialog.onConfirm}
                     onCancel={confirmDialog.onCancel}
+                    isLoading={isRejecting}
                 />
             )}
         </div>

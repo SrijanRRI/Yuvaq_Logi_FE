@@ -14,10 +14,6 @@ import {
   Download,
   X,
   Briefcase,
-  Search,
-  Filter,
-  Calendar,
-  XCircle,
 } from "lucide-react"
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
 import API from "../../API"
@@ -40,6 +36,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [filterOpen, setFilterOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateRange, setDateRange] = useState({ from: "", to: "" })
+
+  const [isFinalizing, setIsFinalizing] = useState(false)
 
   const getTransporterName = (id) => {
     const found = transporterList.find((t) => t._id === id)
@@ -85,6 +83,9 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     setConfirmDialog({
       message: "Are you sure you want to finalize this quotation?",
       onConfirm: async () => {
+
+        setIsFinalizing(true);
+
         const responsesForThisTender = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price)
         const quotation = responsesForThisTender[resIdx]
         const quotationId = quotation._id
@@ -125,6 +126,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           console.error("Error finalizing tender:", error)
           toast.error("Something went wrong while finalizing. Please try again.")
         } finally {
+          setIsFinalizing(false);
           setConfirmDialog(null)
         }
       },
@@ -594,6 +596,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           message={confirmDialog.message}
           onConfirm={confirmDialog.onConfirm}
           onCancel={confirmDialog.onCancel}
+          isLoading={isFinalizing}
         />
       )}
     </div>
