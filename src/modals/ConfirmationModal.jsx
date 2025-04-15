@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertCircle, X } from 'lucide-react';
 
-export const ConfirmationModal = ({ message, onConfirm, onCancel }) => {
+export const ConfirmationModal = ({ message, onConfirm, onCancel, isLoading = false }) => {
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-xl p-6 shadow-2xl w-full max-w-md transform transition-all animate-fade-in">
@@ -32,11 +32,24 @@ export const ConfirmationModal = ({ message, onConfirm, onCancel }) => {
           >
             Cancel
           </button>
+          
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors flex items-center gap-2"
           >
-            Confirm
+            {isLoading && (
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            )}
+            {isLoading ? "Processing..." : "Confirm"}
           </button>
         </div>
       </div>
