@@ -20,7 +20,12 @@ const API = {
 
   //Transport User
   FETCH_ALL_TRANSPORTER: `${serverUrl}/admin/transport-users`,
-  FETCH_ALL_TENDERS: `${serverUrl}/tenders/assigned`,
+  UPCOMING_TENDERS: `${serverUrl}/tenders/transporter/upcoming`,
+  LIVE_BIDING_TENDERS: `${serverUrl}/tenders/assigned`,
+  GET_QUOTATION_SLIDESHOW: `${serverUrl}/quotation/my-tender-quotes`,
+  GET_MY_POSITION: `${serverUrl}/tenders/my-position`,
+
+
   SUBMIT_QUOTATION: `${serverUrl}/quotation/submit`,
   SEE_QUOTATIONS: `${serverUrl}/tender/quotations`,
   HISTORY_FOR_QUOTATION_QUOTE: `${serverUrl}/tenders/quotation/history`,

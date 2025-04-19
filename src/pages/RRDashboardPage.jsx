@@ -25,6 +25,8 @@ const RRDashboardPage = () => {
   const [form, setForm] = useState({
     deliveryWindow: { from: "", to: "" },
     closingDate: "",
+    biddingStart: "",
+    biddingEnd: "",
     dispatchLocation: "",
     address: "",
     pincode: "",
@@ -143,6 +145,8 @@ const RRDashboardPage = () => {
         to: form.deliveryWindow.to,
       },
       closeDate: form.closingDate,
+      biddingStart: form.biddingStart,
+      biddingEnd: form.biddingEnd,
       dispatchLocation: form.dispatchLocation,
       address: form.address,
       pincode: form.pincode,
@@ -172,6 +176,8 @@ const RRDashboardPage = () => {
       setForm({
         deliveryWindow: { from: "", to: "" },
         closingDate: "",
+        biddingStart: "",
+        biddingEnd: "",
         dispatchLocation: "",
         address: "",
         pincode: "",
