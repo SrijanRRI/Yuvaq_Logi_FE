@@ -133,8 +133,7 @@ const LiveBidding = () => {
               <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-5">
                 <div className="flex flex-wrap justify-between items-start gap-3">
                   <div>
-                    <h3 className="text-xl font-bold">{tender.projectName || "Unnamed Project"}</h3>
-                    <p className="text-indigo-200 text-sm mt-1">Tender #{idx + 1}</p>
+                    <h2 className="text-indigo-200 text-2xl font-bold "> Tender #{idx + 1} </h2>
                   </div>
                   <div className="px-3 py-1.5 rounded-full bg-white bg-opacity-20 text-white text-sm font-medium border border-white border-opacity-30 backdrop-blur-sm">
                     {tender.bidsUsed || 0}/3 Bids Used
