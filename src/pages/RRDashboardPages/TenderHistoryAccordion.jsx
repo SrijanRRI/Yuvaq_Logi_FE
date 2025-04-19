@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ConfirmationModal } from "../../modals/ConfirmationModal";
 import API from "../../API";
-import TenderSearchFilter from "../TenderSearchFilter";
+import TenderSearchFilter from "./TenderSearchFilter";
 
 const TenderHistoryAccordion = ({
   tenderHistories = [],

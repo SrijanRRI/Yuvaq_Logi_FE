@@ -12,7 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
-import QuotationModal from "./QuotationModal"
+import QuotationModal from "../../modals/QuotationModal"
 import axios from "axios"
 import API from "../../API"
 import QuotationSlideshow from "./QuotationSlideShow"

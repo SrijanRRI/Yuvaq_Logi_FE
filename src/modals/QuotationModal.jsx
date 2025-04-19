@@ -2,7 +2,7 @@ import { useState } from "react"
 import { toast } from "react-toastify"
 import { FileText, X, Upload, DollarSign, Truck, AlertCircle } from "lucide-react"
 import axios from "axios"
-import API from "../../API"
+import API from "../API"
 
 const QuotationModal = ({ tender, onClose, onSuccess }) => {
   const [price, setPrice] = useState("")
