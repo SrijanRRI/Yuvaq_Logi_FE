@@ -1,0 +1,59 @@
+import { useEffect, useState } from "react"
+import axios from "axios"
+import API from "../../API"
+import { TrendingUp, Info } from "lucide-react"
+
+const GetMyPosition = ({ tenderId }) => {
+    const [position, setPosition] = useState(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
+  
+    useEffect(() => {
+      if (!tenderId) return
+  
+      const fetchPosition = async () => {
+        try {
+          setLoading(true)
+          const res = await axios.get(`${API.GET_MY_POSITION}/${tenderId}`, { withCredentials: true })
+          setPosition(res.data?.position || null)
+          setError(null)
+        } catch (err) {
+          const errMessage = err?.response?.data?.message || "Something went wrong. Please try again."
+          setError("Unable to retrieve your current bid rank.")
+        } finally {
+          setLoading(false)
+        }
+      }
+  
+      fetchPosition()
+      const interval = setInterval(fetchPosition, 15000)
+      return () => clearInterval(interval)
+    }, [tenderId])
+  
+    if (!tenderId) return null
+  
+    return (
+      <div className="flex items-center gap-3 px-4 py-3 bg-violet-50 border border-violet-200 rounded-lg shadow-sm flex-grow">
+        {loading ? (
+          <div className="animate-pulse text-slate-500 text-sm flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            <span>Fetching your current position...</span>
+          </div>
+        ) : error ? (
+          <div className="text-sm text-red-600 flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            <span>{error}</span>
+          </div>
+        ) : position ? (
+          <div className="text-sm text-violet-800 font-medium flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-violet-600" />
+            <span>
+              Your Current Rank: <span className="font-bold">{position}</span>
+            </span>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+export default GetMyPosition
