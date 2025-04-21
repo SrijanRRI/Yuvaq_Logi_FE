@@ -10,7 +10,6 @@ import {
   Users,
   Clock,
   CheckCircle,
-  AlertCircle,
   Download,
   X,
   Briefcase,
@@ -28,7 +27,6 @@ const TenderHistoryAccordion = ({
   const [editingId, setEditingId] = useState(null);
   const [priceInput, setPriceInput] = useState("");
   const [confirmedIdxMap, setConfirmedIdxMap] = useState({});
-  const [finalPricesMap, setFinalPricesMap] = useState({});
   const [allResponses, setAllResponses] = useState({});
   const [previewFile, setPreviewFile] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -41,48 +39,63 @@ const TenderHistoryAccordion = ({
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
 
-  const getTransporterName = (id) => {
-    const found = transporterList.find((t) => t._id === id);
-    return found ? found.name || found.email : id;
+  const [fetchedResponseIds, setFetchedResponseIds] = useState(new Set());
+  const [responseErrors, setResponseErrors] = useState({});
+  const [reopenedTenders, setReopenedTenders] = useState(new Set());
+
+  const getTransporterName = (transporter) => {
+    /* The field may already be an object ─ handle both cases */
+    if (!transporter) return "Unknown";
+
+    // Already populated
+    if (typeof transporter === "object") {
+      return transporter.name || transporter.email || transporter._id;
+    }
+
+    // Still just an ID – look it up in transporterList
+    const found = transporterList.find((t) => t._id === transporter);
+    return found ? found.name || found.email : transporter;
   };
 
-  const toggleResponses = async (idx, tenderId) => {
-    if (openIdx === idx) {
-      setOpenIdx(null);
-      return;
-    }
 
-    if (allResponses[tenderId]) {
-      setOpenIdx(idx);
-      return;
-    }
+  const toggleResponses = (idx, tenderId) => {
+    // Always toggle the UI open/close
+    setOpenIdx((prev) => (prev === idx ? null : idx));
 
-    try {
-      const response = await axios.get(
-        `${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`,
-        {
-          withCredentials: true,
-        }
-      );
+    // Only trigger fetch if it hasn't been fetched AND there’s no error
+    if (fetchedResponseIds.has(tenderId) || responseErrors[tenderId]) return;
 
-      // console.log("Transporter's quotation", response.data);
+    // Fetch the transporter's response
+    axios
+      .get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
+        withCredentials: true,
+      })
+      .then((response) => {
+        setAllResponses((prev) => ({
+          ...prev,
+          [tenderId]: response.data.data,
+        }));
 
-      setAllResponses((prev) => ({
-        ...prev,
-        [tenderId]: response.data.quotations,
-      }));
-      setOpenIdx(idx);
-    } catch (error) {
-      console.error("Failed to fetch responses:", error);
-      toast.error("Could not load transporter responses. Please try again.");
-    }
-  };
+        // Mark this tenderId as fetched
+        setFetchedResponseIds((prev) => new Set(prev).add(tenderId));
+      })
+      .catch((error) => {
+        const errorMessage =
+          error?.response?.data?.err ||
+          error?.response?.data?.message ||
+          "Could not load transporter responses.";
 
-  const handleConfirm = (tenderId, resIdx) => {
-    const finalPrices = finalPricesMap[tenderId] || {};
-    setEditingId(`${tenderId}-${resIdx}`);
-    setPriceInput(finalPrices[resIdx] || "");
+        console.error(errorMessage);
+
+        // Mark error for this tenderId
+        setResponseErrors((prev) => ({
+          ...prev,
+          [tenderId]: errorMessage,
+        }));
+
+      });
   };
 
   const handleDone = (tenderId, resIdx) => {
@@ -110,14 +123,6 @@ const TenderHistoryAccordion = ({
             }
           );
 
-          setFinalPricesMap((prev) => ({
-            ...prev,
-            [tenderId]: {
-              ...prev[tenderId],
-              [resIdx]: finalPrice,
-            },
-          }));
-
           setConfirmedIdxMap((prev) => ({
             ...prev,
             [tenderId]: resIdx,
@@ -141,6 +146,70 @@ const TenderHistoryAccordion = ({
       onCancel: () => setConfirmDialog(null),
     });
   };
+
+  const handleReopen = async (tenderId) => {
+    let tempReason = "";
+
+    setConfirmDialog({
+      message: (
+        <div>
+          <label className="block mb-2 font-medium text-slate-700">
+            Enter a reason for reopening this tender:
+          </label>
+          <textarea
+            className="w-full border border-slate-300 rounded-md p-2"
+            rows={3}
+            onChange={(e) => {
+              tempReason = e.target.value;
+            }}
+            placeholder="Reason for reopening..."
+          />
+        </div>
+      ),
+
+      onConfirm: async () => {
+        if (!tempReason.trim()) {
+          toast.error("Please provide a reason to reopen the quotation.");
+          return;
+        }
+
+        try {
+          await axios.post(
+            `${API.REOPEN_QUOTATION}/${tenderId}`,
+            { reason: tempReason },
+            { withCredentials: true }
+          );
+
+          toast.success("Quotation reopened successfully.");
+          if (fetchTenderHistory) await fetchTenderHistory();
+
+          // Mark tender as reopened
+          setReopenedTenders((prev) => new Set(prev).add(tenderId));
+
+          // Clear previously confirmed selections and prices
+          setConfirmedIdxMap((prev) => {
+            const newMap = { ...prev };
+            delete newMap[tenderId];
+            return newMap;
+          });
+
+          setEditingId(null);
+          setPriceInput("");
+        } catch (error) {
+          toast.error("Could not reopen quotation.");
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+
+      onCancel: () => {
+        setConfirmDialog(null);
+      },
+    });
+  };
+
+
+
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -216,7 +285,7 @@ const TenderHistoryAccordion = ({
     }
     return new Date(dateString).toLocaleString("en-US", options)
   }
-  
+
 
   return (
     <div>
@@ -310,8 +379,8 @@ const TenderHistoryAccordion = ({
                     <div className="flex items-center gap-3">
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-medium ${tender.status === "finalized"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-amber-100 text-amber-800"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-amber-100 text-amber-800"
                           }`}
                       >
                         {tender.status || "PENDING"}
@@ -553,7 +622,11 @@ const TenderHistoryAccordion = ({
                         Transporter Responses
                       </h4>
 
-                      {responsesForThisTender.length > 0 ? (
+                      {responseErrors[tenderId] ? (
+                        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3" >
+                          {responseErrors[tenderId]}
+                        </div>
+                      ) : responsesForThisTender.length > 0 ? (
                         <div className="space-y-4">
                           {responsesForThisTender.map((res, rIdx) => {
                             // const uniqueKey = `${tenderId}-${rIdx}`
@@ -574,8 +647,8 @@ const TenderHistoryAccordion = ({
                               <div
                                 key={rIdx}
                                 className={`border-l-4 p-5 rounded-lg shadow-sm transition duration-300 ${isDimmed
-                                    ? "border-slate-300 bg-slate-100 opacity-60"
-                                    : "border-emerald-500 bg-white"
+                                  ? "border-slate-300 bg-slate-100 opacity-60"
+                                  : "border-emerald-500 bg-white"
                                   }`}
                               >
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -592,6 +665,7 @@ const TenderHistoryAccordion = ({
                                             Finalized
                                           </span>
                                         )}
+
                                     </p>
                                   </div>
                                   <div>
@@ -640,14 +714,49 @@ const TenderHistoryAccordion = ({
                                       )}
                                     </div>
                                   </div>
+
+                                  {/* Rank */}
+                                  <div>
+                                    <p className="text-sm text-slate-500">Rank</p>
+                                    <p className="text-md font-medium text-slate-700">{res.rank}</p>
+                                  </div>
+
+                                  {/* Quote Time */}
+                                  <div>
+                                    <p className="text-sm text-slate-500">Quoted At</p>
+                                    <p className="text-md font-medium text-slate-700">
+                                      {new Date(res.createdAt).toLocaleString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                    </p>
+                                  </div>
+
                                 </div>
 
                                 <div className="mt-4">
                                   {isSelected &&
                                     tender.status === "finalized" ? (
-                                    <div className="text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200 flex items-center gap-2">
-                                      <CheckCircle className="h-4 w-4" />
-                                      Final Deal Price: ₹{selectedFinalPrice}
+                                    <div className="flex flex-col md:flex-row md:items-center gap-3 text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
+                                      <div className="flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4" />
+                                        Final Deal Price: ₹{selectedFinalPrice}
+                                      </div>
+
+                                      {/* Show Reopen Button if before closeDate */}
+                                      {new Date() < new Date(tender.closeDate) && (
+                                        <button
+                                          onClick={() => handleReopen(tenderId)}
+                                          className="text-emerald-600 border border-emerald-300 px-3 py-1 rounded-md text-sm hover:bg-emerald-50 transition"
+                                        >
+                                          Reopen Quotation
+                                        </button>
+                                      )}
+
                                     </div>
                                   ) : tender.status !== "finalized" &&
                                     isEditing ? (
@@ -672,23 +781,33 @@ const TenderHistoryAccordion = ({
                                     </div>
                                   ) : (
                                     tender.status !== "finalized" &&
-                                    confirmedIdxMap[tenderId] === undefined && (
+                                      confirmedIdxMap[tenderId] === undefined && (
+                                        reopenedTenders.has(tenderId) || res.rank === "L1"
+                                      ) ? (
                                       <div className="mt-3 space-y-2">
-                                        <p className="text-sm text-amber-600 flex items-center gap-1">
-                                          <AlertCircle className="h-4 w-4" />
-                                          Please enter the final price after
-                                          negotiation before confirming.
+                                        <p className="text-sm text-slate-600">
+                                          Confirm this price as final?
                                         </p>
                                         <button
-                                          onClick={() =>
-                                            handleConfirm(tenderId, rIdx)
-                                          }
+                                          onClick={() => {
+                                            setPriceInput(res.price);
+                                            handleDone(tenderId, rIdx);
+                                          }}
                                           className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200"
                                         >
-                                          Set Final Price
+                                          Confirm ₹{res.price}
                                         </button>
                                       </div>
-                                    )
+                                    ) : confirmedIdxMap[tenderId] === undefined ? (
+                                      <div className="mt-3">
+                                        <button
+                                          disabled
+                                          className="px-4 py-2 bg-slate-200 text-slate-500 rounded-md cursor-not-allowed"
+                                        >
+                                          Disabled
+                                        </button>
+                                      </div>
+                                    ) : null
                                   )}
                                 </div>
                               </div>
@@ -705,74 +824,80 @@ const TenderHistoryAccordion = ({
                       )}
                     </div>
                   </div>
-                )}
+                )
+                }
               </div>
             );
           })}
         </div>
-      )}
+      )
+      }
 
       {/* File Preview Modal */}
-      {previewFile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
-            <button
-              onClick={() => setPreviewFile(null)}
-              className="absolute top-3 right-3 text-slate-500 hover:text-red-500 transition-colors duration-200"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <h3 className="text-lg font-semibold mb-4 pr-8">
-              {previewFile.originalName}
-            </h3>
-
-            {previewFile.mimetype.startsWith("image/") ? (
-              <img
-                src={previewFile.url || "/placeholder.svg"}
-                alt={previewFile.originalName}
-                className="w-full max-h-[70vh] object-contain rounded-md"
-              />
-            ) : previewFile.mimetype === "application/pdf" ? (
-              <iframe
-                src={previewFile.url}
-                className="w-full h-[70vh] rounded-md"
-                title="PDF Preview"
-              />
-            ) : (
-              <div className="bg-slate-50 p-8 rounded-md text-center">
-                <FileText className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 mb-4">
-                  Preview not supported for this file type.
-                </p>
-              </div>
-            )}
-
-            <div className="mt-4 flex justify-end">
-              <a
-                href={previewFile.url}
-                download={previewFile.originalName}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2"
+      {
+        previewFile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="absolute top-3 right-3 text-slate-500 hover:text-red-500 transition-colors duration-200"
               >
-                <Download className="h-4 w-4" /> Download
-              </a>
+                <X className="h-5 w-5" />
+              </button>
+
+              <h3 className="text-lg font-semibold mb-4 pr-8">
+                {previewFile.originalName}
+              </h3>
+
+              {previewFile.mimetype.startsWith("image/") ? (
+                <img
+                  src={previewFile.url || "/placeholder.svg"}
+                  alt={previewFile.originalName}
+                  className="w-full max-h-[70vh] object-contain rounded-md"
+                />
+              ) : previewFile.mimetype === "application/pdf" ? (
+                <iframe
+                  src={previewFile.url}
+                  className="w-full h-[70vh] rounded-md"
+                  title="PDF Preview"
+                />
+              ) : (
+                <div className="bg-slate-50 p-8 rounded-md text-center">
+                  <FileText className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 mb-4">
+                    Preview not supported for this file type.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <a
+                  href={previewFile.url}
+                  download={previewFile.originalName}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" /> Download
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Confirmation Dialog */}
-      {confirmDialog && (
-        <ConfirmationModal
-          message={confirmDialog.message}
-          onConfirm={confirmDialog.onConfirm}
-          onCancel={confirmDialog.onCancel}
-          isLoading={isFinalizing}
-        />
-      )}
-    </div>
+      {
+        confirmDialog && (
+          <ConfirmationModal
+            message={confirmDialog.message}
+            onConfirm={confirmDialog.onConfirm}
+            onCancel={confirmDialog.onCancel}
+            isLoading={isFinalizing}
+          />
+        )
+      }
+    </div >
   );
 };
 

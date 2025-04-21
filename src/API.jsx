@@ -24,6 +24,7 @@ const API = {
   LIVE_BIDING_TENDERS: `${serverUrl}/tenders/assigned`,
   GET_QUOTATION_SLIDESHOW: `${serverUrl}/quotation/my-tender-quotes`,
   GET_MY_POSITION: `${serverUrl}/tenders/my-position`,
+  REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
 
 
   SUBMIT_QUOTATION: `${serverUrl}/quotation/submit`,
