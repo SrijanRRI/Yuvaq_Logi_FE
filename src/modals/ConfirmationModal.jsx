@@ -11,7 +11,7 @@ export const ConfirmationModal = ({ message, onConfirm, onCancel, isLoading = fa
             <AlertCircle className="w-6 h-6 text-indigo-600" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800">Confirm Action</h3>
-          <button 
+          <button
             onClick={onCancel}
             className="ml-auto p-1 hover:bg-slate-100 rounded-full transition-colors"
           >
@@ -20,8 +20,12 @@ export const ConfirmationModal = ({ message, onConfirm, onCancel, isLoading = fa
         </div>
 
         {/* Message */}
-        <div className="mb-6">
-          <p className="text-slate-600 leading-relaxed">{message}</p>
+        <div className="mb-6 text-slate-600 leading-relaxed">
+          {typeof message === "string" ? (
+            <p>{message}</p>
+          ) : (
+            message
+          )}
         </div>
 
         {/* Actions */}
@@ -32,7 +36,7 @@ export const ConfirmationModal = ({ message, onConfirm, onCancel, isLoading = fa
           >
             Cancel
           </button>
-          
+
           <button
             onClick={onConfirm}
             disabled={isLoading}
