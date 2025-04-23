@@ -1,14 +1,34 @@
-import React from "react";
+import React, { useState } from "react";
 import { FileText, Package, MapPin, Calendar, Clock, Truck, DollarSign, CheckCircle, AlertCircle, ChevronDown, ChevronUp, User, Clipboard, Tag, FileCheck } from 'lucide-react';
 
+const groupQuotationsByUser = (quotations = []) => {
+  const grouped = {};
+  quotations.forEach((q) => {
+    const userId = q.transportUser?._id || "unknown";
+    if (!grouped[userId]) {
+      grouped[userId] = {
+        user: q.transportUser,
+        quotes: [],
+      };
+    }
+    grouped[userId].quotes.push(q);
+  });
+  return grouped;
+};
+
 const AdminAllTenders = ({ tenders = [] }) => {
-  const [expandedTenders, setExpandedTenders] = React.useState({});
+  const [expandedTenders, setExpandedTenders] = useState({});
+  const [openQuoteDropdowns, setOpenQuoteDropdowns] = useState({});
 
   const toggleExpand = (id) => {
     setExpandedTenders(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
+  };
+
+  const toggleQuoteDropdown = (userId) => {
+    setOpenQuoteDropdowns((prev) => ({ ...prev, [userId]: !prev[userId] }));
   };
 
   return (
@@ -204,68 +224,96 @@ const AdminAllTenders = ({ tenders = [] }) => {
                       </div>
 
                       {tender.quotations && tender.quotations.length > 0 ? (
-                        <div className="space-y-3">
-                          {tender.quotations.slice()
-                            .sort((a, b) => a.price - b.price).map((quote, qIdx) => {
-                              const isSelected = quote._id === tender.selectedQuotation?._id;
-                              return (
+                        <div className="space-y-4">
+                          {Object.entries(groupQuotationsByUser(tender.quotations)).map(([userId, { user, quotes }]) => {
+                            const isOpen = openQuoteDropdowns[userId];
+                            const isSelectedAny = quotes.some(q => q._id === tender.selectedQuotation?._id);
+
+                            return (
+                              <div
+                                key={userId}
+                                className={`rounded-lg border ${isSelectedAny ? "border-green-300 bg-green-50" : "border-gray-200 bg-white"}`}
+                              >
                                 <div
-                                  key={qIdx}
-                                  className={`p-4 rounded-lg border ${isSelected
-                                    ? "bg-green-50 border-green-200"
-                                    : "bg-white border-gray-200"
-                                    }`}
+                                  className="flex justify-between items-center p-4 cursor-pointer"
+                                  onClick={() => toggleQuoteDropdown(userId)}
                                 >
-                                  <div className="flex flex-wrap justify-between items-start gap-4">
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <Truck className={`h-4 w-4 ${isSelected ? "text-green-600" : "text-gray-600"}`} />
-                                        <span className="font-medium">
-                                          {quote.transportUser?.name || "Unknown Transporter"}
-                                        </span>
-                                        {isSelected && (
-                                          <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                            Selected
-                                          </span>
-                                        )}
-                                      </div>
-                                      <p className="text-sm text-gray-500">{quote.transportUser?.email || "No email"}</p>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-4 text-sm">
-                                      <div className={`px-3 py-1 rounded-full ${isSelected ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                                        }`}>
-                                        <span className="font-medium">₹{quote.price || 0}</span>
-                                      </div>
-
-                                      <div className="flex items-center gap-1 text-gray-600">
-                                        <Clock className="h-3 w-3" />
-                                        <span>{new Date(quote.createdAt).toLocaleString()}</span>
-                                      </div>
-
-                                      {quote.vehicleNumber && (
-                                        <div className="flex items-center gap-1 text-gray-600">
-                                          <Truck className="h-3 w-3" />
-                                          <span>{quote.vehicleNumber}</span>
-                                        </div>
-                                      )}
-                                    </div>
+                                  <div className="flex items-center gap-2">
+                                    <Truck className="h-4 w-4 text-gray-600" />
+                                    <span className="font-medium">{user?.name || "Unknown Transporter"}</span>
+                                    {isSelectedAny && (
+                                      <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>
+                                    )}
                                   </div>
-
-                                  {isSelected && tender.finalPrice && (
-                                    <div className="mt-3 pt-3 border-t border-green-200 flex items-center justify-between">
-                                      <div className="flex items-center gap-2 text-green-700">
-                                        <CheckCircle className="h-4 w-4" />
-                                        <span className="font-medium">Finalized Quotation</span>
-                                      </div>
-                                      <div className="font-bold text-green-700">
-                                        Final Price: ₹{tender.finalPrice}
-                                      </div>
-                                    </div>
+                                  {isOpen ? (
+                                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-gray-500" />
                                   )}
                                 </div>
-                              );
-                            })}
+
+                                {isOpen && (
+                                  <div className="space-y-3 px-4 pb-4">
+                                    {quotes
+                                      .slice()
+                                      .sort((a, b) => a.price - b.price)
+                                      .map((quote, qIdx) => {
+                                        const isSelected = quote._id === tender.selectedQuotation?._id;
+                                        return (
+                                          <div
+                                            key={qIdx}
+                                            className={`p-3 rounded-lg border ${isSelected ? "border-green-200 bg-green-100" : "border-gray-200 bg-white"}`}
+                                          >
+                                            <div className="flex flex-wrap justify-between items-start gap-4">
+                                              <div>
+                                                <p className="text-sm text-gray-500">
+                                                  {quote.transportUser?.email || "No email"}
+                                                </p>
+                                              </div>
+
+                                              <div className="flex flex-wrap gap-4 text-sm">
+                                                <div
+                                                  className={`px-3 py-1 rounded-full ${isSelected
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-gray-100 text-gray-700"
+                                                    }`}
+                                                >
+                                                  ₹{quote.price || 0}
+                                                </div>
+
+                                                <div className="flex items-center gap-1 text-gray-600">
+                                                  <Clock className="h-3 w-3" />
+                                                  <span>{new Date(quote.createdAt).toLocaleString()}</span>
+                                                </div>
+
+                                                {quote.vehicleNumber && (
+                                                  <div className="flex items-center gap-1 text-gray-600">
+                                                    <Truck className="h-3 w-3" />
+                                                    <span>{quote.vehicleNumber}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {isSelected && tender.finalPrice !== undefined && tender.finalPrice !== null && (
+                                              <div className="mt-3 pt-3 border-t border-green-200 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-green-700">
+                                                  <CheckCircle className="h-4 w-4" />
+                                                  <span className="font-medium">Finalized Quotation</span>
+                                                </div>
+                                                <div className="font-bold text-green-700">
+                                                  At Price: ₹{quote.price}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="bg-white p-6 rounded-lg border border-gray-200 text-center">

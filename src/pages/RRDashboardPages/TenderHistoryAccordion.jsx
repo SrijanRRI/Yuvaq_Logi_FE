@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { Clock, Package, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Clock } from "lucide-react";
 import API from "../../API";
 import TenderSearchFilter from "./TenderSearchFilter";
 
@@ -24,7 +24,6 @@ const TenderHistoryAccordion = ({
   const [allResponses, setAllResponses] = useState({});
   const [previewFile, setPreviewFile] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
-  const [reopenedTenders, setReopenedTenders] = useState({});
 
   const [fetchedResponseIds, setFetchedResponseIds] = useState(new Set());
   const [responseErrors, setResponseErrors] = useState({});
@@ -107,21 +106,25 @@ const TenderHistoryAccordion = ({
               return;
             }
             try {
-              await axios.post(`${API.REOPEN_QUOTATION}/${tenderId}`, { reason }, { withCredentials: true });
+              const api = await axios.post(`${API.REOPEN_QUOTATION}/${tenderId}`, { reason }, { withCredentials: true });
+              // console.log("reopen quotation" , api.data);
               toast.success("Quotation reopened successfully");
-              setReopenedTenders((prev) => {
-                const updated = { ...prev };
-                if (!updated[tenderId]) updated[tenderId] = [];
-                updated[tenderId].push(confirmedIdxMap[tenderId]);
-                return updated;
-              });
+
               setConfirmedIdxMap((prev) => {
                 const copy = { ...prev };
                 delete copy[tenderId];
                 return copy;
               });
+
               setPriceInput("");
               if (fetchTenderHistory) await fetchTenderHistory();
+
+              setFetchedResponseIds((prev) => {
+                const updated = new Set(prev);
+                updated.delete(tenderId);
+                return updated;
+              });
+
             } catch {
               toast.error("Failed to reopen quotation");
             } finally {
@@ -219,7 +222,6 @@ const TenderHistoryAccordion = ({
                   tender={tender}
                   selectedQuotationId={selectedQuotationId}
                   confirmedIdxMap={confirmedIdxMap}
-                  reopenedTenders={reopenedTenders}
                   editingId={editingId}
                   priceInput={priceInput}
                   setEditingId={setEditingId}
