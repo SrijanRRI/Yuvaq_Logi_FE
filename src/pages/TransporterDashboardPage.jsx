@@ -64,7 +64,7 @@ const TransporterDashboardPage = () => {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
       })
-      console.log("Fetch history", res.data.data)
+      // console.log("Fetch history of the Transporter : ", res.data.data)
       setTenders(res.data.data || [])
     } catch (err) {
       console.error("Error fetching history:", err)

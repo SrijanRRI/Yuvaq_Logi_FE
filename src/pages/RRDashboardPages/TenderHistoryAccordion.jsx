@@ -65,7 +65,7 @@ const TenderHistoryAccordion = ({
           "Could not load transporter responses.";
 
         setResponseErrors((prev) => ({ ...prev, [tenderId]: errorMessage }));
-        toast.error(`Transporter response error: ${errorMessage}`);
+        // toast.error(`Transporter response error: ${errorMessage}`);
       });
   };
 
