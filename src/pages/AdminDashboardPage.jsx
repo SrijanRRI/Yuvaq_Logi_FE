@@ -348,7 +348,7 @@ const AdminDashboardPage = () => {
                                             : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
                                             }`}
                                     >
-                                        All Users
+                                        RRI Users
                                     </button>
                                     <button
                                         onClick={() => setUserFilter("transportUser")}
@@ -364,7 +364,7 @@ const AdminDashboardPage = () => {
 
                             <AdminAllUsers
                                 users={allUsers.filter((user) => user.role === userFilter)}
-                                title={userFilter === "user" ? "All Users" : "All Transport Users"}
+                                title={userFilter === "user" ? "All RRI Users" : "All Transport Users"}
                             />
                         </div>
                     )}

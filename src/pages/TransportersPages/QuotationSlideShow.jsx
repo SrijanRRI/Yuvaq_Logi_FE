@@ -85,7 +85,7 @@ const QuotationSlideshow = ({ quotations }) => {
           {isLowestPrice && (
             <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 rounded-bl-lg flex items-center gap-1 shadow-sm">
               <Award className="w-4 h-4" />
-              <span className="text-xs font-medium">Best Price</span>
+              <span className="text-xs font-medium">Lowest Price</span>
             </div>
           )}
 
