@@ -131,12 +131,50 @@ const RRDashboardPage = () => {
     e.preventDefault()
     setLoading(true)
 
-    if (form.materials.length > 0) {
-      if (!form.weight || !form.quantity) {
-        toast.warning("Please enter total weight and quantity.")
-        setLoading(false)
-        return
-      }
+    const { from, to } = form.deliveryWindow;
+    const { closingDate, biddingStart, biddingEnd } = form;
+
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    const closing = new Date(closingDate);
+    const bidStart = new Date(biddingStart);
+    const bidEnd = new Date(biddingEnd);
+
+    // --- VALIDATION START ---
+    if (fromDate > toDate) {
+      toast.error("Delivery 'From' date must be before 'To' date.");
+      setLoading(false);
+      return;
+    }
+
+    if (closing < fromDate || closing > toDate) {
+      toast.error("Closing Date must be within the Delivery Window.");
+      setLoading(false);
+      return;
+    }
+
+    if (bidStart < fromDate || bidStart > toDate) {
+      toast.error("Bidding Start must be within the Delivery Window.");
+      setLoading(false);
+      return;
+    }
+
+    if (bidEnd < fromDate || bidEnd > toDate) {
+      toast.error("Bidding End must be within the Delivery Window.");
+      setLoading(false);
+      return;
+    }
+
+    if (bidStart > bidEnd) {
+      toast.error("Bidding Start cannot be after Bidding End.");
+      setLoading(false);
+      return;
+    }
+
+    if (form.materials.length > 0 && (!form.weight || !form.quantity)) {
+      toast.warning("Please enter total weight and quantity.");
+      setLoading(false);
+      return;
     }
 
     const payload = {
@@ -215,7 +253,7 @@ const RRDashboardPage = () => {
       navigate("/signin")
     }
   }
-  
+
 
   const navbarActions = (
     <button
