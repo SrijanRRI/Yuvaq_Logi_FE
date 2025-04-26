@@ -118,7 +118,7 @@ const TransporterResponseItem = ({
               placeholder="Final Price"
             />
             <button
-              onClick={() => onConfirmFinal(tenderId, idx)}
+              onClick={() => onConfirmFinal(tenderId, idx, Number(priceInput))}
               className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
             >
               Confirm
@@ -130,7 +130,7 @@ const TransporterResponseItem = ({
             <button
               onClick={() => {
                 setPriceInput(response.price);
-                onConfirmFinal(tenderId, idx);
+                onConfirmFinal(tenderId, idx, response.price)
               }}
               className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
             >
