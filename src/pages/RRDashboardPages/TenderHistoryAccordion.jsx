@@ -68,18 +68,50 @@ const TenderHistoryAccordion = ({
       });
   };
 
-  const handleDone = async (tenderId, idx) => {
+  // const handleDone = async (tenderId, idx) => {
+  //   setConfirmDialog({
+  //     message: "Are you sure you want to finalize this quotation?",
+  //     onConfirm: async () => {
+  //       setIsFinalizing(true);
+  //       const sorted = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price);
+  //       const quotation = sorted[idx];
+  //       const finalPrice = priceInput;
+  //       try {
+  //         await axios.put(
+  //           `${API.FINALIZE_TENDER}/${tenderId}`,
+  //           { quotationId: quotation._id, finalPrice: Number(finalPrice) },
+  //           { withCredentials: true }
+  //         );
+  //         setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }));
+  //         toast.success("Tender finalized successfully");
+  //         if (fetchTenderHistory) await fetchTenderHistory();
+  //       } catch (err) {
+  //         toast.error("Finalization failed");
+  //       } finally {
+  //         setConfirmDialog(null);
+  //         setIsFinalizing(false);
+  //       }
+  //     },
+  //     onCancel: () => setConfirmDialog(null),
+  //   });
+  // };
+  const handleDone = async (tenderId, idx, directPrice = null) => {
+    const responses = allResponses[tenderId] || [];
+    const sorted = responses.slice().sort((a, b) => a.price - b.price);
+    const quotation = sorted[idx];
+  
+    const finalPrice = directPrice !== null
+      ? directPrice
+      : priceInput.trim() !== "" ? Number(priceInput) : quotation.price;
+  
     setConfirmDialog({
-      message: "Are you sure you want to finalize this quotation?",
+      message: `Are you sure you want to finalize this quotation at price ₹${finalPrice}?`,
       onConfirm: async () => {
         setIsFinalizing(true);
-        const sorted = (allResponses[tenderId] || []).slice().sort((a, b) => a.price - b.price);
-        const quotation = sorted[idx];
-        const finalPrice = priceInput;
         try {
           await axios.put(
             `${API.FINALIZE_TENDER}/${tenderId}`,
-            { quotationId: quotation._id, finalPrice: Number(finalPrice) },
+            { quotationId: quotation._id, finalPrice },
             { withCredentials: true }
           );
           setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }));
@@ -90,12 +122,13 @@ const TenderHistoryAccordion = ({
         } finally {
           setConfirmDialog(null);
           setIsFinalizing(false);
+          setPriceInput(""); // Clear input after done
         }
       },
       onCancel: () => setConfirmDialog(null),
     });
   };
-
+  
   const handleReopen = (tenderId) => {
     setConfirmDialog({
       message: (
