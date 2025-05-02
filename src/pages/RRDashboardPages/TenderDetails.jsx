@@ -1,6 +1,14 @@
 import { Briefcase, Users } from "lucide-react";
 
-const formatDate = (date) => new Date(date).toLocaleDateString();
+const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+
+const formatDateWithTime = (dateStr) => {
+  const date = new Date(dateStr);
+  const datePart = date.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  const timePart = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+  return `${datePart}, ${timePart}`;
+};
+
 
 const TenderDetails = ({ tender, getTransporterName }) => {
   return (
@@ -23,7 +31,22 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </div>
         )}
 
-        <div><h4 className="text-sm font-medium text-slate-500 mb-1">Delivery Window</h4><p className="font-medium text-slate-800">{tender.deliveryWindow?.from && tender.deliveryWindow?.to ? `${formatDate(tender.deliveryWindow.from)} to ${formatDate(tender.deliveryWindow.to)}` : "Not specified"}</p></div>
+        <div>
+          <h4 className="text-sm font-medium text-slate-500 mb-1">Delivery Window</h4>
+          <p className="font-medium text-slate-800">
+            {tender.deliveryWindow?.from && tender.deliveryWindow?.to ? `${formatDate(tender.deliveryWindow.from)} to ${formatDate(tender.deliveryWindow.to)}` : "Not specified"}
+          </p>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-medium text-slate-500 mb-1">Bidding Window</h4>
+          <p className="font-medium text-slate-800">
+            {tender.biddingStart && tender.biddingEnd
+              ? `${formatDateWithTime(tender.biddingStart)} to ${formatDateWithTime(tender.biddingEnd)}`
+              : "Not specified"}
+          </p>
+        </div>
+
         <div><h4 className="text-sm font-medium text-slate-500 mb-1">Closing Date</h4><p className="font-medium text-slate-800">{formatDate(tender.closeDate)}</p></div>
         <div><h4 className="text-sm font-medium text-slate-500 mb-1">Location</h4><p className="text-slate-800">{tender.dispatchLocation}, {tender.address}, {tender.pincode}</p></div>
 
