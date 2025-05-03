@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+// import { useState, useEffect } from "react";
 import { Calendar, MapPin, Package, Clock, AlertCircle, Timer } from "lucide-react";
+import CountdownTimer from "../../components/CountdownTimer";
 
 const UpcomingTenders = ({ tenders }) => {
-  // State to store countdown timers
-  const [countdowns, setCountdowns] = useState({});
 
   // Format date to readable format
   const formatDate = (dateStr) =>
@@ -26,25 +25,6 @@ const UpcomingTenders = ({ tenders }) => {
         minute: "2-digit",
       })
       : "N/A";
-
-  // Format milliseconds to hours, minutes, seconds
-  const formatMillis = (ms) => {
-    if (ms <= 0) return "Bidding Open";
-
-    const totalSeconds = Math.floor(ms / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    const hrs = Math.floor((totalSeconds % 86400) / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    let result = "";
-    if (days > 0) result += `${days}d `;
-    if (hrs > 0 || days > 0) result += `${hrs}h `;
-    if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
-    result += `${secs}s`;
-
-    return result;
-  };
 
   // Get tender status based on dates
   const getTenderStatus = (tender) => {
@@ -85,35 +65,11 @@ const UpcomingTenders = ({ tenders }) => {
     }
   };
 
-  // Update countdowns every second
-  useEffect(() => {
-    // Initialize countdowns
-    const initialCountdowns = {};
-    tenders.forEach((tender) => {
-      initialCountdowns[tender._id] = tender.biddingOpensIn;
-    });
-    setCountdowns(initialCountdowns);
-
-    // Set interval to update countdowns
-    const interval = setInterval(() => {
-      setCountdowns((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((id) => {
-          updated[id] = Math.max(0, updated[id] - 1000);
-        });
-        return updated;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [tenders]);
-
   return (
     <div className="grid gap-6">
       {tenders.map((tender, idx) => {
         const status = getTenderStatus(tender);
         const statusColor = getStatusColor(status);
-        const countdownValue = countdowns[tender._id];
 
         return (
           <div
@@ -144,7 +100,9 @@ const UpcomingTenders = ({ tenders }) => {
                     <Timer className="w-5 h-5" />
                     <span>Bidding Opens In</span>
                   </div>
-                  <div className="text-2xl font-bold text-blue-800 tabular-nums">{formatMillis(countdownValue)}</div>
+                  <div className="text-2xl font-bold text-blue-800 tabular-nums">
+                    <CountdownTimer endTime={tender.biddingStart} />
+                  </div>
                 </div>
               )}
 
@@ -206,7 +164,7 @@ const UpcomingTenders = ({ tenders }) => {
                   <div>
                     <div className="text-slate-500 mb-1">Location</div>
                     <div className="font-medium text-slate-800">
-                      {tender.dispatchLocation || "No location specified"}
+                      {tender.dispatchLocation || "No location specified"} , {tender.pincode}
                     </div>
                   </div>
                 </div>
