@@ -1,7 +1,18 @@
-let serverUrl = "http://localhost:5000";
-// let serverUrl = "http://192.168.13.78:5000"
-// let serverUrl = "https://tenderappbe.onrender.com"
-// let serverUrl = "https://logiyatrabe.rrispat.in"
+// let serverUrl = "http://localhost:5000";
+// // let serverUrl = "http://192.168.13.78:5000"
+// // let serverUrl = "https://tenderappbe.onrender.com"
+// // let serverUrl = "https://logiyatrabe.rrispat.in"
+
+
+// // Default API URLs --- while Deploying : 
+// const DOMAIN_URL = "https://logiyatrabe.rrispat.in";
+// const IP_URL = "http://192.168.13.60:8000";
+
+// Default API URLs --- for local use: 
+const DOMAIN_URL = "http://localhost:5000";
+const IP_URL = "http://192.168.13.78:5000";
+
+export let serverUrl = localStorage.getItem("serverUrl") === "IP" ? IP_URL : DOMAIN_URL;
 
 const API = {
   // for authentication :
@@ -41,5 +52,29 @@ const API = {
 
   CHECK_ME : `${serverUrl}/api/auth/me`,
 };
+
+export const switchServerUrl = (mode) => {
+  localStorage.setItem("serverUrl", mode);
+
+  const path = window.location.pathname + window.location.search;
+
+  //  // Define your frontend URLs explicitly --- Deployment:
+  //  const frontendDomain = "https://logiyatra.rrispat.in";
+  //  const frontendIP = "http://192.168.13.60";
+
+ // Frontend URLs
+  const frontendDomain = "http://localhost:5173";
+  const frontendIP = "http://192.168.13.77:5173";
+
+  // Select frontend URL based on mode
+  const frontendUrl = mode === "DOMAIN" ? frontendDomain : frontendIP;
+
+  // Add slight delay to ensure localStorage is set
+  setTimeout(() => {
+    console.log("Redirecting to:", `${frontendUrl}${path}`);
+    window.location.href = `${frontendUrl}${path}`;
+  }, 100);
+};
+
 
 export default API;

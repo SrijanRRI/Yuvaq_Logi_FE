@@ -39,7 +39,7 @@ function App() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<SignUpPage />} />
+      <Route path="/" element={<SignInPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/signin" element={<SignInPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
