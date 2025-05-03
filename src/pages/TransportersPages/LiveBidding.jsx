@@ -17,11 +17,11 @@ import axios from "axios"
 import API from "../../API"
 import QuotationSlideshow from "./QuotationSlideShow"
 import GetMyPosition from "./GetMyPositon"
+import CountdownTimer from "../../components/CountdownTimer"
 
 const LiveBidding = () => {
   const [tenders, setTenders] = useState([])
   const [selectedTender, setSelectedTender] = useState(null)
-  const [countdowns, setCountdowns] = useState({})
   const [slideshowData, setSlideshowData] = useState({})
   const [expandedMaterials, setExpandedMaterials] = useState({})
 
@@ -33,14 +33,6 @@ const LiveBidding = () => {
       })
       const fetchedTenders = res.data?.data || []
       setTenders(fetchedTenders)
-
-      const now = new Date().getTime()
-      const newCountdowns = {}
-      fetchedTenders.forEach((tender) => {
-        const end = new Date(tender.biddingEnd).getTime()
-        newCountdowns[tender._id] = Math.max(0, end - now)
-      })
-      setCountdowns(newCountdowns)
 
       for (const tender of fetchedTenders) {
         const quotesRes = await axios.get(`${API.GET_QUOTATION_SLIDESHOW}/${tender._id}`, {
@@ -54,19 +46,7 @@ const LiveBidding = () => {
   }
 
   useEffect(() => {
-    fetchLiveBidingTenders()
-
-    const interval = setInterval(() => {
-      setCountdowns((prev) => {
-        const updated = { ...prev }
-        Object.keys(updated).forEach((id) => {
-          updated[id] = Math.max(0, updated[id] - 1000)
-        })
-        return updated
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
+    fetchLiveBidingTenders();
   }, [])
 
   const toggleMaterials = (tenderId) => {
@@ -79,31 +59,22 @@ const LiveBidding = () => {
   const formatDate = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A"
 
   const formatDateTime = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
       : "N/A"
-
-  const formatMillis = (ms) => {
-    if (ms <= 0) return "Bidding Closed"
-    const totalSeconds = Math.floor(ms / 1000)
-    const hrs = Math.floor((totalSeconds % 86400) / 3600)
-    const mins = Math.floor((totalSeconds % 3600) / 60)
-    const secs = totalSeconds % 60
-    return `${hrs}h ${mins}m ${secs}s`
-  }
 
   return (
     <div className="grid gap-8">
@@ -120,9 +91,11 @@ const LiveBidding = () => {
       ) : (
         tenders.map((tender, idx) => {
           const hasQuotations = slideshowData[tender._id]?.length > 0
-          const timeLeft = countdowns[tender._id] || 0
-          const isExpired = timeLeft <= 0
           const isMaterialsExpanded = expandedMaterials[tender._id] || false
+
+          const biddingEndTime = new Date(tender.biddingEnd).getTime();
+          const now = Date.now();
+          const isExpired = now >= biddingEndTime;
 
           return (
             <div
@@ -153,8 +126,9 @@ const LiveBidding = () => {
                     <p className={`text-sm font-medium ${isExpired ? "text-red-700" : "text-blue-700"}`}>
                       {isExpired ? "Bidding Ended" : "Bidding Ends In"}
                     </p>
+
                     <p className={`text-xl font-bold ${isExpired ? "text-red-800" : "text-blue-800"}`}>
-                      {formatMillis(timeLeft)}
+                      <CountdownTimer endTime={tender.biddingEnd} labelWhenDone="Bidding Closed" />
                     </p>
                   </div>
                 </div>
@@ -171,7 +145,7 @@ const LiveBidding = () => {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Location</p>
-                      <p className="font-medium text-slate-800">{tender.dispatchLocation || "No location"}</p>
+                      <p className="font-medium text-slate-800">{tender.dispatchLocation || "No location"} , {tender.pincode} </p>
                     </div>
                   </div>
 
