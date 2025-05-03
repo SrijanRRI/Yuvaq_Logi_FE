@@ -1,15 +1,6 @@
-import {
-  Calendar,
-  MapPin,
-  Package,
-  FileText,
-  Truck,
-  Users,
-  Plus,
-  Trash2,
-  Send,
-  Briefcase,
-} from "lucide-react";
+"use client"
+
+import { Calendar, MapPin, Package, FileText, Truck, Users, Plus, Trash2, Send, Briefcase } from "lucide-react"
 
 const TenderForm = ({
   form,
@@ -23,10 +14,7 @@ const TenderForm = ({
   loading,
 }) => {
   return (
-    <form
-      onSubmit={handleSend}
-      className="bg-white rounded-xl shadow-lg border border-slate-200 p-6"
-    >
+    <form onSubmit={handleSend} className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
       <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
         <Package className="h-6 w-6 text-emerald-600" />
         Create New Tender
@@ -41,9 +29,7 @@ const TenderForm = ({
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                From
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">From</label>
               <input
                 type="date"
                 name="deliveryStart"
@@ -62,9 +48,7 @@ const TenderForm = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                To
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">To</label>
               <input
                 type="date"
                 name="deliveryEnd"
@@ -91,9 +75,7 @@ const TenderForm = ({
             Closing Date
           </h2>
           <div className="mt-4">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Tender Closing Date
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tender Closing Date</label>
             <input
               type="date"
               name="closingDate"
@@ -105,32 +87,36 @@ const TenderForm = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Bidding Start
-            </label>
-            <input
-              type="datetime-local"
-              name="biddingStart"
-              value={form.biddingStart || ""}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Bidding End
-            </label>
-            <input
-              type="datetime-local"
-              name="biddingEnd"
-              value={form.biddingEnd || ""}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              required
-            />
+        <div className="md:col-span-2">
+          <div className="w-full md:col-span-2">
+            <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2 mb-4">
+              <Calendar className="h-5 w-5 text-emerald-600" />
+              Bidding Time
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Bidding Start</label>
+                <input
+                  type="datetime-local"
+                  name="biddingStart"
+                  value={form.biddingStart || ""}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Bidding End</label>
+                <input
+                  type="datetime-local"
+                  name="biddingEnd"
+                  value={form.biddingEnd || ""}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base"
+                  required
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -143,9 +129,7 @@ const TenderForm = ({
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Project Name
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
             <input
               type="text"
               name="projectName"
@@ -157,9 +141,7 @@ const TenderForm = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Project Code
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Project Code</label>
             <input
               type="text"
               name="projectCode"
@@ -171,9 +153,7 @@ const TenderForm = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Purchase Order
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Purchase Order</label>
             <input
               type="text"
               name="purchaseOrder"
@@ -185,9 +165,7 @@ const TenderForm = ({
             />
           </div>
           <div className="md:col-span-3">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Project Remark
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Project Remark</label>
             <textarea
               name="projectRemark"
               value={form.projectRemark || ""}
@@ -207,9 +185,7 @@ const TenderForm = ({
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Location
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
             <input
               type="text"
               name="dispatchLocation"
@@ -221,9 +197,7 @@ const TenderForm = ({
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Address
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
             <textarea
               name="address"
               value={form.address}
@@ -234,9 +208,7 @@ const TenderForm = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Pincode
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
             <input
               type="number"
               name="pincode"
@@ -272,15 +244,11 @@ const TenderForm = ({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-slate-100 text-slate-600">
-                    <th className="px-4 py-2 text-left rounded-l-md">
-                      Material
-                    </th>
+                    <th className="px-4 py-2 text-left rounded-l-md">Material</th>
                     <th className="px-4 py-2 text-left">Sub Item</th>
                     <th className="px-4 py-2 text-right">Weight (Kg)</th>
                     <th className="px-4 py-2 text-right">Quantity</th>
-                    <th className="px-4 py-2 text-center rounded-r-md">
-                      Action
-                    </th>
+                    <th className="px-4 py-2 text-center rounded-r-md">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -293,12 +261,8 @@ const TenderForm = ({
                     >
                       <td className="px-4 py-2 font-medium">{material.item}</td>
                       <td className="px-4 py-2">{material.subItem || "-"}</td>
-                      <td className="px-4 py-2 text-right">
-                        {material.weight}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        {material.quantity}
-                      </td>
+                      <td className="px-4 py-2 text-right">{material.weight}</td>
+                      <td className="px-4 py-2 text-right">{material.quantity}</td>
                       <td className="px-4 py-2 text-center">
                         <button
                           type="button"
@@ -316,9 +280,7 @@ const TenderForm = ({
 
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Total Weight (Kg)
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Weight (Kg)</label>
                 <input
                   type="number"
                   name="weight"
@@ -330,9 +292,7 @@ const TenderForm = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Total Quantity
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Quantity</label>
                 <input
                   type="number"
                   name="quantity"
@@ -435,19 +395,8 @@ const TenderForm = ({
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                ></path>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
               Sending...
             </>
@@ -459,7 +408,7 @@ const TenderForm = ({
         </button>
       </div>
     </form>
-  );
-};
+  )
+}
 
-export default TenderForm;
+export default TenderForm

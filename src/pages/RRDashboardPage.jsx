@@ -60,7 +60,7 @@ const RRDashboardPage = () => {
       })
       const data = response.data?.data || []
 
-      // console.log("Tender's responses : ", response.data)
+      // console.log("Tender's responses histories : ", response.data)
       setTenderHistories(data)
     } catch (err) {
       console.error("Failed to fetch tender history", err)
