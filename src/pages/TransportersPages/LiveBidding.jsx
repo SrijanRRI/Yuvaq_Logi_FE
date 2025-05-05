@@ -190,7 +190,7 @@ const LiveBidding = () => {
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Shipment Details</p>
                       <p className="font-medium text-slate-800">
-                        {tender.totalWeight} kg | {tender.totalQuantity} pcs
+                        {tender.totalWeight} MT | {tender.totalQuantity} pcs
                       </p>
                     </div>
                   </div>
@@ -225,7 +225,7 @@ const LiveBidding = () => {
                           <h4 className="font-semibold text-slate-800">Materials</h4>
                           <p className="text-xs text-slate-500">
                             {tender.materials.length} {tender.materials.length === 1 ? "item" : "items"} |{" "}
-                            {tender.totalWeight} kg Total Weight | {" "} {tender.totalQuantity} pcs Total Quantity
+                            {tender.totalWeight} MT Total Weight | {" "} {tender.totalQuantity} pcs Total Quantity
                           </p>
                         </div>
                       </div>
@@ -252,7 +252,7 @@ const LiveBidding = () => {
                             <tr className="bg-gradient-to-r from-slate-50 to-slate-100">
                               <th className="px-4 py-3 text-left font-medium text-slate-700">Material</th>
                               <th className="px-4 py-3 text-left font-medium text-slate-700">Sub Material</th>
-                              <th className="px-4 py-3 text-right font-medium text-slate-700">Weight (kg)</th>
+                              <th className="px-4 py-3 text-right font-medium text-slate-700">Weight (MT)</th>
                               <th className="px-4 py-3 text-right font-medium text-slate-700">Quantity</th>
                             </tr>
                           </thead>
@@ -274,7 +274,7 @@ const LiveBidding = () => {
                               <td colSpan="2" className="px-4 py-2 text-right font-medium text-slate-700">
                                 Total:
                               </td>
-                              <td className="px-4 py-2 text-right font-bold text-slate-800">{tender.totalWeight} kg</td>
+                              <td className="px-4 py-2 text-right font-bold text-slate-800">{tender.totalWeight} MT</td>
                               <td className="px-4 py-2 text-right font-bold text-slate-800">
                                 {tender.totalQuantity} pcs
                               </td>
@@ -301,7 +301,7 @@ const LiveBidding = () => {
                               </div>
                               <div>
                                 <p className="text-xs text-slate-500">Weight</p>
-                                <p className="text-slate-700 font-medium">{m.weight || "-"} kg</p>
+                                <p className="text-slate-700 font-medium">{m.weight || "-"} MT</p>
                               </div>
                             </div>
                           </div>
@@ -310,7 +310,7 @@ const LiveBidding = () => {
                         <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 p-3 flex justify-between items-center">
                           <span className="font-medium text-slate-700">Total:</span>
                           <div className="flex gap-4">
-                            <span className="text-slate-800 font-bold">{tender.totalWeight} kg</span>
+                            <span className="text-slate-800 font-bold">{tender.totalWeight} MT</span>
                             <span className="text-slate-800 font-bold">{tender.totalQuantity} pcs</span>
                           </div>
                         </div>

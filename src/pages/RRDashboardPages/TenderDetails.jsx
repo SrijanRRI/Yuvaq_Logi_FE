@@ -73,7 +73,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                     <tr key={idx} className="border-t border-slate-200">
                       <td className="px-2 py-1.5 font-medium">{mat.material}</td>
                       <td className="px-2 py-1.5">{mat.subMaterial || "-"}</td>
-                      <td className="px-2 py-1.5 text-right">{mat.weight} kg</td>
+                      <td className="px-2 py-1.5 text-right">{mat.weight} MT</td>
                       <td className="px-2 py-1.5 text-right">{mat.quantity} pcs</td>
                     </tr>
                   ))}

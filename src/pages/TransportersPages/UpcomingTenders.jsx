@@ -192,7 +192,7 @@ const UpcomingTenders = ({ tenders }) => {
                   <div>
                     <div className="text-slate-500 mb-1">Shipment Details</div>
                     <div className="font-medium text-slate-800">
-                      Total Weight: <span className="text-slate-700">{tender.totalWeight} kg</span> | Total Quantity:{" "}
+                      Total Weight: <span className="text-slate-700">{tender.totalWeight} MT</span> | Total Quantity:{" "}
                       <span className="text-slate-700">{tender.totalQuantity} pcs</span>
                     </div>
                   </div>
@@ -225,7 +225,7 @@ const UpcomingTenders = ({ tenders }) => {
                         <tr className="bg-slate-100">
                           <th className="px-4 py-3 text-left font-medium text-slate-700">Material</th>
                           <th className="px-4 py-3 text-left font-medium text-slate-700">Sub Material</th>
-                          <th className="px-4 py-3 text-right font-medium text-slate-700">Weight (kg)</th>
+                          <th className="px-4 py-3 text-right font-medium text-slate-700">Weight (MT)</th>
                           <th className="px-4 py-3 text-right font-medium text-slate-700">Quantity</th>
                         </tr>
                       </thead>
@@ -247,7 +247,7 @@ const UpcomingTenders = ({ tenders }) => {
                           <td colSpan="2" className="px-4 py-2 text-right font-medium text-slate-700">
                             Total:
                           </td>
-                          <td className="px-4 py-2 text-right font-bold text-slate-800">{tender.totalWeight} kg</td>
+                          <td className="px-4 py-2 text-right font-bold text-slate-800">{tender.totalWeight} MT</td>
                           <td className="px-4 py-2 text-right font-bold text-slate-800">{tender.totalQuantity} pcs</td>
                         </tr>
                       </tfoot>

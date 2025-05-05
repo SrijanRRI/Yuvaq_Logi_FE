@@ -246,7 +246,7 @@ const TenderForm = ({
                   <tr className="bg-slate-100 text-slate-600">
                     <th className="px-4 py-2 text-left rounded-l-md">Material</th>
                     <th className="px-4 py-2 text-left">Sub Item</th>
-                    <th className="px-4 py-2 text-right">Weight (Kg)</th>
+                    <th className="px-4 py-2 text-right">Weight (MT)</th>
                     <th className="px-4 py-2 text-right">Quantity</th>
                     <th className="px-4 py-2 text-center rounded-r-md">Action</th>
                   </tr>
@@ -280,7 +280,7 @@ const TenderForm = ({
 
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Total Weight (Kg)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Weight (MT)</label>
                 <input
                   type="number"
                   name="weight"
