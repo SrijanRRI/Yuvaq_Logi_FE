@@ -132,7 +132,7 @@ const HistoryView = ({ tenders }) => {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Shipment</p>
                       <p className="font-medium text-gray-800">
-                        {tender.totalWeight} kg | {tender.totalQuantity} pcs
+                        {tender.totalWeight} MT | {tender.totalQuantity} pcs
                       </p>
                     </div>
                   </div>
@@ -318,7 +318,7 @@ const HistoryView = ({ tenders }) => {
                               <tr className="bg-gray-50">
                                 <th className="px-4 py-3 text-left font-medium text-gray-700">Material</th>
                                 <th className="px-4 py-3 text-left font-medium text-gray-700">Sub Material</th>
-                                <th className="px-4 py-3 text-right font-medium text-gray-700">Weight (kg)</th>
+                                <th className="px-4 py-3 text-right font-medium text-gray-700">Weight (MT)</th>
                                 <th className="px-4 py-3 text-right font-medium text-gray-700">Quantity</th>
                               </tr>
                             </thead>
@@ -341,7 +341,7 @@ const HistoryView = ({ tenders }) => {
                                   Total:
                                 </td>
                                 <td className="px-4 py-2 text-right font-bold text-gray-800">
-                                  {tender.totalWeight} kg
+                                  {tender.totalWeight} MT
                                 </td>
                                 <td className="px-4 py-2 text-right font-bold text-gray-800">
                                   {tender.totalQuantity} pcs

@@ -28,7 +28,7 @@ const SignInPage = () => {
   const handleServerToggle = () => {
     const newMode = serverMode === "DOMAIN" ? "IP" : "DOMAIN";
 
-    console.log(newMode);
+    // console.log(newMode);
 
     setServerMode(newMode);
     switchServerUrl(newMode);
@@ -118,7 +118,7 @@ const SignInPage = () => {
               className="w-60 h-28 object-contain"
             />
           </div>
-          
+
           <p className="text-gray-500 mt-1">Sign in to your account</p>
         </div>
 

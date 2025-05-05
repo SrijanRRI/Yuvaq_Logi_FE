@@ -167,7 +167,7 @@ export const MaterialModal = ({ close, onAdd }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="weight" className="block text-sm font-medium text-slate-700">
-                Weight (kg)
+                Weight (MT)
               </label>
               <input
                 type="number"
