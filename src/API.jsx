@@ -76,5 +76,29 @@ export const switchServerUrl = (mode) => {
   }, 100);
 };
 
+// export const switchServerUrl = (mode) => {
+//   localStorage.setItem("serverUrl", mode);
+
+//   const path = window.location.pathname + window.location.search;
+
+//   // Frontend URLs
+//   const frontendDomain = "http://localhost:5173"; // or deployed: "https://logiyatra.rrispat.in"
+//   const frontendIP = "http://192.168.13.77:5173";
+
+//   const frontendUrl = mode === "DOMAIN" ? frontendDomain : frontendIP;
+
+//   // Refresh the page *only* if switching back to DOMAIN
+//   setTimeout(() => {
+//     const shouldRefresh = mode === "DOMAIN";
+//     const targetUrl = `${frontendUrl}${path}`;
+//     if (shouldRefresh) {
+//       window.location.href = targetUrl; // full reload
+//     } else {
+//       history.pushState(null, "", targetUrl); // soft switch
+//     }
+//   }, 100);
+// };
+
+
 
 export default API;

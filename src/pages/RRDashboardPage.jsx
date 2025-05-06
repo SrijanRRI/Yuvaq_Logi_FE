@@ -53,6 +53,8 @@ const RRDashboardPage = () => {
   const userInfo = useSelector((state) => state.User?.userInfo)
   const userName = userInfo?.name || "RR User"
 
+  const [formDisabled, setFormDisabled] = useState(false);
+
   const fetchTenderHistory = async () => {
     try {
       const response = await axios.get(API.FETCH_ALL_TENDER_CREATED_BY_RRUSER, {
@@ -130,6 +132,7 @@ const RRDashboardPage = () => {
   const handleSend = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setFormDisabled(true);
 
     const { from, to } = form.deliveryWindow;
     const { closingDate, biddingStart, biddingEnd } = form;
@@ -144,36 +147,42 @@ const RRDashboardPage = () => {
     if (fromDate > toDate) {
       toast.error("Delivery 'From' date must be before 'To' date.");
       setLoading(false);
+      setFormDisabled(false);
       return;
     }
 
     if (closing < fromDate || closing > toDate) {
       toast.error("Closing Date must be within the Delivery Window.");
       setLoading(false);
+      setFormDisabled(false);
       return;
     }
 
     if (bidStart < fromDate || bidStart > toDate) {
       toast.error("Bidding Start must be within the Delivery Window.");
       setLoading(false);
+      setFormDisabled(false);
       return;
     }
 
     if (bidEnd < fromDate || bidEnd > toDate) {
       toast.error("Bidding End must be within the Delivery Window.");
       setLoading(false);
+      setFormDisabled(false);
       return;
     }
 
     if (bidStart > bidEnd) {
       toast.error("Bidding Start cannot be after Bidding End.");
       setLoading(false);
+      setFormDisabled(false);
       return;
     }
 
     if (form.materials.length > 0 && (!form.weight || !form.quantity)) {
       toast.warning("Please enter total weight and quantity.");
       setLoading(false);
+      setFormDisabled(false);
       return;
     }
 
@@ -238,6 +247,7 @@ const RRDashboardPage = () => {
       toast.error(errMessage)
     } finally {
       setLoading(false)
+      setFormDisabled(false);
     }
   }
 
@@ -290,6 +300,7 @@ const RRDashboardPage = () => {
             handleRemoveMaterial={handleRemoveMaterial}
             selectedTransporters={selectedTransporters}
             loading={loading}
+            formDisabled={formDisabled}
           />
         )}
       </div>
