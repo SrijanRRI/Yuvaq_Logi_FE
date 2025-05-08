@@ -53,52 +53,27 @@ const API = {
   CHECK_ME : `${serverUrl}/api/auth/me`,
 };
 
-export const switchServerUrl = (mode) => {
-  localStorage.setItem("serverUrl", mode);
-
-  const path = window.location.pathname + window.location.search;
-
-  //  // Define your frontend URLs explicitly --- Deployment:
-  //  const frontendDomain = "https://logiyatra.rrispat.in";
-  //  const frontendIP = "http://192.168.13.60";
-
- // Frontend URLs
-  const frontendDomain = "http://localhost:5173";
-  const frontendIP = "http://192.168.13.77:5173";
-
-  // Select frontend URL based on mode
-  const frontendUrl = mode === "DOMAIN" ? frontendDomain : frontendIP;
-
-  // Add slight delay to ensure localStorage is set
-  setTimeout(() => {
-    console.log("Redirecting to:", `${frontendUrl}${path}`);
-    window.location.href = `${frontendUrl}${path}`;
-  }, 100);
-};
-
 // export const switchServerUrl = (mode) => {
 //   localStorage.setItem("serverUrl", mode);
 
 //   const path = window.location.pathname + window.location.search;
 
-//   // Frontend URLs
-//   const frontendDomain = "http://localhost:5173"; // or deployed: "https://logiyatra.rrispat.in"
+//   //  // Define your frontend URLs explicitly --- Deployment:
+//   //  const frontendDomain = "https://logiyatra.rrispat.in";
+//   //  const frontendIP = "http://192.168.13.60";
+
+//  // Frontend URLs
+//   const frontendDomain = "http://localhost:5173";
 //   const frontendIP = "http://192.168.13.77:5173";
 
+//   // Select frontend URL based on mode
 //   const frontendUrl = mode === "DOMAIN" ? frontendDomain : frontendIP;
 
-//   // Refresh the page *only* if switching back to DOMAIN
+//   // Add slight delay to ensure localStorage is set
 //   setTimeout(() => {
-//     const shouldRefresh = mode === "DOMAIN";
-//     const targetUrl = `${frontendUrl}${path}`;
-//     if (shouldRefresh) {
-//       window.location.href = targetUrl; // full reload
-//     } else {
-//       history.pushState(null, "", targetUrl); // soft switch
-//     }
+//     console.log("Redirecting to:", `${frontendUrl}${path}`);
+//     window.location.href = `${frontendUrl}${path}`;
 //   }, 100);
 // };
-
-
 
 export default API;

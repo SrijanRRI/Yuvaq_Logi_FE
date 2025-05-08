@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 
 import { login } from "../utils/UserSlice";
-import API, { switchServerUrl } from "../API";
+import API from "../API";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
@@ -12,7 +12,7 @@ const SignInPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [serverMode, setServerMode] = useState(localStorage.getItem("serverUrl") || "DOMAIN");
+  // const [serverMode, setServerMode] = useState(localStorage.getItem("serverUrl") || "DOMAIN");
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -25,31 +25,18 @@ const SignInPage = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleServerToggle = () => {
-    const newMode = serverMode === "DOMAIN" ? "IP" : "DOMAIN";
+  // const handleServerToggle = () => {
+  //   const newMode = serverMode === "DOMAIN" ? "IP" : "DOMAIN";
 
-    // console.log(newMode);
+  //   // console.log(newMode);
 
-    setServerMode(newMode);
-    switchServerUrl(newMode);
-  };
-
-  useEffect(() => {
-    const currentHost = window.location.hostname;
-    if (currentHost === "localhost") {
-      setServerMode("DOMAIN");
-      localStorage.setItem("serverUrl", "DOMAIN");
-    } else {
-      setServerMode("IP");
-      localStorage.setItem("serverUrl", "IP");
-    }
-  }, []);
+  //   setServerMode(newMode);
+  //   switchServerUrl(newMode);
+  // };
 
   // useEffect(() => {
   //   const currentHost = window.location.hostname;
-  //   if (currentHost === "logiyatra.rrispat.in") {
-
-  //     console.log(currentHost);
+  //   if (currentHost === "localhost") {
   //     setServerMode("DOMAIN");
   //     localStorage.setItem("serverUrl", "DOMAIN");
   //   } else {
@@ -57,6 +44,19 @@ const SignInPage = () => {
   //     localStorage.setItem("serverUrl", "IP");
   //   }
   // }, []);
+
+  // // useEffect(() => {
+  // //   const currentHost = window.location.hostname;
+  // //   if (currentHost === "logiyatra.rrispat.in") {
+
+  // //     console.log(currentHost);
+  // //     setServerMode("DOMAIN");
+  // //     localStorage.setItem("serverUrl", "DOMAIN");
+  // //   } else {
+  // //     setServerMode("IP");
+  // //     localStorage.setItem("serverUrl", "IP");
+  // //   }
+  // // }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,7 +123,7 @@ const SignInPage = () => {
         </div>
 
         {/* Domain/IP Toggle */}
-        <div className="flex items-center justify-center mb-6 gap-2">
+        {/* <div className="flex items-center justify-center mb-6 gap-2">
           <span className="text-gray-600 font-semibold text-sm">(Public) Domain</span>
           <label className="inline-flex items-center cursor-pointer">
             <input
@@ -135,7 +135,7 @@ const SignInPage = () => {
             <div className="relative w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-red-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-full" />
           </label>
           <span className="text-gray-600 font-semibold text-sm">(Private) IP</span>
-        </div>
+        </div> */}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="relative">
