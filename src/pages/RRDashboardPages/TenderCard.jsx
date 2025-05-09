@@ -1,6 +1,9 @@
 import { ChevronDown, ChevronUp, Package } from "lucide-react";
 
 const TenderCard = ({ tender, isOpen, onToggle, children }) => {
+
+  const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-200">
       <div
@@ -17,7 +20,7 @@ const TenderCard = ({ tender, isOpen, onToggle, children }) => {
                 Tender : {tender.projectName || `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
               </h3>
               <p className="text-sm text-slate-500">
-                Created on {new Date(tender.createdAt).toLocaleDateString()} • {tender.materials?.length || 0} materials
+                Created on {formatDate(new Date(tender.createdAt))} • {tender.materials?.length || 0} materials
                 {tender.projectCode && ` • Project Code: ${tender.projectCode}`}
               </p>
             </div>
