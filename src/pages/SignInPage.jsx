@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
 import { login } from "../utils/UserSlice";
 import API from "../API";
 import axios from "axios";
@@ -12,7 +11,6 @@ const SignInPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  // const [serverMode, setServerMode] = useState(localStorage.getItem("serverUrl") || "DOMAIN");
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -27,39 +25,6 @@ const SignInPage = () => {
     setShowPassword(!showPassword);
   };
 
-  // const handleServerToggle = () => {
-  //   const newMode = serverMode === "DOMAIN" ? "IP" : "DOMAIN";
-
-  //   // console.log(newMode);
-
-  //   setServerMode(newMode);
-  //   switchServerUrl(newMode);
-  // };
-
-  // useEffect(() => {
-  //   const currentHost = window.location.hostname;
-  //   if (currentHost === "localhost") {
-  //     setServerMode("DOMAIN");
-  //     localStorage.setItem("serverUrl", "DOMAIN");
-  //   } else {
-  //     setServerMode("IP");
-  //     localStorage.setItem("serverUrl", "IP");
-  //   }
-  // }, []);
-
-  // // useEffect(() => {
-  // //   const currentHost = window.location.hostname;
-  // //   if (currentHost === "logiyatra.rrispat.in") {
-
-  // //     console.log(currentHost);
-  // //     setServerMode("DOMAIN");
-  // //     localStorage.setItem("serverUrl", "DOMAIN");
-  // //   } else {
-  // //     setServerMode("IP");
-  // //     localStorage.setItem("serverUrl", "IP");
-  // //   }
-  // // }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -73,7 +38,7 @@ const SignInPage = () => {
       const res = await axios.post(API.SIGNIN, payload, {
         withCredentials: true,
       });
-      const { success, message, data, token } = res?.data || {};
+      const { success, message, data } = res?.data || {};
 
       if (success) {
         dispatch(
@@ -125,32 +90,15 @@ const SignInPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
         <div className="flex flex-col items-center mb-8">
-          {/* Logo */}
-          <div className="w-60 h-24 flex items-center justify-center ">
+          <div className="w-60 h-24 flex items-center justify-center">
             <img
               src="/assets/LogiYatraLogo.png"
               alt="Company Logo"
               className="w-60 h-28 object-contain"
             />
           </div>
-
           <p className="text-gray-500 mt-1">Sign in to your account</p>
         </div>
-
-        {/* Domain/IP Toggle */}
-        {/* <div className="flex items-center justify-center mb-6 gap-2">
-          <span className="text-gray-600 font-semibold text-sm">(Public) Domain</span>
-          <label className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={serverMode === "IP"}
-              className="sr-only peer"
-              onChange={handleServerToggle}
-            />
-            <div className="relative w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-red-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-full" />
-          </label>
-          <span className="text-gray-600 font-semibold text-sm">(Private) IP</span>
-        </div> */}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="relative">
@@ -209,20 +157,19 @@ const SignInPage = () => {
           </div>
 
           <div className="flex items-center justify-end">
-            <div>
-              <span
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer"
-                onClick={() => navigate("/forgot-password")}
-              >
-                Forgot Password?
-              </span>
-            </div>
+            <span
+              className="text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Forgot Password?
+            </span>
           </div>
 
           <button
             type="submit"
-            className={`w-full py-3 bg-[#ca000e] text-white rounded-lg  transition duration-200 font-medium shadow-md flex items-center justify-center ${loading ? "opacity-75 cursor-not-allowed" : ""
-              }`}
+            className={`w-full py-3 bg-[#ca000e] text-white rounded-lg transition duration-200 font-medium shadow-md flex items-center justify-center ${
+              loading ? "opacity-75 cursor-not-allowed" : ""
+            }`}
             disabled={loading}
           >
             {loading ? (
