@@ -8,7 +8,11 @@ const ProtectedRoute = ({
   redirect = "/signin",
   children,
 }) => {
-  const { isAuthenticated, role } = useSelector((state) => state.User);
+  const { isAuthenticated, role, isAuthChecking } = useSelector((state) => state.User);
+
+  if (isAuthChecking) {
+    return <div className="text-center mt-10">Checking session...</div>;
+  }
 
   if (!isAuthenticated || (requiredRole && role !== requiredRole)) {
     return <Navigate to={redirect} />;

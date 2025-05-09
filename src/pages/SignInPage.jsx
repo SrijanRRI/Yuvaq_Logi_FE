@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { login } from "../utils/UserSlice";
 import API from "../API";
@@ -16,6 +16,8 @@ const SignInPage = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const { isAuthenticated, role } = useSelector((state) => state.User);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -105,6 +107,19 @@ const SignInPage = () => {
       setLoading(false);
     }
   };
+
+   // Redirect if already logged in
+   useEffect(() => {
+    if (isAuthenticated && role) {
+      if (role === "user") {
+        navigate("/rr/dashboard");
+      } else if (role === "transportUser") {
+        navigate("/transporter/dashboard");
+      } else if (role === "admin") {
+        navigate("/admin/dashboard");
+      }
+    }
+  }, [isAuthenticated, role, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">

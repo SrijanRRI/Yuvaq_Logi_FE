@@ -8,33 +8,42 @@ import ProtectedRoute from "./utils/ProtectedRoute";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import API from "./API";
 import axios from "axios";
-import { login } from "./utils/UserSlice";
+import { login, setAuthChecking } from "./utils/UserSlice";
+
 
 function App() {
   const dispatch = useDispatch();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
+  const { isAuthChecking } = useSelector((state) => state.User);
+
   useEffect(() => {
     const checkSession = async () => {
+
+      dispatch(setAuthChecking(true));
+
       try {
         const res = await axios.get(API.CHECK_ME, { withCredentials: true });
         const { data, role } = res.data;
         dispatch(login({ user: data, role }));
       } catch (err) {
         // console.log(err)
+        // dispatch(setAuthChecking(false));
         console.log("User not authenticated");
       } finally {
-        setCheckingAuth(false);
+        // setCheckingAuth(false);
+        dispatch(setAuthChecking(false));
       }
     };
     checkSession();
   }, [dispatch]);
 
-  if (checkingAuth)
-    return <div className="text-center mt-10">Checking session...</div>;
+  // if (checkingAuth) return <div className="text-center mt-10">Checking session...</div>;
+
+  if (isAuthChecking) return <div className="text-center mt-10">Checking session...</div>;
 
   return (
     <Routes>
