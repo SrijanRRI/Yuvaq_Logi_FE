@@ -1,7 +1,7 @@
-let serverUrl = "http://localhost:5000";
+// let serverUrl = "http://localhost:5000";
 // // let serverUrl = "http://192.168.13.78:5000"
 // // let serverUrl = "https://tenderappbe.onrender.com"
-// // let serverUrl = "https://logiyatrabe.rrispat.in"
+let serverUrl = "https://logiyatrabe.rrispat.in"
 
 
 // // // Default API URLs --- while Deploying : 

@@ -103,7 +103,7 @@ const AdminAllTenders = ({ tenders = [] }) => {
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1 bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-sm">
                       <Package className="h-3 w-3" />
-                      <span>Weight : {tender.totalWeight || 0} Kg </span>
+                      <span>Weight : {tender.totalWeight || 0} MT </span>
                     </div>
 
                     <div className="flex items-center gap-1 bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-sm">
@@ -175,7 +175,7 @@ const AdminAllTenders = ({ tenders = [] }) => {
                           <h4>Shipment Details</h4>
                         </div>
                         <div className="space-y-2 text-sm">
-                          <p><span className="text-gray-500">Total Weight:</span> {tender.totalWeight || 0} kg</p>
+                          <p><span className="text-gray-500">Total Weight:</span> {tender.totalWeight || 0} MT</p>
                           <p><span className="text-gray-500">Total Quantity:</span> {tender.totalQuantity || 0} pcs</p>
                           <p><span className="text-gray-500">Remarks:</span> {tender.remarks || "N/A"}</p>
                         </div>
@@ -203,7 +203,7 @@ const AdminAllTenders = ({ tenders = [] }) => {
                               <div key={mIdx} className="grid grid-cols-4 gap-4 p-3 text-sm">
                                 <div>{mat.material || "N/A"}</div>
                                 <div>{mat.subMaterial || "N/A"}</div>
-                                <div>{mat.weight || 0} kg</div>
+                                <div>{mat.weight || 0} MT</div>
                                 <div>{mat.quantity || 0} pcs</div>
                               </div>
                             ))}
