@@ -3,7 +3,11 @@ import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-const ProtectedRoute = ({ requiredRole = null, redirect = "/signin", children }) => {
+const ProtectedRoute = ({
+  requiredRole = null,
+  redirect = "/signin",
+  children,
+}) => {
   const { isAuthenticated, role, isAuthChecking } = useSelector((state) => state.User);
 
   if (isAuthChecking) {
