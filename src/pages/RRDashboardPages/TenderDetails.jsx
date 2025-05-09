@@ -1,4 +1,4 @@
-import { Briefcase, Users } from "lucide-react";
+import { Briefcase, Package, Scale, Users } from "lucide-react";
 
 const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -83,6 +83,37 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           ) : (
             <p className="text-slate-500 italic">No materials added</p>
           )}
+
+          {/* Redesigned Total Weight and Quantity Section */}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 shadow-sm border border-emerald-100 transition-all hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="bg-emerald-100 p-2 rounded-full">
+                    <Scale className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600">Total Weight</span>
+                </div>
+                <div className="bg-white px-3 py-1 rounded-full shadow-sm">
+                  <span className="text-emerald-700 font-bold">{tender.totalWeight} MT</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg p-4 shadow-sm border border-sky-100 transition-all hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="bg-sky-100 p-2 rounded-full">
+                    <Package className="h-5 w-5 text-sky-600" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600">Total Quantity</span>
+                </div>
+                <div className="bg-white px-3 py-1 rounded-full shadow-sm">
+                  <span className="text-sky-700 font-bold">{tender.totalQuantity} pcs</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div>
