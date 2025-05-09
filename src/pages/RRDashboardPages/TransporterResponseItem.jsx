@@ -28,6 +28,13 @@ const TransporterResponseItem = ({
   const currentRank = response.rank;
   const canConfirm = rankOrder[allowedRankIndex] === currentRank;
 
+  const isBeforeOrOnClosingDay = () => {
+    const now = new Date();
+    const closeDateEnd = new Date(tender.closeDate);
+    closeDateEnd.setHours(23, 59, 59, 999);
+    return now <= closeDateEnd;
+  };
+
   return (
     <div className={`border-l-4 p-5 rounded-lg shadow-sm transition duration-300 ${isDimmed ? "border-slate-300 bg-slate-100 opacity-60" : "border-emerald-500 bg-white"}`}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -90,20 +97,27 @@ const TransporterResponseItem = ({
 
       {/* Action Buttons */}
       <div className="mt-4">
-        {isSelected && tender.status === "finalized" ? (
+        {(isSelected || confirmedIdxMap[tenderId] === idx) && tender.status === "finalized" ? (
           <div className="flex flex-col md:flex-row md:items-center gap-3 text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" /> Final Deal Price: ₹{tender.finalPrice || response.price}
             </div>
-            {new Date() < new Date(tender.closeDate) && (
-              <button
-                onClick={() => onReopen(tenderId)}
-                disabled={!canReopen}
-                className={`text-sm px-3 py-1 rounded-md transition border ${canReopen ? "text-emerald-600 border-emerald-300 hover:bg-emerald-50" : "text-slate-400 border-slate-200 cursor-not-allowed"}`}
-              >
-                {canReopen ? "Reopen Quotation" : "Max Reopens Reached"}
-              </button>
-            )}
+
+            <button
+              onClick={() => onReopen(tenderId)}
+              disabled={!canReopen || !isBeforeOrOnClosingDay()}
+              className={`text-sm px-3 py-1 rounded-md transition border ${canReopen && isBeforeOrOnClosingDay()
+                  ? "text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                  : "text-slate-400 border-slate-200 cursor-not-allowed"
+                }`}
+            >
+              {canReopen && isBeforeOrOnClosingDay()
+                ? "Reopen Quotation"
+                : !isBeforeOrOnClosingDay()
+                  ? "Closed"
+                  : "Max Reopens Reached"}
+            </button>
+
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <RefreshCcw className="h-4 w-4" /> Reopen Attempts: {reopenCount} / 2
             </div>
