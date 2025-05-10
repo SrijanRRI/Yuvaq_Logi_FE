@@ -109,8 +109,8 @@ const TransporterResponseItem = ({
               className={`text-sm px-3 py-1 rounded-md transition border ${canReopen && isBeforeOrOnClosingDay()
                   ? "text-emerald-600 border-emerald-300 hover:bg-emerald-50"
                   : "text-slate-400 border-slate-200 cursor-not-allowed"
-                }`}
-            >
+                }`} >
+
               {canReopen && isBeforeOrOnClosingDay()
                 ? "Reopen Quotation"
                 : !isBeforeOrOnClosingDay()
