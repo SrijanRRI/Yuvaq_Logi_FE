@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 
 const SignUpPage = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
-  const [userType, setUserType] = useState('RR'); // UI toggle state
+  const [userType, setUserType] = useState('Transporter'); // UI toggle state
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 

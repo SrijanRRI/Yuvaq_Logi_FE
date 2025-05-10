@@ -6,12 +6,12 @@ import axios from "axios"
 import { ArrowLeft, History } from "lucide-react"
 import Navbar from "../components/Navbar"
 import { MaterialModal } from "../modals/MaterialModal"
-import { TransporterModal } from "../modals/TransporterModal"
 import TenderForm from "./RRDashboardPages/TenderForm"
 import TenderHistoryAccordion from "./RRDashboardPages/TenderHistoryAccordion"
 import API from "../API"
 import { useDispatch } from "react-redux"
 import { logout } from "../utils/UserSlice"
+import TransporterModal from "../modals/TransporterModal"
 
 const RRDashboardPage = () => {
   const navigate = useNavigate()
