@@ -71,19 +71,20 @@ const TenderSearchFilter = ({
         <div className="space-y-2">
           <label className="block text-sm font-medium text-slate-700">Status</label>
           <div className="flex flex-wrap gap-2">
-            {["all", "finalized", "Open"].map((status) => (
+            {["all", "finalized", "open", "closed"].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  statusFilter === status
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === status
                     ? status === "finalized"
                       ? "bg-green-100 text-green-700 border border-green-200"
-                      : status === "Open"
-                      ? "bg-amber-100 text-amber-700 border border-amber-200"
-                      : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                      : status === "open"
+                        ? "bg-amber-100 text-amber-700 border border-amber-200"
+                        : status === "closed"
+                          ? "bg-red-100 text-red-700 border border-red-200"
+                          : "bg-emerald-100 text-emerald-700 border border-emerald-200"
                     : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
-                }`}
+                  }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
               </button>
