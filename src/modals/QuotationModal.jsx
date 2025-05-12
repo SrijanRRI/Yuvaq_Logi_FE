@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { FileText, X, Upload, DollarSign, Truck, AlertCircle } from "lucide-react"
+import { FileText, X, Upload, IndianRupee, Truck, AlertCircle } from "lucide-react"
 import axios from "axios"
 import API from "../API"
 
@@ -92,8 +92,8 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-green-600" />
-                <span>Price (₹)</span>
+                <IndianRupee className="w-4 h-4 text-green-600" />
+                <span>Price (₹) / मूल्य (₹)</span>
               </div>
             </label>
             <input
@@ -103,9 +103,8 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                 setPrice(e.target.value)
                 if (errors.price) setErrors({ ...errors, price: null })
               }}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${
-                errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
+                }`}
               placeholder="Enter your bid amount"
             />
             {errors.price && (
@@ -120,19 +119,18 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-blue-600" />
-                <span>Vehicle Details</span>
+                <span> Vehicle Details / वाहन की सूचना / प्रति आइटम मूल्य विवरण सहित </span>
               </div>
             </label>
-            <input
-              type="text"
+            <textarea
               value={vehicleNo}
               onChange={(e) => {
-                setVehicleNo(e.target.value)
-                if (errors.vehicleNo) setErrors({ ...errors, vehicleNo: null })
+                setVehicleNo(e.target.value);
+                if (errors.vehicleNo) setErrors({ ...errors, vehicleNo: null });
               }}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${
-                errors.vehicleNo ? "border-red-300 bg-red-50" : "border-slate-300"
-              }`}
+              className={`w-full px-4 py-4 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none ${errors.vehicleNo ? "border-red-300 bg-red-50" : "border-slate-300"
+                }`}
+              rows={4}
               placeholder="Enter vehicle number/details"
             />
             {errors.vehicleNo && (
@@ -147,13 +145,12 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-amber-600" />
-                <span>Attachment (Optional)</span>
+                <span>Attachment (Optional) / अनुलग्नक (वैकल्पिक)</span>
               </div>
             </label>
             <div
-              className={`border border-dashed rounded-lg p-4 text-center ${
-                file ? "border-green-300 bg-green-50" : "border-slate-300 bg-slate-50"
-              }`}
+              className={`border border-dashed rounded-lg p-4 text-center ${file ? "border-green-300 bg-green-50" : "border-slate-300 bg-slate-50"
+                }`}
             >
               {file ? (
                 <div className="flex items-center justify-between">
