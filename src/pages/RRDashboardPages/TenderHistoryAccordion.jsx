@@ -158,10 +158,8 @@ const TenderHistoryAccordion = ({
     const matchSearch = [t.projectName, t.dispatchLocation, t.projectCode].some((val) =>
       (val || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
-    const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "finalized" && t.status === "finalized") ||
-      (statusFilter === "Open" && t.status !== "finalized");
+    
+    const matchStatus = statusFilter === "all" || t.status.toLowerCase() === statusFilter.toLowerCase();
 
     let matchDate = true;
     if (dateRange.from && dateRange.to && t.deliveryWindow?.from && t.deliveryWindow?.to) {

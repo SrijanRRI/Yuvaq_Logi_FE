@@ -16,17 +16,12 @@ const TransporterResponseItem = ({
   setPreviewFile,
 }) => {
   const tenderId = tender._id;
+
+  const isFinalizedView = tender.status === "finalized" || (tender.status === "closed" && tender.selectedQuotation && tender.finalPrice);
+
   const isSelected = response._id === selectedQuotationId;
-  const isDimmed = tender.status === "finalized" && !isSelected;
+  const isDimmed = isFinalizedView && !isSelected;
   const isEditing = editingId === `${tenderId}-${idx}`;
-
-  const reopenCount = tender.reopenCount || 0;
-  const canReopen = reopenCount < 2;
-
-  const rankOrder = ["L1", "L2", "L3"];
-  const allowedRankIndex = reopenCount;
-  const currentRank = response.rank;
-  const canConfirm = rankOrder[allowedRankIndex] === currentRank;
 
   const isBeforeOrOnClosingDay = () => {
     const now = new Date();
@@ -34,6 +29,15 @@ const TransporterResponseItem = ({
     closeDateEnd.setHours(23, 59, 59, 999);
     return now <= closeDateEnd;
   };
+
+  const reopenCount = tender.reopenCount || 0;
+  const canReopen = reopenCount < 2;
+  const canReopenQuotation = tender.status === "finalized" && canReopen && isBeforeOrOnClosingDay();
+
+  const rankOrder = ["L1", "L2", "L3"];
+  const allowedRankIndex = reopenCount;
+  const currentRank = response.rank;
+  const canConfirm = rankOrder[allowedRankIndex] === currentRank;
 
   return (
     <div className={`border-l-4 p-5 rounded-lg shadow-sm transition duration-300 ${isDimmed ? "border-slate-300 bg-slate-100 opacity-60" : "border-emerald-500 bg-white"}`}>
@@ -97,7 +101,7 @@ const TransporterResponseItem = ({
 
       {/* Action Buttons */}
       <div className="mt-4">
-        {(isSelected || confirmedIdxMap[tenderId] === idx) && tender.status === "finalized" ? (
+        {(isSelected || confirmedIdxMap[tenderId] === idx) && isFinalizedView ? (
           <div className="flex flex-col md:flex-row md:items-center gap-3 text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" /> Final Deal Price: ₹{tender.finalPrice || response.price}
@@ -105,13 +109,13 @@ const TransporterResponseItem = ({
 
             <button
               onClick={() => onReopen(tenderId)}
-              disabled={!canReopen || !isBeforeOrOnClosingDay()}
-              className={`text-sm px-3 py-1 rounded-md transition border ${canReopen && isBeforeOrOnClosingDay()
-                  ? "text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                  : "text-slate-400 border-slate-200 cursor-not-allowed"
+              disabled={!canReopenQuotation}
+              className={`text-sm px-3 py-1 rounded-md transition border ${canReopenQuotation
+                ? "text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                : "text-slate-400 border-slate-200 cursor-not-allowed"
                 }`} >
 
-              {canReopen && isBeforeOrOnClosingDay()
+              {canReopenQuotation
                 ? "Reopen Quotation"
                 : !isBeforeOrOnClosingDay()
                   ? "Closed"
@@ -122,7 +126,7 @@ const TransporterResponseItem = ({
               <RefreshCcw className="h-4 w-4" /> Reopen Attempts: {reopenCount} / 2
             </div>
           </div>
-        ) : tender.status !== "finalized" && isEditing ? (
+        ) : !isFinalizedView && isEditing ? (
           <div className="mt-3 flex gap-3 items-center">
             <input
               type="number"
@@ -138,7 +142,7 @@ const TransporterResponseItem = ({
               Confirm
             </button>
           </div>
-        ) : tender.status !== "finalized" && confirmedIdxMap[tenderId] === undefined && canConfirm ? (
+        ) : !isFinalizedView && confirmedIdxMap[tenderId] === undefined && canConfirm ? (
           <div className="mt-3 space-y-2">
             <p className="text-sm text-slate-600">Confirm this price as final?</p>
             <button
