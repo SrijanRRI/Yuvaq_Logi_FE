@@ -102,7 +102,7 @@ const TransporterResponseItem = ({
       {/* Action Buttons */}
       <div className="mt-4">
         {(isSelected || confirmedIdxMap[tenderId] === idx) && isFinalizedView ? (
-          <div className="flex flex-col md:flex-row md:items-center gap-3 text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-evenly gap-3 text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" /> Final Deal Price: ₹{tender.finalPrice || response.price}
             </div>

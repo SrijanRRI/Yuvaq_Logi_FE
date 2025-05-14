@@ -10,7 +10,7 @@ const ReopenConfirmationModal = ({ onConfirm, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
       <div className="bg-white rounded-lg p-6 max-w-lg w-full relative">
         <h3 className="text-lg font-semibold mb-3">Reopen Quotation</h3>
 

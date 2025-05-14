@@ -24,6 +24,7 @@ const TenderHistoryAccordion = ({
   const [allResponses, setAllResponses] = useState({});
   const [previewFile, setPreviewFile] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [reopenModalTenderId, setReopenModalTenderId] = useState(null);
 
   const [fetchedResponseIds, setFetchedResponseIds] = useState(new Set());
   const [responseErrors, setResponseErrors] = useState({});
@@ -72,11 +73,11 @@ const TenderHistoryAccordion = ({
     const responses = allResponses[tenderId] || [];
     const sorted = responses.slice().sort((a, b) => a.price - b.price);
     const quotation = sorted[idx];
-  
+
     const finalPrice = directPrice !== null
       ? directPrice
       : priceInput.trim() !== "" ? Number(priceInput) : quotation.price;
-  
+
     setConfirmDialog({
       message: `Are you sure you want to finalize this quotation at price ₹${finalPrice}?`,
       onConfirm: async () => {
@@ -101,48 +102,41 @@ const TenderHistoryAccordion = ({
       onCancel: () => setConfirmDialog(null),
     });
   };
-  
+
+  const handleReopenSubmit = async (reason) => {
+    if (!reason.trim()) {
+      toast.error("Please provide a reason to reopen the quotation.");
+      return;
+    }
+
+    try {
+      await axios.post(`${API.REOPEN_QUOTATION}/${reopenModalTenderId}`, { reason }, { withCredentials: true });
+
+      toast.success("Quotation reopened successfully");
+
+      setConfirmedIdxMap((prev) => {
+        const copy = { ...prev };
+        delete copy[reopenModalTenderId];
+        return copy;
+      });
+
+      setPriceInput("");
+      if (fetchTenderHistory) await fetchTenderHistory();
+
+      setFetchedResponseIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(reopenModalTenderId);
+        return updated;
+      });
+    } catch {
+      toast.error("Failed to reopen quotation");
+    } finally {
+      setReopenModalTenderId(null);
+    }
+  };
+
   const handleReopen = (tenderId) => {
-    setConfirmDialog({
-      message: (
-        <ReopenConfirmationModal
-          onConfirm={async (reason) => {
-            if (!reason.trim()) {
-              toast.error("Please provide a reason to reopen the quotation.");
-              return;
-            }
-            try {
-              const api = await axios.post(`${API.REOPEN_QUOTATION}/${tenderId}`, { reason }, { withCredentials: true });
-              // console.log("reopen quotation" , api.data);
-              toast.success("Quotation reopened successfully");
-
-              setConfirmedIdxMap((prev) => {
-                const copy = { ...prev };
-                delete copy[tenderId];
-                return copy;
-              });
-
-              setPriceInput("");
-              if (fetchTenderHistory) await fetchTenderHistory();
-
-              setFetchedResponseIds((prev) => {
-                const updated = new Set(prev);
-                updated.delete(tenderId);
-                return updated;
-              });
-
-            } catch {
-              toast.error("Failed to reopen quotation");
-            } finally {
-              setConfirmDialog(null);
-            }
-          }}
-          onCancel={() => setConfirmDialog(null)} 
-        />
-      ),
-      onConfirm: () => { },
-      onCancel: () => setConfirmDialog(null),
-    });
+    setReopenModalTenderId(tenderId);
   };
 
   const formatDate = (date) => new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
@@ -158,7 +152,7 @@ const TenderHistoryAccordion = ({
     const matchSearch = [t.projectName, t.dispatchLocation, t.projectCode].some((val) =>
       (val || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
+
     const matchStatus = statusFilter === "all" || t.status.toLowerCase() === statusFilter.toLowerCase();
 
     let matchDate = true;
@@ -243,6 +237,13 @@ const TenderHistoryAccordion = ({
       })}
 
       {previewFile && <AttachmentPreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />}
+
+      {reopenModalTenderId && (
+        <ReopenConfirmationModal
+          onConfirm={handleReopenSubmit}
+          onCancel={() => setReopenModalTenderId(null)}
+        />
+      )}
 
       {confirmDialog && (
         <ConfirmationModal
