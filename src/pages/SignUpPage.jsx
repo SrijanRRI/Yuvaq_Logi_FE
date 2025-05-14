@@ -80,15 +80,15 @@ const SignUpPage = () => {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <InputField
-            label="Full Name"
+            label="Full Company Name"
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="John Doe"
+            placeholder="Company Name"
             className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
-            label="Email"
+            label="Company Email"
             name="email"
             type="email"
             value={form.email}
@@ -97,7 +97,7 @@ const SignUpPage = () => {
             className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
-            label="Password"
+            label="Set Password"
             name="password"
             type="password"
             value={form.password}

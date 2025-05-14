@@ -12,6 +12,8 @@ const SignInPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // const [serverMode, setServerMode] = useState(localStorage.getItem("serverUrl") || "DOMAIN");
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -73,8 +75,44 @@ const SignInPage = () => {
     }
   };
 
-   // Redirect if already logged in
-   useEffect(() => {
+  // // Toggle Server Mode
+  // const handleServerToggle = () => {
+  //   const newMode = serverMode === "DOMAIN" ? "IP" : "DOMAIN";
+  //   // console.log(newMode);
+  //   setServerMode(newMode);
+  //   switchServerUrl(newMode);
+  // };
+
+  // useEffect(() => {
+  //   const currentHost = window.location.hostname;
+  //   // window.location.reload();
+
+  //   if (currentHost === "localhost") {
+  //     setServerMode("DOMAIN");
+  //     localStorage.setItem("serverUrl", "DOMAIN");
+  //   } else {
+  //     setServerMode("IP");
+  //     localStorage.setItem("serverUrl", "IP");
+  //   }
+  // }, []);
+
+  // useEffect(() => {
+  //     const currentHost = window.location.hostname;
+  //     // window.location.reload();
+
+  //     if (currentHost === "reportfe.rrispat.in" ) {
+  //         console.log(currentHost);
+
+  //         setServerMode("DOMAIN");
+  //         localStorage.setItem("serverUrl", "DOMAIN");
+  //     } else {
+  //         setServerMode("IP");
+  //         localStorage.setItem("serverUrl", "IP");
+  //     }
+  // }, []);  
+
+  // Redirect if already logged in
+  useEffect(() => {
     if (isAuthenticated && role) {
       if (role === "user") {
         navigate("/rr/dashboard");
@@ -99,6 +137,22 @@ const SignInPage = () => {
           </div>
           <p className="text-gray-500 mt-1">Sign in to your account</p>
         </div>
+
+        {/* <div className="flex justify-center items-center gap-2 my-4 space-x-2">
+          <span className="text-gray-600 font-bold"> (Public) Domain</span>
+
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={serverMode === "IP"}
+              className="sr-only peer"
+              onChange={handleServerToggle}
+            />
+            <div className="relative w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-red-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all"></div>
+          </label>
+
+          <span className="text-gray-600 font-bold">(Private) IP</span>
+        </div> */}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="relative">
@@ -167,9 +221,8 @@ const SignInPage = () => {
 
           <button
             type="submit"
-            className={`w-full py-3 bg-[#ca000e] text-white rounded-lg transition duration-200 font-medium shadow-md flex items-center justify-center ${
-              loading ? "opacity-75 cursor-not-allowed" : ""
-            }`}
+            className={`w-full py-3 bg-[#ca000e] text-white rounded-lg transition duration-200 font-medium shadow-md flex items-center justify-center ${loading ? "opacity-75 cursor-not-allowed" : ""
+              }`}
             disabled={loading}
           >
             {loading ? (

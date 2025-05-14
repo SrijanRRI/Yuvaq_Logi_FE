@@ -4,9 +4,9 @@ let serverUrl = "http://localhost:5000";
 // let serverUrl = "https://logiyatrabe.rrispat.in"
 
 
-// // // Default API URLs --- while Deploying : 
-// const DOMAIN_URL = "https://logiyatrabe.rrispat.in";
-// const IP_URL = "http://192.168.13.60:8000";
+// // // // Default API URLs --- while Deploying : 
+// // const DOMAIN_URL = "https://logiyatrabe.rrispat.in";
+// // const IP_URL = "http://192.168.13.60:8000";
 
 // // Default API URLs --- for local use: 
 // const DOMAIN_URL = "http://localhost:5000";
