@@ -38,6 +38,7 @@ const RRDashboardPage = () => {
     remarks: "",
     transporter: [],
     isManualTotals: false,
+    maxBidAmount: "",
   })
 
   const [showMaterialModal, setShowMaterialModal] = useState(false)
@@ -203,6 +204,7 @@ const RRDashboardPage = () => {
       totalQuantity: form.quantity ? Number.parseInt(form.quantity) : null,
       remarks: form.remarks,
       transporters: form.transporter,
+      maxBidAmount: form.maxBidAmount ? Number.parseFloat(form.maxBidAmount) : null,
       materials: form.materials.map((mat) => ({
         material: mat.item,
         subMaterial: mat.subItem || null,
@@ -217,6 +219,8 @@ const RRDashboardPage = () => {
       })
       setTenderHistories((prev) => [response.data, ...prev])
       toast.success("Tender submitted successfully!")
+
+      // console.log("form submitted :" , payload);
 
       setForm({
         deliveryWindow: { from: "", to: "" },
