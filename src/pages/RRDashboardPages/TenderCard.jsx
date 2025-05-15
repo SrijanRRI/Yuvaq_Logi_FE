@@ -1,45 +1,80 @@
-import { ChevronDown, ChevronUp, Package } from "lucide-react";
+import { ChevronDown, ChevronUp, Package, Calendar, MapPin } from "lucide-react"
 
-const TenderCard = ({ tender, isOpen, onToggle, children }) => {
+const TenderCard = ({ tender, isOpen, onToggle }) => {
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" })
 
-  const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
-  
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-200">
-      <div
-        className="p-5 cursor-pointer hover:bg-slate-50 transition-colors duration-200"
-        onClick={onToggle}
-      >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
-              <Package className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-800">
-                Tender : {tender.projectName || `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
-              </h3>
-              <p className="text-sm text-slate-500">
-                Created on {formatDate(new Date(tender.createdAt))} • {tender.materials?.length || 0} materials
-                {tender.projectCode && ` • Project Code: ${tender.projectCode}`}
-              </p>
+    <div
+      className={`p-5 cursor-pointer transition-all duration-300 ${isOpen ? "bg-slate-50" : "hover:bg-slate-50/70"}`}
+      onClick={onToggle}
+    >
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="flex items-start md:items-center gap-4">
+          <div
+            className={`p-3 rounded-xl ${tender.status === "finalized" ? "bg-emerald-100 text-emerald-600" : tender.status === "closed" ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600"} shadow-sm`}
+          >
+            <Package className="h-6 w-6" />
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-slate-800 text-lg">
+              {tender.projectName || `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
+            </h3>
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1 text-sm text-slate-500">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                {formatDate(new Date(tender.createdAt))}
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Package className="h-3.5 w-3.5 text-slate-400" />
+                {tender.materials?.length || 0} materials
+              </div>
+
+              {tender.projectCode && (
+                <div className="flex items-center gap-1">
+                  <span className="font-medium text-slate-600">Project Code:</span> {tender.projectCode}
+                </div>
+              )}
+
+              {tender.dispatchLocation && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                  {tender.dispatchLocation}
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${tender.status === "finalized" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
-              {tender.status || "PENDING"}
-            </span>
+        </div>
+
+        <div className="flex items-center gap-3 ml-12 md:ml-0">
+          <span
+            className={`px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide ${
+              tender.status === "finalized"
+                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                : tender.status === "closed"
+                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                  : "bg-blue-100 text-blue-800 border border-blue-200"
+            }`}
+          >
+            {tender.status || "PENDING"}
+          </span>
+
+          <div
+            className={`p-2 rounded-full ${isOpen ? "bg-slate-200" : "bg-slate-100"} transition-colors duration-200`}
+          >
             {isOpen ? (
-              <ChevronUp className="h-5 w-5 text-slate-400" />
+              <ChevronUp className="h-5 w-5 text-slate-600" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-slate-400" />
+              <ChevronDown className="h-5 w-5 text-slate-600" />
             )}
           </div>
         </div>
       </div>
-      {isOpen && <div className="border-t border-slate-200 p-5">{children}</div>}
     </div>
-  );
-};
+  )
+}
 
-export default TenderCard;
+export default TenderCard

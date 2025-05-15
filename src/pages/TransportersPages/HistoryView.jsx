@@ -1,4 +1,4 @@
-import { useState } from "react"
+import React, { useState } from "react";
 import {
   Calendar,
   MapPin,
@@ -11,11 +11,11 @@ import {
   ChevronUp,
   Truck,
   Scale,
-} from "lucide-react"
+} from "lucide-react";
 
 const HistoryView = ({ tenders }) => {
-  const [expandedId, setExpandedId] = useState(null)
-  const [expandedQuotationsId, setExpandedQuotationsId] = useState(null)
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedQuotationsId, setExpandedQuotationsId] = useState(null);
 
   const formatDate = (dateStr) =>
     dateStr
@@ -24,7 +24,7 @@ const HistoryView = ({ tenders }) => {
           month: "short",
           year: "numeric",
         })
-      : "N/A"
+      : "N/A";
 
   const formatDateTime = (dateStr) =>
     dateStr
@@ -35,66 +35,71 @@ const HistoryView = ({ tenders }) => {
           hour: "2-digit",
           minute: "2-digit",
         })
-      : "N/A"
+      : "N/A";
 
   const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id)
-  }
+    setExpandedId(expandedId === id ? null : id);
+  };
 
   return (
-    <div className="grid gap-6 px-4 py-6 md:px-6 max-w-7xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">Tender History</h2>
-      <p className="text-gray-600 mb-6">View your past tenders and quotation details</p>
+    <div className="grid gap-8">
+      <h2 className="text-2xl font-bold text-gray-800 mb-2 hidden">Tender History</h2>
 
       {tenders.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center border border-gray-200 shadow-sm">
-          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Package className="w-8 h-8 text-gray-400" />
+        <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl border border-gray-200 text-center shadow-lg">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <Package className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Tenders Found</h3>
-          <p className="text-gray-600">You don't have any tender history yet.</p>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No Tenders Found</h3>
+          <p className="text-gray-500 max-w-md">
+            You don't have any tender history yet. Active tenders will appear here once completed.
+          </p>
         </div>
       ) : (
         tenders.map((item, idx) => {
-          const tender = item.tender
-          const quotations = item.quotations || []
-          const finalizedStatus = tender.finalizedStatus
-          const isFinalized = finalizedStatus ? true : false
+          const tender = item.tender;
+          const quotations = item.quotations || [];
+          const finalizedStatus = tender.finalizedStatus;
+          const isFinalized = finalizedStatus ? true : false;
 
           return (
             <div
               key={tender._id || idx}
-              className="bg-white rounded-xl overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-md"
+              className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 group"
             >
               {/* Header */}
               <div
-                className={`bg-gradient-to-r ${isFinalized ? "from-emerald-800 to-teal-700" : "from-indigo-800 to-violet-700"} text-white p-5`}
+                className={`bg-gradient-to-r ${
+                  isFinalized 
+                    ? "from-emerald-600 via-emerald-700 to-teal-700" 
+                    : "from-indigo-600 via-indigo-700 to-violet-700"
+                } text-white p-6`}
               >
                 <div className="flex flex-wrap justify-between items-start gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <Truck className="w-5 h-5 text-white/80" />
-                      <p className="text-white text-lg font-bold">Tender #{idx + 1}</p>
+                      <p className="text-xl font-bold">Tender #{idx + 1}</p>
                     </div>
                     {finalizedStatus && (
-                      <p className="text-sm mt-2 text-emerald-200 flex items-center gap-2">
+                      <p className="text-sm mt-2 text-emerald-100 flex items-center gap-2">
                         <Star className="w-4 h-4 text-yellow-300" /> {finalizedStatus}
                       </p>
                     )}
                   </div>
-                  <div className="px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg text-white text-sm">
+                  <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-white text-sm border border-white/20">
                     {formatDate(tender.closeDate)}
                   </div>
                 </div>
               </div>
 
               {/* Main Content */}
-              <div className="p-5 space-y-6">
+              <div className="p-6 space-y-6">
                 {/* Info grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                    <div className="bg-indigo-100 p-2 rounded-full">
-                      <MapPin className="w-5 h-5 text-indigo-600" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="flex items-start gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
+                    <div className="p-2.5 bg-indigo-100 rounded-full text-indigo-600 group-hover:bg-indigo-200 transition-colors">
+                      <MapPin className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Location</p>
@@ -102,9 +107,9 @@ const HistoryView = ({ tenders }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                    <div className="bg-purple-100 p-2 rounded-full">
-                      <Calendar className="w-5 h-5 text-purple-600" />
+                  <div className="flex items-start gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
+                    <div className="p-2.5 bg-purple-100 rounded-full text-purple-600 group-hover:bg-purple-200 transition-colors">
+                      <Calendar className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Delivery Window</p>
@@ -114,9 +119,9 @@ const HistoryView = ({ tenders }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                    <div className="bg-blue-100 p-2 rounded-full">
-                      <Calendar className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-start gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
+                    <div className="p-2.5 bg-blue-100 rounded-full text-blue-600 group-hover:bg-blue-200 transition-colors">
+                      <Calendar className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Tender Close Date</p>
@@ -124,19 +129,19 @@ const HistoryView = ({ tenders }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                    <div className="bg-red-100 p-2 rounded-full">
-                      <Scale className="w-5 h-5 text-red-600" />
+                  <div className="flex items-start gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
+                    <div className="p-2.5 bg-red-100 rounded-full text-red-600 group-hover:bg-red-200 transition-colors">
+                      <Scale className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Max Bid Amount</p>
-                      <p className="font-medium text-gray-800">{tender.maxBidAmount || " - "}</p>
+                      <p className="font-medium text-gray-800">₹ {tender.maxBidAmount?.toLocaleString('en-IN') || "N/A"}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                    <div className="bg-teal-100 p-2 rounded-full">
-                      <Package className="w-5 h-5 text-teal-600" />
+                  <div className="flex items-start gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200 sm:col-span-2 lg:col-span-2">
+                    <div className="p-2.5 bg-teal-100 rounded-full text-teal-600 group-hover:bg-teal-200 transition-colors">
+                      <Package className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Shipment</p>
@@ -152,10 +157,10 @@ const HistoryView = ({ tenders }) => {
                   <div className="border-t border-gray-100 pt-5">
                     <button
                       onClick={() => setExpandedQuotationsId((prev) => (prev === tender._id ? null : tender._id))}
-                      className="mb-4 flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg hover:bg-indigo-50"
+                      className="mb-4 flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50"
                     >
                       <Package className="w-4 h-4" />
-                      {expandedQuotationsId === tender._id ? "Hide Quotations" : "View Quotations"}
+                      {expandedQuotationsId === tender._id ? "Hide Quotations" : "View Your Quotations"}
                       
                       {expandedQuotationsId === tender._id ? (
                         <ChevronUp className="w-4 h-4" />
@@ -172,25 +177,33 @@ const HistoryView = ({ tenders }) => {
                         </h4>
                         <div className="grid gap-4">
                           {quotations.map((q, qidx) => {
-                            const isFinalized = q.vehicleNumber?.toLowerCase().includes("final")
+                            const isFinalized = q.vehicleNumber?.toLowerCase().includes("final");
                             return (
                               <div
-                                key={q._id}
-                                className={`rounded-lg border ${isFinalized ? "border-emerald-200 bg-emerald-50/50" : "border-gray-200 bg-gray-50"} p-5 transition-all duration-300 hover:shadow-sm`}
+                                key={q._id || qidx}
+                                className={`rounded-lg border ${
+                                  isFinalized 
+                                    ? "border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-teal-50/80" 
+                                    : "border-gray-200 bg-gray-50"
+                                } p-5 transition-all duration-300 hover:shadow-md group`}
                               >
                                 <div className="flex justify-between items-center mb-4">
                                   <div
-                                    className={`text-sm font-medium px-3 py-1 rounded-full ${isFinalized ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"}`}
+                                    className={`text-sm font-medium px-3 py-1.5 rounded-full ${
+                                      isFinalized 
+                                        ? "bg-emerald-100 text-emerald-800" 
+                                        : "bg-gray-200 text-gray-700"
+                                    }`}
                                   >
                                     Quotation #{qidx + 1} {isFinalized && "• Finalized"}
                                   </div>
                                   <div className="text-xs text-gray-500">{formatDateTime(q.createdAt)}</div>
                                 </div>
 
-                                <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                                <div className="grid sm:grid-cols-3 gap-4 mb-5">
                                   <div className="flex items-center gap-3">
                                     <div
-                                      className={`p-2 rounded-full ${isFinalized ? "bg-emerald-100" : "bg-green-100"}`}
+                                      className={`p-2.5 rounded-full ${isFinalized ? "bg-emerald-100" : "bg-green-100"}`}
                                     >
                                       <DollarSign
                                         className={`w-4 h-4 ${isFinalized ? "text-emerald-600" : "text-green-600"}`}
@@ -205,7 +218,7 @@ const HistoryView = ({ tenders }) => {
                                   </div>
 
                                   <div className="flex items-center gap-3">
-                                    <div className="bg-blue-100 p-2 rounded-full">
+                                    <div className="bg-blue-100 p-2.5 rounded-full">
                                       <Calendar className="w-4 h-4 text-blue-600" />
                                     </div>
                                     <div>
@@ -215,8 +228,8 @@ const HistoryView = ({ tenders }) => {
                                   </div>
 
                                   <div className="flex items-center gap-3">
-                                    <div className="bg-yellow-100 p-2 rounded-full">
-                                      <Truck className="w-4 h-4 text-yellow-600" />
+                                    <div className="bg-amber-100 p-2.5 rounded-full">
+                                      <Truck className="w-4 h-4 text-amber-600" />
                                     </div>
                                     <div>
                                       <p className="text-xs text-gray-500">Vehicle Number</p>
@@ -230,20 +243,20 @@ const HistoryView = ({ tenders }) => {
                                   <div className="mt-4">
                                     <button
                                       onClick={() =>
-                                        setExpandedId((prev) => (prev === `${q._id}-img` ? null : `${q._id}-img`))
+                                        setExpandedId((prev) => (prev === `${q._id || qidx}-img` ? null : `${q._id || qidx}-img`))
                                       }
-                                      className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition px-3 py-2 rounded-lg hover:bg-indigo-50"
+                                      className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg hover:bg-indigo-50"
                                     >
                                       <ImageIcon className="w-4 h-4" />
-                                      {expandedId === `${q._id}-img` ? "Hide Images" : "View Images"}
-                                      {expandedId === `${q._id}-img` ? (
+                                      {expandedId === `${q._id || qidx}-img` ? "Hide Attachments" : "View Attachments"}
+                                      {expandedId === `${q._id || qidx}-img` ? (
                                         <ChevronUp className="w-4 h-4" />
                                       ) : (
                                         <ChevronDown className="w-4 h-4" />
                                       )}
                                     </button>
 
-                                    {expandedId === `${q._id}-img` && (
+                                    {expandedId === `${q._id || qidx}-img` && (
                                       <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
                                         {q.files.map((file, i) => (
                                           <a
@@ -251,15 +264,15 @@ const HistoryView = ({ tenders }) => {
                                             href={file.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="block aspect-square border rounded-md overflow-hidden shadow-sm hover:shadow-md transition group"
+                                            className="block aspect-square border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all group/img"
                                           >
                                             <div className="relative w-full h-full">
                                               <img
                                                 src={file.url || "/placeholder.svg"}
                                                 alt={file.name || `Quotation Image ${i + 1}`}
-                                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                                                className="object-cover w-full h-full group-hover/img:scale-105 transition-transform duration-300"
                                               />
-                                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
                                                 <span className="text-white text-xs font-medium">View Image</span>
                                               </div>
                                             </div>
@@ -274,7 +287,7 @@ const HistoryView = ({ tenders }) => {
                                   </p>
                                 )}
                               </div>
-                            )
+                            );
                           })}
                         </div>
                       </div>
@@ -302,11 +315,13 @@ const HistoryView = ({ tenders }) => {
 
                 {/* Expanded details */}
                 {expandedId === (tender._id || idx) && (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-300 pt-4">
+                  <div className="pt-4 space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
                     {tender.remarks && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 bg-amber-100 rounded-full">
+                            <AlertCircle className="w-5 h-5 text-amber-500" />
+                          </div>
                           <div>
                             <p className="font-medium text-amber-800 mb-1">Remarks</p>
                             <p className="text-amber-700 text-sm">{tender.remarks}</p>
@@ -322,26 +337,26 @@ const HistoryView = ({ tenders }) => {
                           <span className="w-1.5 h-5 bg-indigo-500 rounded-full"></span>
                           <h4 className="font-semibold text-gray-800">Materials</h4>
                         </div>
-                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="bg-gray-50">
-                                <th className="px-4 py-3 text-left font-medium text-gray-700">Material</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-700">Sub Material</th>
-                                <th className="px-4 py-3 text-right font-medium text-gray-700">Weight (MT)</th>
-                                <th className="px-4 py-3 text-right font-medium text-gray-700">Quantity</th>
+                              <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                <th className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">Material</th>
+                                <th className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">Sub Material</th>
+                                <th className="px-4 py-3 text-right font-semibold text-gray-700 border-b border-gray-200">Weight (MT)</th>
+                                <th className="px-4 py-3 text-right font-semibold text-gray-700 border-b border-gray-200">Quantity</th>
                               </tr>
                             </thead>
                             <tbody>
                               {tender.materials.map((m, i) => (
                                 <tr
                                   key={m._id || i}
-                                  className="border-t border-gray-200 hover:bg-gray-50 transition-colors"
+                                  className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-indigo-50/50 transition-colors`}
                                 >
-                                  <td className="px-4 py-3 font-medium text-gray-700">{m.material}</td>
-                                  <td className="px-4 py-3 text-gray-600">{m.subMaterial || "-"}</td>
-                                  <td className="px-4 py-3 text-right text-gray-700">{m.weight}</td>
-                                  <td className="px-4 py-3 text-right text-gray-700">{m.quantity}</td>
+                                  <td className="px-4 py-3 font-medium text-gray-700 border-t border-gray-200">{m.material}</td>
+                                  <td className="px-4 py-3 text-gray-600 border-t border-gray-200">{m.subMaterial || "-"}</td>
+                                  <td className="px-4 py-3 text-right text-gray-700 border-t border-gray-200">{m.weight}</td>
+                                  <td className="px-4 py-3 text-right text-gray-700 border-t border-gray-200">{m.quantity}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -366,11 +381,11 @@ const HistoryView = ({ tenders }) => {
                 )}
               </div>
             </div>
-          )
+          );
         })
       )}
     </div>
-  )
-}
+  );
+};
 
-export default HistoryView
+export default HistoryView;

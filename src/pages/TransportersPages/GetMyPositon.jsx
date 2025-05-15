@@ -33,20 +33,20 @@ const GetMyPosition = ({ tenderId }) => {
   if (!tenderId) return null
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-violet-50 border border-violet-200 rounded-lg shadow-sm flex-grow">
+    <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-100 to-purple-100 border border-violet-300 rounded-xl shadow-md flex-grow">
       {loading ? (
-        <div className="animate-pulse text-slate-500 text-sm flex items-center gap-2">
+        <div className="animate-pulse text-indigo-600 text-sm flex items-center gap-2">
           <Info className="w-4 h-4" />
           <span>Fetching your current position...</span>
         </div>
       ) : error ? (
-        <div className="text-sm text-red-600 flex items-center gap-2">
+        <div className="text-sm text-red-500 font-medium flex items-center gap-2">
           <Info className="w-4 h-4" />
           <span>{error}</span>
         </div>
       ) : position ? (
-        <div className="text-sm text-violet-800 font-medium flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-violet-600" />
+        <div className="text-sm text-violet-900 font-semibold flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-violet-700" />
           <span>
             Your Current Rank: <span className="font-bold">{position}</span>
           </span>
@@ -57,7 +57,9 @@ const GetMyPosition = ({ tenderId }) => {
       <button
         onClick={fetchPosition}
         disabled={loading}
-        className={`p-2 rounded-full hover:bg-violet-100 transition ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+        className={`p-2 rounded-full border border-violet-300 bg-white hover:bg-violet-100 shadow-sm transition duration-200 ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
         title="Refresh Rank"
       >
         <RotateCcw className="w-4 h-4 text-violet-600" />

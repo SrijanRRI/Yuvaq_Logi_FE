@@ -16,9 +16,9 @@ import {
 import QuotationModal from "../../modals/QuotationModal"
 import axios from "axios"
 import API from "../../API"
-import QuotationSlideshow from "./QuotationSlideShow"
 import GetMyPosition from "./GetMyPositon"
 import CountdownTimer from "../../components/CountdownTimer"
+import QuotationSlideshow from "./QuotationSlideshow"
 
 const LiveBidding = () => {
   const [tenders, setTenders] = useState([])
