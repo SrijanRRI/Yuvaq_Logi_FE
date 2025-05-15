@@ -48,6 +48,7 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
+      // console.log("upcoming tenders :" , res.data);
     } catch (err) {
       console.error("Error fetching all tenders:", err)
       setError("Failed to load tenders.")

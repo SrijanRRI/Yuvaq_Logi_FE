@@ -1,5 +1,5 @@
 // import { useState, useEffect } from "react";
-import { Calendar, MapPin, Package, Clock, AlertCircle, Timer } from "lucide-react";
+import { Calendar, MapPin, Package, Clock, AlertCircle, Timer, Scale } from "lucide-react";
 import CountdownTimer from "../../components/CountdownTimer";
 
 const UpcomingTenders = ({ tenders }) => {
@@ -184,6 +184,14 @@ const UpcomingTenders = ({ tenders }) => {
                   <div>
                     <div className="text-slate-500 mb-1">Closing Date</div>
                     <div className="font-medium text-slate-800">{formatDate(tender.closeDate)}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition-colors">
+                  <Scale className="w-5 h-5 text-slate-500 mt-0.5" />
+                  <div>
+                    <div className="text-slate-500 mb-1">Max Bid Amount</div>
+                    <div className="font-medium text-slate-800">{tender.maxBidAmount}</div>
                   </div>
                 </div>
 

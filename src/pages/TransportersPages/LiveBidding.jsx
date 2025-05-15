@@ -11,6 +11,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Scale,
 } from "lucide-react"
 import QuotationModal from "../../modals/QuotationModal"
 import axios from "axios"
@@ -191,6 +192,18 @@ const LiveBidding = () => {
                       <p className="text-xs text-slate-500 mb-1">Shipment Details</p>
                       <p className="font-medium text-slate-800">
                         {tender.totalWeight} MT | {tender.totalQuantity} pcs
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                    <div className="bg-rose-100 p-2.5 rounded-full">
+                      <Scale className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Max Bid Amount</p>
+                      <p className="font-medium text-slate-800">
+                        {tender.maxBidAmount || " - "}
                       </p>
                     </div>
                   </div>

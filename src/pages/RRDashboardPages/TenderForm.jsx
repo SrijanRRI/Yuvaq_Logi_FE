@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Package, FileText, Truck, Users, Plus, Trash2, Send, Briefcase } from "lucide-react"
+import { Calendar, MapPin, Package, FileText, Truck, Users, Plus, Trash2, Send, Briefcase, Scale } from "lucide-react"
 import FullScreenLoader from "../../components/FullScreenLoader"
 
 const TenderForm = ({
@@ -126,6 +126,29 @@ const TenderForm = ({
                     </div>
                   </div>
                 </div>
+
+                <div className="space-y-4 sm:col-span-2">
+                  <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+                    <Scale className="h-5 w-5 text-emerald-600" />
+                    Maximum Bid Amount
+                  </h2>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <span className="text-slate-500 text-sm">₹</span>
+                    </div>
+                    <input
+                      type="number"
+                      name="maxBidAmount"
+                      value={form.maxBidAmount || ""}
+                      onChange={handleChange}
+                      placeholder="Enter maximum allowed bid amount"
+                      className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500">Enter the lower limit transporters can quote for this tender.</p>
+                </div>
+
               </div>
 
               {/* Project Details */}

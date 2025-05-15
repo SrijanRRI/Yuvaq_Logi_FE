@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   Truck,
+  Scale,
 } from "lucide-react"
 
 const HistoryView = ({ tenders }) => {
@@ -124,6 +125,16 @@ const HistoryView = ({ tenders }) => {
                   </div>
 
                   <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <div className="bg-red-100 p-2 rounded-full">
+                      <Scale className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Max Bid Amount</p>
+                      <p className="font-medium text-gray-800">{tender.maxBidAmount || " - "}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                     <div className="bg-teal-100 p-2 rounded-full">
                       <Package className="w-5 h-5 text-teal-600" />
                     </div>
@@ -145,6 +156,7 @@ const HistoryView = ({ tenders }) => {
                     >
                       <Package className="w-4 h-4" />
                       {expandedQuotationsId === tender._id ? "Hide Quotations" : "View Quotations"}
+                      
                       {expandedQuotationsId === tender._id ? (
                         <ChevronUp className="w-4 h-4" />
                       ) : (

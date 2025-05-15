@@ -47,6 +47,20 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </p>
         </div>
 
+        <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-4 shadow-sm border border-yellow-100 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-yellow-100 p-2 rounded-full">
+                <Scale className="h-5 w-5 text-yellow-600" />
+              </div>
+              <span className="text-sm font-medium text-slate-600">Max Bid Amount</span>
+            </div>
+            <div className="bg-white px-3 py-1 rounded-full shadow-sm">
+              <span className="text-yellow-700 font-bold">₹ {tender.maxBidAmount}</span>
+            </div>
+          </div>
+        </div>
+
         <div><h4 className="text-sm font-medium text-slate-500 mb-1">Closing Date</h4><p className="font-medium text-slate-800">{formatDate(tender.closeDate)}</p></div>
         <div><h4 className="text-sm font-medium text-slate-500 mb-1">Location</h4><p className="text-slate-800">{tender.dispatchLocation}, {tender.address}, {tender.pincode}</p></div>
 

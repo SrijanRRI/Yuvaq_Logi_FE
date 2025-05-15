@@ -16,7 +16,11 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
 
     if (!price || price <= 0) {
       newErrors.price = "Please enter a valid price"
+    } else if (tender.maxBidAmount && Number(price) > Number(tender.maxBidAmount)) {
+      newErrors.price = `Bid cannot exceed ₹${tender.maxBidAmount}`
+      toast.error(`आपकी बोली राशि ₹${tender.maxBidAmount} से अधिक नहीं हो सकती। कृपया ₹${tender.maxBidAmount} या उससे कम दर्ज करें।`)
     }
+
 
     if (!vehicleNo) {
       newErrors.vehicleNo = "Vehicle number is required"
@@ -105,7 +109,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
               }}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
                 }`}
-              placeholder="Enter your bid amount"
+              placeholder={`Enter your bid (Max ₹${tender.maxBidAmount})`}
             />
             {errors.price && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
