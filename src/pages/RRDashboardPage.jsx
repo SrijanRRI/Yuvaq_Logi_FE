@@ -240,6 +240,7 @@ const RRDashboardPage = () => {
         remarks: "",
         transporter: [],
         isManualTotals: false,
+        maxBidAmount: "",
       })
 
       setSelectedTransporters([])
