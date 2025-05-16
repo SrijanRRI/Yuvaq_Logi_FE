@@ -55,7 +55,7 @@ const TransporterResponseItem = ({
         </div>
         <div>
           <p className="text-sm text-slate-500">Price</p>
-          <p className="text-lg font-semibold text-green-700">₹{response.price}</p>
+          <p className="text-lg font-semibold text-green-700">₹ {Number(response.price).toLocaleString("en-IN")} </p>
         </div>
         <div>
           <p className="text-sm text-slate-500">Vehicle Detail</p>
@@ -104,7 +104,7 @@ const TransporterResponseItem = ({
         {(isSelected || confirmedIdxMap[tenderId] === idx) && isFinalizedView ? (
           <div className="flex flex-col md:flex-row md:items-center md:justify-evenly gap-3 text-green-700 font-semibold text-md bg-green-50 p-3 rounded-md border border-green-200">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" /> Final Deal Price: ₹{tender.finalPrice || response.price}
+              <CheckCircle className="h-4 w-4" /> Final Deal Price: ₹{Number(tender.finalPrice || response.price).toLocaleString("en-IN")}
             </div>
 
             <button
@@ -152,7 +152,7 @@ const TransporterResponseItem = ({
               }}
               className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
             >
-              Confirm ₹{response.price}
+              Confirm ₹{Number(response.price).toLocaleString("en-IN")}
             </button>
           </div>
         ) : confirmedIdxMap[tenderId] === undefined ? (

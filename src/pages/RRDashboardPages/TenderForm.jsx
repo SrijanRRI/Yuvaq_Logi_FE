@@ -139,6 +139,7 @@ const TenderForm = ({
                     <input
                       type="number"
                       name="maxBidAmount"
+                      step="1"
                       value={form.maxBidAmount || ""}
                       onChange={handleChange}
                       placeholder="Enter maximum allowed bid amount"
