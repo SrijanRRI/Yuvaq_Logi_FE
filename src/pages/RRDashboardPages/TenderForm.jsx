@@ -41,6 +41,7 @@ const TenderForm = ({
                         type="date"
                         name="deliveryStart"
                         value={form.deliveryWindow.from}
+                        min={new Date().toISOString().split("T")[0]}
                         onChange={(e) =>
                           setForm((prev) => ({
                             ...prev,
@@ -140,6 +141,7 @@ const TenderForm = ({
                       type="number"
                       name="maxBidAmount"
                       step="1"
+                      min="1"
                       value={form.maxBidAmount || ""}
                       onChange={handleChange}
                       placeholder="Enter maximum allowed bid amount"
