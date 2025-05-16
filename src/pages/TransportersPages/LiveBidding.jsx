@@ -203,7 +203,7 @@ const LiveBidding = () => {
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Max Bid Amount</p>
                       <p className="font-medium text-slate-800">
-                        {tender.maxBidAmount || " - "}
+                        {tender.maxBidAmount?.toLocaleString('en-IN') || " - "}
                       </p>
                     </div>
                   </div>

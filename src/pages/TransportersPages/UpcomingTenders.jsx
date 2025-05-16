@@ -286,13 +286,6 @@ const UpcomingTenders = ({ tenders }) => {
                     </div>
                   </div>
                 )}
-
-                {/* View more details button */}
-                <div className="mt-4 flex justify-center">
-                  <button className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg shadow hover:from-indigo-600 hover:to-indigo-700 transition-all transform hover:scale-105 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
-                    View Complete Details
-                  </button>
-                </div>
               </div>
             </div>
           );

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { toast } from "react-toastify"
 import axios from "axios"
@@ -232,7 +230,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
                       <option value="all">All Statuses</option>
-                      <option value="pending">Pending</option>
+                      <option value="open">Open</option>
                       <option value="closed">Closed</option>
                       <option value="finalized">Finalized</option>
                     </select>

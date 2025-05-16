@@ -1,4 +1,4 @@
-import { CheckCircle, FileText, RefreshCcw, Edit, Check, X, Award, Truck, Info } from "lucide-react"
+import { CheckCircle, FileText, RefreshCcw, Check, Award, Truck, Info } from "lucide-react"
 
 const TransporterResponseItem = ({
   response,
@@ -7,9 +7,6 @@ const TransporterResponseItem = ({
   selectedQuotationId,
   confirmedIdxMap,
   editingId,
-  priceInput,
-  setEditingId,
-  setPriceInput,
   onConfirmFinal,
   onReopen,
   getTransporterName,
@@ -22,7 +19,6 @@ const TransporterResponseItem = ({
 
   const isSelected = response._id === selectedQuotationId
   const isDimmed = isFinalizedView && !isSelected
-  const isEditing = editingId === `${tenderId}-${idx}`
 
   const isBeforeOrOnClosingDay = () => {
     const now = new Date()
@@ -42,13 +38,12 @@ const TransporterResponseItem = ({
 
   return (
     <div
-      className={`rounded-xl shadow-sm transition duration-300 overflow-hidden ${
-        isDimmed
+      className={`rounded-xl shadow-sm transition duration-300 overflow-hidden ${isDimmed
           ? "border border-slate-200 bg-slate-50"
           : isSelected
             ? "border-2 border-emerald-500 bg-white"
             : "border border-slate-200 bg-white"
-      }`}
+        }`}
     >
       <div
         className={`${isSelected ? "bg-emerald-50 border-b border-emerald-100" : isDimmed ? "bg-slate-100 border-b border-slate-200" : "bg-indigo-50 border-b border-indigo-100"} px-5 py-3`}
@@ -139,11 +134,10 @@ const TransporterResponseItem = ({
                 <button
                   onClick={() => onReopen(tenderId)}
                   disabled={!canReopenQuotation}
-                  className={`px-4 py-2 rounded-lg transition border flex items-center gap-2 ${
-                    canReopenQuotation
+                  className={`px-4 py-2 rounded-lg transition border flex items-center gap-2 ${canReopenQuotation
                       ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
                       : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   <RefreshCcw className="h-4 w-4" />
                   {canReopenQuotation
@@ -158,48 +152,10 @@ const TransporterResponseItem = ({
                 </div>
               </div>
             </div>
-          ) : !isFinalizedView && isEditing ? (
-            <div className="mt-4 flex gap-3 items-center bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <span className="text-slate-500">₹</span>
-                </div>
-                <input
-                  type="number"
-                  value={priceInput}
-                  onChange={(e) => setPriceInput(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-lg font-medium"
-                  placeholder="Enter final price"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onConfirmFinal(tenderId, idx, Number(priceInput))}
-                  className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2"
-                >
-                  <Check className="h-4 w-4" /> Confirm
-                </button>
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="px-4 py-2.5 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" /> Cancel
-                </button>
-              </div>
-            </div>
           ) : !isFinalizedView && confirmedIdxMap[tenderId] === undefined && canConfirm ? (
             <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <p className="text-slate-700">Would you like to confirm this price as final?</p>
+              <p className="text-slate-700">Would you like to confirm this quotation?</p>
               <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingId(`${tenderId}-${idx}`)
-                    setPriceInput(response.price)
-                  }}
-                  className="px-4 py-2 border border-indigo-300 text-indigo-600 rounded-lg hover:bg-indigo-50 flex items-center gap-2"
-                >
-                  <Edit className="h-4 w-4" /> Edit Price
-                </button>
                 <button
                   onClick={() => onConfirmFinal(tenderId, idx, response.price)}
                   className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2"
