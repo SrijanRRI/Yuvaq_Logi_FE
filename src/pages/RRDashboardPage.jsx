@@ -87,19 +87,39 @@ const RRDashboardPage = () => {
   }
 
   const handleChange = (e) => {
-    const { name, value, options } = e.target
+    const { name, value, options } = e.target;
 
     if (name === "transporter") {
       const selected = Array.from(options)
         .filter((option) => option.selected)
-        .map((option) => option.value)
-      setForm({ ...form, [name]: selected })
-    } else if (name === "weight" || name === "quantity") {
-      setForm({ ...form, [name]: value, isManualTotals: true })
-    } else {
-      setForm({ ...form, [name]: value })
+        .map((option) => option.value);
+      setForm((prev) => ({ ...prev, transporter: selected }));
     }
-  }
+
+    else if (name === "maxBidAmount") {
+      const rounded = value ? Math.round(Number(value)) : "";
+      setForm((prev) => ({
+        ...prev,
+        maxBidAmount: rounded.toString(),
+      }));
+    }
+
+    else if (name === "weight" || name === "quantity") {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+        isManualTotals: true,
+      }));
+    }
+
+    else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
 
   const handleRemoveMaterial = (indexToRemove) => {
     setForm((prev) => {
@@ -204,7 +224,7 @@ const RRDashboardPage = () => {
       totalQuantity: form.quantity ? Number.parseInt(form.quantity) : null,
       remarks: form.remarks,
       transporters: form.transporter,
-      maxBidAmount: form.maxBidAmount ? Number.parseFloat(form.maxBidAmount) : null,
+      maxBidAmount: form.maxBidAmount ? Math.round(Number(form.maxBidAmount)) : null,
       materials: form.materials.map((mat) => ({
         material: mat.item,
         subMaterial: mat.subItem || null,

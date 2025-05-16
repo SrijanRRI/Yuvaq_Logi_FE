@@ -130,7 +130,7 @@ const HistoryView = ({ tenders }) => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Max Bid Amount</p>
-                      <p className="font-medium text-gray-800">{tender.maxBidAmount || " - "}</p>
+                      <p className="font-medium text-gray-800">{Number(tender.maxBidAmount).toLocaleString("en-IN") || " - "}</p>
                     </div>
                   </div>
 

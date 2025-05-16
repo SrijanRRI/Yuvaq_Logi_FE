@@ -56,7 +56,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               <span className="text-sm font-medium text-slate-600">Max Bid Amount</span>
             </div>
             <div className="bg-white px-3 py-1 rounded-full shadow-sm">
-              <span className="text-yellow-700 font-bold">₹ {tender.maxBidAmount}</span>
+              <span className="text-yellow-700 font-bold">₹ {Number(tender.maxBidAmount).toLocaleString("en-IN") || " - "}</span>
             </div>
           </div>
         </div>
