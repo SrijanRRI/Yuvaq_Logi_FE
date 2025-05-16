@@ -97,7 +97,7 @@ const RRDashboardPage = () => {
     }
 
     else if (name === "maxBidAmount") {
-      const rounded = value ? Math.round(Number(value)) : "";
+       const rounded = value ? parseInt(value, 10) : "";
       setForm((prev) => ({
         ...prev,
         maxBidAmount: rounded.toString(),
@@ -224,7 +224,7 @@ const RRDashboardPage = () => {
       totalQuantity: form.quantity ? Number.parseInt(form.quantity) : null,
       remarks: form.remarks,
       transporters: form.transporter,
-      maxBidAmount: form.maxBidAmount ? Math.round(Number(form.maxBidAmount)) : null,
+      maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
       materials: form.materials.map((mat) => ({
         material: mat.item,
         subMaterial: mat.subItem || null,
