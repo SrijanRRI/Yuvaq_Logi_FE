@@ -23,6 +23,7 @@ import UpcomingTenders from "./TransportersPages/UpcomingTenders"
 import LiveBidding from "./TransportersPages/LiveBidding"
 import HistoryView from "./TransportersPages/HistoryView"
 import Logo from "/assets/LogiYatraIcon1.png"
+import Navbar from "../components/Navbar"
 
 const TransporterDashboardPage = () => {
   const [view, setView] = useState("all")
@@ -116,65 +117,11 @@ const TransporterDashboardPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* Modern Navbar */}
-      <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center h-16 px-4">
-            {/* Logo and Title */}
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-lg overflow-hidden shadow-md">
-                  <img
-                    src={Logo} 
-                    alt="Logo"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-800"> Transporter Dashboard </h1>
-                <p className="text-xs text-slate-500">Manage your Bids and Quotations</p>
-              </div>
-            </div>
-
-            {/* User Menu and Notifications */}
-            <div className="flex items-center gap-2">
-
-              {/* User Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 p-2 rounded-full hover:bg-slate-100 transition-colors"
-                >
-                  <div className="h-8 w-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-600">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <span className="hidden sm:block text-sm font-medium text-slate-700">{userName}</span>
-                  <ChevronDown className="h-4 w-4 text-slate-400" />
-                </button>
-
-                {/* User Dropdown */}
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-50 overflow-hidden">
-                    <div className="p-3 border-b border-slate-200">
-                      <p className="font-medium text-slate-800">{userName}</p>
-                      <p className="text-xs text-slate-500">Transporter</p>
-                    </div>
-                    <div className="p-2">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md flex items-center gap-2"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navbar
+        title="Transporter Dashboard"
+        userName={userName}
+        onLogout={handleLogout}
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6">
