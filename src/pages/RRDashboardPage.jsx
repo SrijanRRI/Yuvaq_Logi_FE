@@ -336,12 +336,28 @@ const RRDashboardPage = () => {
         )}
       </div>
 
-      {/* Modals remain the same */}
+      
       {showMaterialModal && (
         <MaterialModal
           close={() => setShowMaterialModal(false)}
           onAdd={(newMaterial) => {
-            // ... existing code
+            setForm((prev) => {
+              const updatedMaterials = [...prev.materials, newMaterial]
+              let weight = prev.weight
+              let quantity = prev.quantity
+
+              if (!prev.isManualTotals) {
+                weight = updatedMaterials.reduce((sum, mat) => sum + Number.parseFloat(mat.weight || 0), 0).toFixed(2)
+                quantity = updatedMaterials.reduce((sum, mat) => sum + Number.parseInt(mat.quantity || 0), 0)
+              }
+
+              return {
+                ...prev,
+                materials: updatedMaterials,
+                weight,
+                quantity,
+              }
+            })
           }}
         />
       )}
