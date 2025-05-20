@@ -28,6 +28,7 @@ const API = {
  APPROVEREQUEST: `${serverUrl}/admin/approve-user/`,
  REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
  GETALLTENDER : `${serverUrl}/admin/all-tender`,
+ GET_ALL_REPORTS : `${serverUrl}/admin/tenders/ranked-best-report`,
 
   //Transport User
   FETCH_ALL_TRANSPORTER: `${serverUrl}/admin/transport-users`,

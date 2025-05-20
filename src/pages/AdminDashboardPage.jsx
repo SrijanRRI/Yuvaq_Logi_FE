@@ -10,15 +10,16 @@ import { logout } from "../utils/UserSlice"
 import AdminAllUsers from "./AdminPage/AdminAllUsers"
 import AdminAllTenders from "./AdminPage/AdminAllTenders"
 import AdminRequests from "./AdminPage/AdminRequests"
+import AdminReports from "./AdminPage/AdminReports"
 
 const AdminDashboardPage = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
     const [requests, setRequests] = useState([])
-    const [approvedUsers, setApprovedUsers] = useState([])
+    // const [approvedUsers, setApprovedUsers] = useState([])
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
+    // const [error, setError] = useState(null)
     const [confirmDialog, setConfirmDialog] = useState(null)
     const [approvingIndex, setApprovingIndex] = useState(null)
 
@@ -31,8 +32,16 @@ const AdminDashboardPage = () => {
 
     const [isRejecting, setIsRejecting] = useState(false)
 
+    const [reportData, setReportData] = useState([])
+
     const userInfo = useSelector((state) => state.User?.userInfo)
     const userName = userInfo?.name || "Admin User"
+
+    useEffect(() => {
+        if (activeTab === "requests") {
+            fetchPendingUsers()
+        }
+    }, [activeTab])
 
     const fetchAllUsers = async () => {
         setLoading(true)
@@ -142,11 +151,22 @@ const AdminDashboardPage = () => {
         })
     }
 
-    useEffect(() => {
-        if (activeTab === "requests") {
-            fetchPendingUsers()
+    const fetchReports = async () => {
+        setLoading(true)
+        try {
+            const res = await axios.get(API.GET_ALL_REPORTS,
+                { withCredentials: true }
+            )
+            setReportData(res.data?.data || [])
+            setActiveTab("reports")
+
+        } catch (err) {
+            toast.error("Error fetching reports.")
+            console.log("error", err);
+        } finally {
+            setLoading(false)
         }
-    }, [activeTab])
+    }
 
     const handleLogout = async () => {
         try {
@@ -232,6 +252,16 @@ const AdminDashboardPage = () => {
                             }`}
                     >
                         Tenders
+                    </button>
+
+                    <button
+                        onClick={fetchReports}
+                        className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "reports"
+                            ? "bg-gradient-to-r from-gray-700 to-gray-900 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+                            }`}
+                    >
+                        Reports
                     </button>
                 </div>
 
@@ -334,6 +364,30 @@ const AdminDashboardPage = () => {
                                     <h3 className="font-semibold text-green-800 text-lg mb-1">Tenders</h3>
                                     <p className="text-green-600 text-sm">View all tender information</p>
                                 </div>
+
+                                <div
+                                    onClick={fetchReports}
+                                    className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl cursor-pointer hover:shadow-md transition-shadow duration-200"
+                                >
+                                    <div className="w-12 h-12 bg-yellow-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-6 w-6 text-yellow-700"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2 2v2m6 0v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2m10-14h4a2 2 0 012 2v4m0 0L13 3m7 5v12a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <h3 className="font-semibold text-yellow-800 text-lg mb-1">Reports</h3>
+                                    <p className="text-yellow-600 text-sm">View all tender's reports</p>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -380,6 +434,8 @@ const AdminDashboardPage = () => {
                     )}
 
                     {activeTab === "tenders" && <AdminAllTenders tenders={allTenders} />}
+
+                    {activeTab === "reports" && <AdminReports data={reportData} />}
 
                 </div>
             </main>
