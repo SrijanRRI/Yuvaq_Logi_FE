@@ -108,7 +108,7 @@ const AdminDashboardPage = () => {
 
             if (res.data.success) {
                 toast.success(`${user.name} approved successfully.`)
-                setApprovedUsers((prev) => [...prev, user])
+                // setApprovedUsers((prev) => [...prev, user])
                 setRequests((prev) => prev.filter((_, i) => i !== index))
             } else {
                 toast.error("Failed to approve user.")
