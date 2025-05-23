@@ -39,6 +39,7 @@ const RRDashboardPage = () => {
     transporter: [],
     isManualTotals: false,
     maxBidAmount: "",
+    maxBidUnit: "",
   })
 
   const [showMaterialModal, setShowMaterialModal] = useState(false)
@@ -225,6 +226,7 @@ const RRDashboardPage = () => {
       remarks: form.remarks,
       transporters: form.transporter,
       maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
+      maxBidUnit: form.maxBidUnit || null,
       materials: form.materials.map((mat) => ({
         material: mat.item,
         subMaterial: mat.subItem || null,
@@ -261,6 +263,7 @@ const RRDashboardPage = () => {
         transporter: [],
         isManualTotals: false,
         maxBidAmount: "",
+        maxBidUnit: "",
       })
 
       setSelectedTransporters([])

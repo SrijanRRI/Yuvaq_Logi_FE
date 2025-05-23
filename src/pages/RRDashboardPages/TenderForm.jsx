@@ -15,21 +15,20 @@ const TenderForm = ({
 }) => {
   return (
     <>
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 min-h-[600px] flex items-center justify-center">
-        {loading ?
-
-          (<FullScreenLoader />) :
-
-          (<form onSubmit={handleSend} className="w-full">
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 min-h-[600px] flex items-center justify-center">
+        {loading ? (
+          <FullScreenLoader />
+        ) : (
+          <form onSubmit={handleSend} className="w-full max-w-6xl mx-auto">
             <fieldset disabled={formDisabled} className="space-y-8">
-              <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <Package className="h-6 w-6 text-emerald-600" />
                 Create New Tender
               </h1>
 
               {/* Delivery Window & Closing Date */}
               <div className="grid md:grid-cols-2 gap-6 mb-8">
-                <div className="space-y-4">
+                <div className="space-y-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-emerald-600" />
                     Delivery Window
@@ -77,7 +76,7 @@ const TenderForm = ({
                   </div>
                 </div>
 
-                <div>
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-emerald-600" />
                     Closing Date
@@ -95,8 +94,8 @@ const TenderForm = ({
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <div className="w-full md:col-span-2">
+                <div className="md:col-span-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <div className="w-full">
                     <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2 mb-4">
                       <Calendar className="h-5 w-5 text-emerald-600" />
                       Bidding Time
@@ -128,30 +127,50 @@ const TenderForm = ({
                   </div>
                 </div>
 
-                <div className="space-y-4 sm:col-span-2">
+                <div className="space-y-4 md:col-span-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
                     <Scale className="h-5 w-5 text-emerald-600" />
                     Maximum Bid Amount
                   </h2>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <span className="text-slate-500 text-sm">₹</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <span className="text-slate-500 text-sm">₹</span>
+                      </div>
+                      <input
+                        type="number"
+                        name="maxBidAmount"
+                        step="1"
+                        min="1"
+                        value={form.maxBidAmount || ""}
+                        onChange={handleChange}
+                        placeholder="Enter maximum allowed bid amount"
+                        className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base"
+                        required
+                      />
                     </div>
-                    <input
-                      type="number"
-                      name="maxBidAmount"
-                      step="1"
-                      min="1"
-                      value={form.maxBidAmount || ""}
-                      onChange={handleChange}
-                      placeholder="Enter maximum allowed bid amount"
-                      className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base"
-                      required
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500">Enter the lower limit transporters can quote for this tender.</p>
-                </div>
 
+                    {/* Dropdown Selector */}
+                    <div>
+                      <select
+                        name="maxBidUnit"
+                        value={form.maxBidUnit || ""}
+                        onChange={handleChange}
+                        required
+                        className="w-full py-2 px-3 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent h-[42px]"
+                      >
+                        <option value="" disabled>
+                          Select Unit
+                        </option>
+                        <option value="Per MT">Per MT</option>
+                        <option value="Per Tender">Per Tender</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Enter the lower limit transporters can quote for this tender.
+                  </p>
+                </div>
               </div>
 
               {/* Project Details */}
@@ -160,7 +179,7 @@ const TenderForm = ({
                   <Briefcase className="h-5 w-5 text-emerald-600" />
                   Project Details
                 </h2>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
                     <input
@@ -216,7 +235,7 @@ const TenderForm = ({
                   <MapPin className="h-5 w-5 text-emerald-600" />
                   Dispatch Location Details
                 </h2>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
                     <input
@@ -272,7 +291,7 @@ const TenderForm = ({
                 </div>
 
                 {form.materials.length > 0 ? (
-                  <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                  <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-100">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -288,8 +307,9 @@ const TenderForm = ({
                           {form.materials.map((material, index) => (
                             <tr
                               key={index}
-                              className={`${index % 2 === 0 ? "bg-white" : "bg-slate-50"
-                                } hover:bg-slate-100 transition-colors duration-150`}
+                              className={`${
+                                index % 2 === 0 ? "bg-white" : "bg-slate-50"
+                              } hover:bg-slate-100 transition-colors duration-150`}
                             >
                               <td className="px-4 py-2 font-medium">{material.item}</td>
                               <td className="px-4 py-2">{material.subItem || "-"}</td>
@@ -310,7 +330,7 @@ const TenderForm = ({
                       </table>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Total Weight (MT)</label>
                         <input
@@ -369,12 +389,12 @@ const TenderForm = ({
                 </div>
 
                 {selectedTransporters.length > 0 ? (
-                  <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                  <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-100">
                     <div className="flex flex-wrap gap-2">
                       {selectedTransporters.map((transporter) => (
                         <div
                           key={transporter._id}
-                          className="bg-white px-3 py-1.5 rounded-md border border-slate-200 text-sm flex items-center gap-1.5"
+                          className="bg-white px-3 py-1.5 rounded-md border border-slate-200 text-sm flex items-center gap-1.5 shadow-sm"
                         >
                           <Users className="h-3.5 w-3.5 text-emerald-600" />
                           {transporter.name || transporter.email}
@@ -408,10 +428,9 @@ const TenderForm = ({
                   value={form.remarks}
                   onChange={handleChange}
                   placeholder="Add any additional information or special instructions"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[100px]"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[100px] bg-slate-50"
                 ></textarea>
               </div>
-
             </fieldset>
 
             {/* Submit Button */}
@@ -419,7 +438,7 @@ const TenderForm = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2 shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -429,7 +448,14 @@ const TenderForm = ({
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
                     Sending...
@@ -441,7 +467,8 @@ const TenderForm = ({
                 )}
               </button>
             </div>
-          </form>)}
+          </form>
+        )}
       </div>
     </>
   )

@@ -36,23 +36,22 @@ const API = {
   LIVE_BIDING_TENDERS: `${serverUrl}/tenders/assigned`,
   GET_QUOTATION_SLIDESHOW: `${serverUrl}/quotation/my-tender-quotes`,
   GET_MY_POSITION: `${serverUrl}/tenders/my-position`,
-  REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
-
-
+  
   SUBMIT_QUOTATION: `${serverUrl}/quotation/submit`,
   SEE_QUOTATIONS: `${serverUrl}/tender/quotations`,
   HISTORY_FOR_QUOTATION_QUOTE: `${serverUrl}/tenders/quotation/history`,
-
+  
   //RR USer Tenders
   CREATE_TENDER: `${serverUrl}/tenders/create-tender`,
   FETCH_ALL_TENDER_CREATED_BY_RRUSER: `${serverUrl}/tenders/my-tenders`,
   FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER: `${serverUrl}/tenders/quotations`,
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
+  REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
 
   //API for session checking 
 
   CHECK_ME : `${serverUrl}/api/auth/me`,
-};
+}; 
 
 // export const switchServerUrl = (mode) => {
 //   localStorage.setItem("serverUrl", mode);

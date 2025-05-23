@@ -191,7 +191,10 @@ const UpcomingTenders = ({ tenders }) => {
                   <Scale className="w-5 h-5 text-slate-500 mt-0.5" />
                   <div>
                     <div className="text-slate-500 mb-1">Max Bid Amount</div>
-                    <div className="font-medium text-slate-800">{Number(tender.maxBidAmount).toLocaleString("en-IN") || " - "}</div>
+                    <div className="font-medium text-slate-800">
+                      {Number(tender.maxBidAmount).toLocaleString("en-IN") || " - "}
+                      {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : " - "}
+                    </div>
                   </div>
                 </div>
 
