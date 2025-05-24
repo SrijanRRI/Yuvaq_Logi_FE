@@ -99,7 +99,7 @@ const HistoryView = ({ tenders }) => {
                   <InfoCard icon={<Calendar className="w-5 h-5" />} label="Tender Close Date" value={formatDate(tender.closeDate)} bg="bg-blue-100 text-blue-600" />
 
                   {/* Max Bid */}
-                  <InfoCard icon={<Scale className="w-5 h-5" />} label="Max Bid Amount" value={`₹ ${tender.maxBidAmount?.toLocaleString("en-IN") || "N/A"}`} bg="bg-red-100 text-red-600" />
+                  <InfoCard icon={<Scale className="w-5 h-5" />} label="Max Bid Amount" value={`₹ ${tender.maxBidAmount?.toLocaleString("en-IN") || "N/A"} ${tender.maxBidUnit ? `(${tender.maxBidUnit})` : " ( - ) "}`} bg="bg-red-100 text-red-600" />
 
                   {/* Shipment */}
                   <InfoCard icon={<Package className="w-5 h-5" />} label="Shipment" value={`${tender.totalWeight} MT | ${tender.totalQuantity} pcs`} bg="bg-teal-100 text-teal-600" span="sm:col-span-2 lg:col-span-2" />

@@ -84,6 +84,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-yellow-200">
               <span className="text-yellow-700 font-bold text-lg">
                 ₹ {tender.maxBidAmount?.toLocaleString() || "N/A"}
+                {tender.maxBidUnit ? ` (${tender.maxBidUnit}) ` : " ( - ) "}
               </span>
             </div>
           </div>

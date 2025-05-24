@@ -17,7 +17,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     if (!price || price <= 0) {
       newErrors.price = "Please enter a valid price"
     } else if (tender.maxBidAmount && Number(price) > Number(tender.maxBidAmount)) {
-      newErrors.price = `Bid cannot exceed ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")}`
+      newErrors.price = `Bid cannot exceed ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} ${tender.maxBidUnit ? ` (${tender.maxBidUnit})` : ""}`
       toast.error(`आपकी बोली राशि ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} से अधिक नहीं हो सकती। कृपया ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} या उससे कम दर्ज करें।`)
     }
 
@@ -109,7 +109,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
               }}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
                 }`}
-              placeholder={`Enter your bid (Max ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")})`}
+              placeholder={`Enter your bid (Max ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} ${tender.maxBidUnit ? ` (${tender.maxBidUnit})` : "( - )"} ) `}
             />
             {errors.price && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">

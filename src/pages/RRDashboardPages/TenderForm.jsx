@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Calendar,
   MapPin,
@@ -11,7 +13,10 @@ import {
   Briefcase,
   Scale,
   Info,
+  ChevronDown,
+  Check,
 } from "lucide-react"
+import { useState } from "react"
 
 import FullScreenLoader from "../../components/FullScreenLoader"
 
@@ -27,6 +32,26 @@ const TenderForm = ({
   loading,
   formDisabled,
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
+  const unitOptions = [
+    { value: "Per MT", label: "Per MT", description: "Price per metric ton" },
+    { value: "Per Tender", label: "Per Tender", description: "Fixed price for entire tender" },
+  ]
+
+  const handleUnitSelect = (value) => {
+    const event = {
+      target: {
+        name: "maxBidUnit",
+        value: value,
+      },
+    }
+    handleChange(event)
+    setIsDropdownOpen(false)
+  }
+
+  const selectedOption = unitOptions.find((option) => option.value === form.maxBidUnit)
+
   return (
     <div className="space-y-8">
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
@@ -150,7 +175,7 @@ const TenderForm = ({
                   <Scale className="h-5 w-5 text-amber-600" />
                   Maximum Bid Amount
                 </h2>
-                <div className="relative">
+                <div className="relative mb-4">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <span className="text-slate-500 text-lg">₹</span>
                   </div>
@@ -166,7 +191,70 @@ const TenderForm = ({
                     required
                   />
                 </div>
-                <div className="mt-2 flex items-start gap-2 text-amber-700">
+
+                {/* Enhanced Custom Dropdown */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Unit Type</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
+                            <Scale className="h-4 w-4 text-amber-600" />
+                          </div>
+                          <div>
+                            {selectedOption ? (
+                              <div>
+                                <div className="font-medium text-slate-800">{selectedOption.label}</div>
+                                <div className="text-xs text-slate-500">{selectedOption.description}</div>
+                              </div>
+                            ) : (
+                              <div className="text-slate-500">Select Unit Type</div>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
+                            isDropdownOpen ? "transform rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Dropdown Options */}
+                    {isDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
+                        {unitOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleUnitSelect(option.value)}
+                            className="w-full px-4 py-3 text-left hover:bg-amber-50 transition-colors duration-150 border-b border-amber-100 last:border-b-0 focus:outline-none focus:bg-amber-50"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
+                                  <Scale className="h-4 w-4 text-amber-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-slate-800">{option.label}</div>
+                                  <div className="text-xs text-slate-500">{option.description}</div>
+                                </div>
+                              </div>
+                              {form.maxBidUnit === option.value && <Check className="h-4 w-4 text-amber-600" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 text-amber-700">
                   <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p className="text-xs">Enter the maximum amount transporters can quote for this tender.</p>
                 </div>

@@ -8,22 +8,22 @@ const UpcomingTenders = ({ tenders }) => {
   const formatDate = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
 
   // Format date with time
   const formatDateTime = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
       : "N/A";
 
   // Get tender status based on dates
@@ -210,7 +210,10 @@ const UpcomingTenders = ({ tenders }) => {
                     </div>
                     <div>
                       <div className="text-gray-500 text-sm mb-1">Max Bid Amount</div>
-                      <div className="font-medium text-gray-800">₹ {tender.maxBidAmount?.toLocaleString('en-IN') || "N/A"}</div>
+                      <div className="font-medium text-gray-800">
+                        ₹ {tender.maxBidAmount?.toLocaleString('en-IN') || "N/A"}
+                        {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : "( - )"}
+                      </div>
                     </div>
                   </div>
 
