@@ -38,7 +38,7 @@ export const TransporterList = ({
   return (
     <div className="flex-1 overflow-y-auto p-5 pb-0">
       {/* Select All Section */}
-      <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 sticky top-0 z-10">
+      {/* <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 sticky top-0 z-10">
         <label className="flex items-center gap-3 cursor-pointer">
           <div className="relative flex items-center justify-center">
             <input
@@ -76,21 +76,24 @@ export const TransporterList = ({
             </p>
           </div>
         </label>
-      </div>
+      </div> */}
 
       {/* Transporter List */}
       <div className="space-y-1 py-2 max-h-[400px]">
         {transporterList.map((transporter) => (
           <label
             key={transporter._id}
-            className="flex items-center gap-3 p-3 rounded-md hover:bg-slate-50 transition-colors duration-200 cursor-pointer"
+            // className="flex items-center gap-3 p-3 rounded-md hover:bg-slate-50 transition-colors duration-200  cursor-pointer"
+            className="flex items-center gap-3 p-3 rounded-md hover:bg-slate-50 transition-colors duration-200  cursor-not-allowed"
           >
             <div className="relative flex items-center justify-center">
               <input
                 type="checkbox"
-                checked={localSelection.includes(transporter._id)}
-                onChange={() => handleCheckboxChange(transporter._id)}
+                // checked={localSelection.includes(transporter._id)}
+                // onChange={() => handleCheckboxChange(transporter._id)}
+                checked={true}
                 className="sr-only"
+                disabled
               />
               <div
                 className={`w-5 h-5 rounded transition-all duration-200 transform ${
