@@ -8,13 +8,21 @@ import API from '../API';
 import { toast } from 'react-toastify';
 
 const SignUpPage = () => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [userType, setUserType] = useState('Transporter'); // UI toggle state
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === 'phone') {
+      // Allow only digits and limit to 10 characters
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+      setForm({ ...form, [name]: digitsOnly });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const getRoleFromUserType = (type) => {
@@ -30,11 +38,17 @@ const SignUpPage = () => {
       return;
     }
 
+    if (!/^\d{10}$/.test(form.phone)) {
+      toast.error("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     const role = getRoleFromUserType(userType);
 
     const payload = {
       name: form.name,
       email: form.email.toLowerCase().trim(),
+      phone: form.phone.trim(),
       password: form.password,
       confirmPassword: form.confirmPassword,
       role,
@@ -64,7 +78,7 @@ const SignUpPage = () => {
       <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
         {/* Logo Section */}
         <div className="flex justify-center ">
-        <div className="w-60 h-24 flex items-center justify-center ">
+          <div className="w-60 h-24 flex items-center justify-center ">
             <img
               src="/assets/LogiYatraLogo.png"
               alt="Company Logo"
@@ -72,8 +86,8 @@ const SignUpPage = () => {
             />
           </div>
         </div>
-        
-       
+
+
         <p className="text-center text-gray-500 mb-6">Join us and start your journey</p>
 
         <UserToggle userType={userType} setUserType={setUserType} />
@@ -94,6 +108,17 @@ const SignUpPage = () => {
             value={form.email}
             onChange={handleChange}
             placeholder="johndoe@example.com"
+            className="focus:ring-red-700 focus:border-red-800"
+          />
+          <InputField
+            label="Phone Number"
+            name="phone"
+            type="text"
+            value={form.phone}
+            onChange={handleChange}
+            maxLength={10}
+            inputMode="numeric"
+            placeholder="10-digit mobile number"
             className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
@@ -145,7 +170,7 @@ const SignUpPage = () => {
             </span>
           </p>
         </div>
-        
+
         <div className="mt-6 pt-6 border-t border-gray-200 text-center">
           <p className="text-xs text-gray-500">
             By signing up, you agree to our Terms of Service and Privacy Policy

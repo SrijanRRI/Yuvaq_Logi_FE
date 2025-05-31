@@ -1,7 +1,11 @@
+// Development :
 let serverUrl = "http://localhost:5000";
-// let serverUrl = "http://192.168.13.78:5000"
-// // let serverUrl = "https://tenderappbe.onrender.com"
+
+// Production : 
 // let serverUrl = "https://logiyatrabe.rrispat.in"
+
+// Render Deployed : 
+// let serverUrl = "https://tenderappbe.onrender.com"
 
 
 // // // // Default API URLs --- while Deploying : 
@@ -49,8 +53,8 @@ const API = {
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
 
   //API for session checking 
-
   CHECK_ME : `${serverUrl}/api/auth/me`,
+  
 };
 
 // export const switchServerUrl = (mode) => {

@@ -46,13 +46,13 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
     )
   }
 
-  const toggleSelectAll = () => {
-    if (localSelection.length === transporterList.length) {
-      setLocalSelection([]) // Unselect all
-    } else {
-      setLocalSelection(transporterList.map((t) => t._id))
-    }
-  }
+  // const toggleSelectAll = () => {
+  //   if (localSelection.length === transporterList.length) {
+  //     setLocalSelection([]) // Unselect all
+  //   } else {
+  //     setLocalSelection(transporterList.map((t) => t._id))
+  //   }
+  // }
 
   const handleSave = () => {
     onSave(localSelection)
@@ -116,7 +116,7 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
           ) : (
             <>
               {/* Select All Section */}
-              <div className="mb-4 p-3 bg-emerald-50 rounded-lg border border-emerald-100 sticky top-0 z-10">
+              {/* <div className="mb-4 p-3 bg-emerald-50 rounded-lg border border-emerald-100 sticky top-0 z-10">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <div className="relative flex items-center justify-center">
                     <input
@@ -154,21 +154,24 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
                     </p>
                   </div>
                 </label>
-              </div>
+              </div> */}
 
               {/* Transporter List */}
               <div className="space-y-1 py-2">
                 {filteredTransporters.map((transporter) => (
                   <label
                     key={transporter._id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200 cursor-pointer"
+                    // className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200 cursor-pointer"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200 cursor-not-allowed"
                   >
                     <div className="relative flex items-center justify-center">
                       <input
                         type="checkbox"
-                        checked={localSelection.includes(transporter._id)}
-                        onChange={() => handleCheckboxChange(transporter._id)}
+                        // checked={localSelection.includes(transporter._id)}
+                        // onChange={() => handleCheckboxChange(transporter._id)}
+                        checked={true}
                         className="sr-only"
+                        disabled
                       />
                       <div
                         className={`w-5 h-5 rounded transition-all duration-200 transform ${
