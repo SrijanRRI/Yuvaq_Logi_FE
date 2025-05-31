@@ -1,4 +1,6 @@
-import { Search, Filter, Calendar, X, XCircle } from "lucide-react"
+"use client"
+
+import { Search, Filter, Calendar, X, CheckCircle, Check } from "lucide-react"
 
 const TenderSearchFilter = ({
   searchQuery,
@@ -14,113 +16,194 @@ const TenderSearchFilter = ({
   clearSearch,
   clearFilters,
 }) => {
-  return (
-    <div className="mb-8 bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300">
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        {/* Search Input */}
-        <div
-          className={`relative flex-grow max-w-xl transition-all duration-300 ${searchFocused ? "scale-105" : ""}`}
-        >
-          <div
-            className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-all duration-300 ${searchFocused ? "text-emerald-500" : "text-slate-400"}`}
-          >
-            <Search className="h-5 w-5" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search by project name, code or location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            className={`w-full pl-10 pr-10 py-3 border rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-slate-700 transition-all duration-300 ${searchFocused ? "border-emerald-500" : "border-slate-300"}`}
-          />
-          {searchQuery && (
-            <button
-              onClick={clearSearch}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
-            >
-              <XCircle className="h-5 w-5" />
-            </button>
-          )}
-        </div>
+  // Status options with their respective styles
+  const statusOptions = [
+    {
+      value: "all",
+      label: "All",
+      className: "bg-gradient-to-r from-slate-500 to-slate-600 text-white border-slate-700",
+    },
+    {
+      value: "finalized",
+      label: "Finalized",
+      className: "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-emerald-700",
+    },
+    {
+      value: "open",
+      label: "Open",
+      className: "bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-700",
+    },
+    {
+      value: "closed",
+      label: "Closed",
+      className: "bg-gradient-to-r from-red-500 to-red-600 text-white border-red-700",
+    },
+  ]
 
-        {/* Filter Toggle Button */}
-        <button
-          onClick={() => setFilterOpen(!filterOpen)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 ${filterOpen
-            ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-            : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
-            }`}
-        >
-          <Filter className="h-4 w-4" />
-          <span className="font-medium">Filters</span>
-          {(statusFilter !== "all" || dateRange.from || dateRange.to) && (
-            <span className="flex items-center justify-center bg-emerald-500 text-white text-xs w-5 h-5 rounded-full">
-              {(statusFilter !== "all" ? 1 : 0) + (dateRange.from || dateRange.to ? 1 : 0)}
-            </span>
-          )}
-        </button>
+  return (
+    <div className="mb-8 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden transition-all duration-300 transform hover:shadow-xl hover:translate-y-[-2px]">
+      <div className="bg-gradient-to-r from-purple-700 to-violet-600 p-5 border-b border-purple-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-20 -translate-y-20 blur-2xl"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-800 opacity-20 rounded-full translate-x-10 translate-y-10 blur-xl"></div>
+
+        <h3 className="text-white font-semibold flex items-center gap-2 relative z-10">
+          <Search className="h-5 w-5 text-purple-200" />
+          Search & Filter Tenders
+        </h3>
+        <p className="text-purple-200 text-sm mt-1 opacity-80">Find the exact tender you're looking for</p>
       </div>
 
-      {/* Expandable Filter Options */}
-      <div
-        className={`mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 overflow-hidden transition-all duration-300 ${filterOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
-      >
-        {/* Status Filter */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700">Status</label>
-          <div className="flex flex-wrap gap-2">
-            {["all", "finalized", "open", "closed"].map((status) => (
+      <div className="p-6">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          {/* Search Input */}
+          <div
+            className={`relative flex-grow max-w-xl transition-all duration-300 ${searchFocused ? "scale-[1.01]" : ""}`}
+          >
+            <div
+              className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-all duration-300 ${searchFocused ? "text-purple-500" : "text-slate-400"}`}
+            >
+              <Search className="h-5 w-5" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by project name, code or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              className={`w-full pl-12 pr-12 py-3.5 border-2 rounded-full shadow-md focus:outline-none bg-white text-slate-700 transition-all duration-300 ${
+                searchFocused
+                  ? "border-purple-500 ring-4 ring-purple-100 shadow-purple-100"
+                  : "border-slate-200 hover:border-slate-300"
+              }`}
+            />
+            {searchQuery && (
               <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === status
-                    ? status === "finalized"
-                      ? "bg-green-100 text-green-700 border border-green-200"
-                      : status === "open"
-                        ? "bg-amber-100 text-amber-700 border border-amber-200"
-                        : status === "closed"
-                          ? "bg-red-100 text-red-700 border border-red-200"
-                          : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                    : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
-                  }`}
+                onClick={clearSearch}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-red-500 transition-colors"
               >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                <X className="h-5 w-5" />
               </button>
+            )}
+          </div>
+
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setFilterOpen(!filterOpen)}
+            className={`flex items-center gap-2 px-5 py-3.5 rounded-full border-2 transition-all duration-300 shadow-md ${
+              filterOpen
+                ? "bg-gradient-to-r from-purple-500 to-violet-600 text-white border-purple-600"
+                : "bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span className="font-medium">Filters</span>
+            {(statusFilter !== "all" || dateRange.from || dateRange.to) && (
+              <span className="flex items-center justify-center bg-white text-purple-600 text-xs w-5 h-5 rounded-full font-bold ml-1">
+                {(statusFilter !== "all" ? 1 : 0) + (dateRange.from || dateRange.to ? 1 : 0)}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Expandable Filter Options */}
+        <div
+          className={`mt-6 overflow-hidden transition-all duration-500 ease-in-out ${
+            filterOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 bg-gradient-to-br from-slate-50 to-purple-50 rounded-xl border border-slate-200">
+            {/* Status Filter */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
+                Status
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {statusOptions.map((status) => (
+                  <button
+                    key={status.value}
+                    onClick={() => setStatusFilter(status.value)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 shadow-sm border ${
+                      statusFilter === status.value
+                        ? `${status.className} shadow-md scale-105`
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {statusFilter === status.value && <Check className="h-3.5 w-3.5" />}
+                      {status.label}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date Filters */}
+            {["from", "to"].map((type) => (
+              <div key={type} className="space-y-3">
+                <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
+                  {type === "from" ? "From Date" : "To Date"}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="date"
+                    value={dateRange[type]}
+                    onChange={(e) => setDateRange({ ...dateRange, [type]: e.target.value })}
+                    className="pl-10 pr-3 py-2.5 w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm transition-all duration-300"
+                  />
+                </div>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Date Filter */}
-        {["from", "to"].map((type) => (
-          <div key={type} className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">{type === "from" ? "From Date" : "To Date"}</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Calendar className="h-4 w-4 text-slate-400" />
-              </div>
-              <input
-                type="date"
-                value={dateRange[type]}
-                onChange={(e) => setDateRange({ ...dateRange, [type]: e.target.value })}
-                className="pl-10 pr-3 py-2 w-full border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              />
+          {(statusFilter !== "all" || dateRange.from || dateRange.to) && (
+            <div className="mt-5 flex justify-end">
+              <button
+                onClick={clearFilters}
+                className="text-purple-600 hover:text-purple-800 text-sm font-medium flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors"
+              >
+                <X className="h-4 w-4" /> Clear all filters
+              </button>
             </div>
-          </div>
-        ))}
-
-        {(statusFilter !== "all" || dateRange.from || dateRange.to) && (
-          <div className="md:col-span-3 flex justify-end">
-            <button
-              onClick={clearFilters}
-              className="text-emerald-600 hover:text-emerald-800 text-sm font-medium flex items-center gap-1"
-            >
-              <X className="h-4 w-4" /> Clear all filters
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Active Filters Summary */}
+      {(statusFilter !== "all" || dateRange.from || dateRange.to) && (
+        <div className="px-5 py-3 bg-gradient-to-r from-slate-50 to-purple-50 border-t border-slate-200 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-500">Active filters:</span>
+
+          {statusFilter !== "all" && (
+            <span
+              className={`text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 ${
+                statusFilter === "finalized"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : statusFilter === "open"
+                    ? "bg-amber-100 text-amber-700"
+                    : statusFilter === "closed"
+                      ? "bg-red-100 text-red-700"
+                      : ""
+              }`}
+            >
+              <CheckCircle className="h-3 w-3" />
+              Status: {statusFilter}
+            </span>
+          )}
+
+          {(dateRange.from || dateRange.to) && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 flex items-center gap-1.5">
+              <Calendar className="h-3 w-3" />
+              Date: {dateRange.from || "Any"} to {dateRange.to || "Any"}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

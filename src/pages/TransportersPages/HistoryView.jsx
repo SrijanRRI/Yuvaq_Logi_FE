@@ -1,17 +1,5 @@
 import React, { useState } from "react";
-import {
-  Calendar,
-  MapPin,
-  Package,
-  AlertCircle,
-  DollarSign,
-  Star,
-  ImageIcon,
-  ChevronDown,
-  ChevronUp,
-  Truck,
-  Scale,
-} from "lucide-react";
+import { Calendar, MapPin, Package, AlertCircle, DollarSign, Star, ImageIcon, ChevronDown, ChevronUp, Truck, Scale, CheckCircle } from 'lucide-react';
 
 const HistoryView = ({ tenders }) => {
   const [expandedId, setExpandedId] = useState(null);
@@ -111,7 +99,7 @@ const HistoryView = ({ tenders }) => {
                   <InfoCard icon={<Calendar className="w-5 h-5" />} label="Tender Close Date" value={formatDate(tender.closeDate)} bg="bg-blue-100 text-blue-600" />
 
                   {/* Max Bid */}
-                  <InfoCard icon={<Scale className="w-5 h-5" />} label="Max Bid Amount" value={`₹ ${tender.maxBidAmount?.toLocaleString("en-IN") || "N/A"} ${tender.maxBidUnit ? `(${tender.maxBidUnit})` : " - "}`} bg="bg-red-100 text-red-600" />
+                  <InfoCard icon={<Scale className="w-5 h-5" />} label="Max Bid Amount" value={`₹ ${tender.maxBidAmount?.toLocaleString("en-IN") || "N/A"} ${tender.maxBidUnit ? `(${tender.maxBidUnit})` : " ( - ) "}`} bg="bg-red-100 text-red-600" />
 
                   {/* Shipment */}
                   <InfoCard icon={<Package className="w-5 h-5" />} label="Shipment" value={`${tender.totalWeight} MT | ${tender.totalQuantity} pcs`} bg="bg-teal-100 text-teal-600" span="sm:col-span-2 lg:col-span-2" />
@@ -139,14 +127,24 @@ const HistoryView = ({ tenders }) => {
                           {quotations.map((q, qidx) => {
                             const isFinalized = q._id === tender.selectedQuotation;
                             return (
-                              <div key={q._id || qidx} className={`rounded-lg border ${
-                                isFinalized ? "border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-teal-50/80" : "border-gray-200 bg-gray-50"
-                              } p-5 transition-all duration-300 hover:shadow-md group`}>
+                              <div 
+                                key={q._id || qidx} 
+                                className={`rounded-lg border ${
+                                  isFinalized 
+                                    ? "border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 ring-2 ring-emerald-500 ring-offset-2" 
+                                    : "border-gray-200 bg-gray-50"
+                                } p-5 transition-all duration-300 hover:shadow-md group relative`}
+                              >
+                                {isFinalized && (
+                                  <div className="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full p-1 shadow-lg">
+                                    <CheckCircle className="w-5 h-5" />
+                                  </div>
+                                )}
                                 <div className="flex justify-between items-center mb-4">
                                   <div className={`text-sm font-medium px-3 py-1.5 rounded-full ${
                                     isFinalized ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
                                   }`}>
-                                    Quotation #{qidx + 1} {isFinalized && "• Finalized"}
+                                    Quotation #{qidx + 1} {isFinalized && "• Selected"}
                                   </div>
                                   <div className="text-xs text-gray-500">{formatDateTime(q.createdAt)}</div>
                                 </div>
@@ -156,6 +154,15 @@ const HistoryView = ({ tenders }) => {
                                   <DataBox icon={<Calendar className="w-4 h-4 text-blue-600" />} label="Submitted On" value={formatDateTime(q.createdAt)} bg="bg-blue-100" />
                                   <DataBox icon={<Truck className="w-4 h-4 text-amber-600" />} label="Vehicle Number" value={q.vehicleNumber || "N/A"} bg="bg-amber-100" />
                                 </div>
+
+                                {isFinalized && (
+                                  <div className="bg-emerald-100 border border-emerald-200 rounded-lg p-3 mb-4">
+                                    <p className="text-emerald-800 text-sm flex items-center gap-2">
+                                      <CheckCircle className="w-4 h-4" />
+                                      This quotation has been selected and finalized
+                                    </p>
+                                  </div>
+                                )}
 
                                 {q.files?.length > 0 ? (
                                   <div className="mt-4">

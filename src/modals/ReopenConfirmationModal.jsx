@@ -1,47 +1,89 @@
-import { useState } from "react";
+import { useState } from "react"
+import { X, RefreshCcw, AlertCircle } from "lucide-react"
 
 const ReopenConfirmationModal = ({ onConfirm, onCancel }) => {
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState("")
+  const [error, setError] = useState("")
 
   const handleCancel = () => {
     if (typeof onCancel === "function") {
-      onCancel(); 
+      onCancel()
     }
-  };
+  }
+
+  const handleSubmit = () => {
+    if (!reason.trim()) {
+      setError("Please provide a reason to reopen this Quotation")
+      return
+    }
+    onConfirm(reason)
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-lg p-6 max-w-lg w-full relative">
-        <h3 className="text-lg font-semibold mb-3">Reopen Quotation</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white rounded-xl w-full max-w-lg shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-5 text-white">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <RefreshCcw className="h-5 w-5" />
+              Reopen Quotation
+            </h3>
+            <button
+              onClick={handleCancel}
+              className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
 
-        <label className="block mb-2 text-slate-700 text-sm font-medium">
-          Please provide a reason to reopen this tender:
-        </label>
-        <textarea
-          className="w-full border border-slate-300 rounded-md p-2"
-          rows={4}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason for reopening..."
-        />
+        {/* Content */}
+        <div className="p-6">
+          <p className="text-slate-600 mb-4">
+            Reopening the quotation allows the tenderer to select a different transporter. Please provide a reason for reopening this quotation.
+          </p>
 
-        <div className="mt-4 flex justify-end gap-3">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onConfirm(reason)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-          >
-            Reopen Tender
-          </button>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Reason for reopening</label>
+            <textarea
+              className={`w-full border ${error ? "border-red-300 bg-red-50" : "border-slate-300"} rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all`}
+              rows={4}
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value)
+                if (error) setError("")
+              }}
+              placeholder="Please explain why you need to reopen this Quotation..."
+            />
+            {error && (
+              <p className="text-sm text-red-600 flex items-center gap-1.5">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+            <button
+              onClick={handleCancel}
+              className="px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 transition-colors shadow-md flex items-center justify-center gap-2"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Reopen Quotation
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ReopenConfirmationModal;
+export default ReopenConfirmationModal

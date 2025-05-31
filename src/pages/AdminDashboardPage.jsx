@@ -17,7 +17,6 @@ const AdminDashboardPage = () => {
     const dispatch = useDispatch()
 
     const [requests, setRequests] = useState([])
-    // const [approvedUsers, setApprovedUsers] = useState([])
     const [loading, setLoading] = useState(false)
     // const [error, setError] = useState(null)
     const [confirmDialog, setConfirmDialog] = useState(null)
@@ -108,7 +107,6 @@ const AdminDashboardPage = () => {
 
             if (res.data.success) {
                 toast.success(`${user.name} approved successfully.`)
-                // setApprovedUsers((prev) => [...prev, user])
                 setRequests((prev) => prev.filter((_, i) => i !== index))
             } else {
                 toast.error("Failed to approve user.")

@@ -16,9 +16,9 @@ import {
 import QuotationModal from "../../modals/QuotationModal"
 import axios from "axios"
 import API from "../../API"
-import QuotationSlideshow from "./QuotationSlideShow"
 import GetMyPosition from "./GetMyPositon"
 import CountdownTimer from "../../components/CountdownTimer"
+import QuotationSlideshow from "./QuotationSlideshow"
 
 const LiveBidding = () => {
   const [tenders, setTenders] = useState([])
@@ -203,8 +203,8 @@ const LiveBidding = () => {
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Max Bid Amount</p>
                       <p className="font-medium text-slate-800">
-                        {Number(tender.maxBidAmount).toLocaleString("en-IN") || " - "}
-                        {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : " - "}
+                        {tender.maxBidAmount?.toLocaleString('en-IN') || " - "}
+                         {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : " - "}
                       </p>
                     </div>
                   </div>

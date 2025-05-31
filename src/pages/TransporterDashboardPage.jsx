@@ -5,22 +5,38 @@ import { useSelector, useDispatch } from "react-redux"
 import axios from "axios"
 import API from "../API"
 import { logout } from "../utils/UserSlice"
-import Navbar from "../components/Navbar"
-import { Package, XCircle, Clock, Calendar, History } from "lucide-react"
+import {
+  Package,
+  XCircle,
+  Clock,
+  Calendar,
+  History,
+  LogOut,
+  Bell,
+  User,
+  ChevronDown,
+  Search,
+  Truck,
+  BarChart4,
+} from "lucide-react"
 import UpcomingTenders from "./TransportersPages/UpcomingTenders"
 import LiveBidding from "./TransportersPages/LiveBidding"
 import HistoryView from "./TransportersPages/HistoryView"
+import Logo from "/assets/LogiYatraIcon1.png"
+import Navbar from "../components/Navbar"
 
 const TransporterDashboardPage = () => {
   const [view, setView] = useState("all")
   const [tenders, setTenders] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+
 
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const userInfo = useSelector((state) => state.User?.userInfo)
-  const userName = userInfo?.name || "RR User"
+  const userName = userInfo?.name || "Transporter"
 
   const fetchLiveBidingTenders = async () => {
     setLoading(true)
@@ -48,7 +64,6 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
-      // console.log("upcoming tenders :" , res.data);
     } catch (err) {
       console.error("Error fetching all tenders:", err)
       setError("Failed to load tenders.")
@@ -65,7 +80,6 @@ const TransporterDashboardPage = () => {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
       })
-      // console.log("Fetch history of the Transporter : ", res.data.data)
       setTenders(res.data.data || [])
     } catch (err) {
       console.error("Error fetching history:", err)
@@ -99,65 +113,80 @@ const TransporterDashboardPage = () => {
     else if (newView === "all") fetchUpcomingTenders()
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200">
-      <Navbar title="Transporter Dashboard" userName={userName} onLogout={handleLogout} />
 
-      <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-          <button
-            onClick={() => handleViewChange("all")}
-            className={`px-5 py-2.5 rounded-lg shadow-sm border transition-all duration-200 flex items-center justify-center gap-2 ${
-              view === "all"
-                ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white border-teal-700"
-                : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-            }`}
-          >
-            <Calendar className={`w-4 h-4 ${view === "all" ? "text-teal-200" : "text-teal-500"}`} />
-            <span>Upcoming Tenders</span>
-          </button>
-          <button
-            onClick={() => handleViewChange("live")}
-            className={`px-5 py-2.5 rounded-lg shadow-sm border transition-all duration-200 flex items-center justify-center gap-2 ${
-              view === "live"
-                ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white border-teal-700"
-                : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-            }`}
-          >
-            <Clock className={`w-4 h-4 ${view === "live" ? "text-teal-200" : "text-teal-500"}`} />
-            <span>Live Bidding</span>
-          </button>
-          <button
-            onClick={() => handleViewChange("history")}
-            className={`px-5 py-2.5 rounded-lg shadow-sm border transition-all duration-200 flex items-center justify-center gap-2 ${
-              view === "history"
-                ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white border-teal-700"
-                : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-            }`}
-          >
-            <History className={`w-4 h-4 ${view === "history" ? "text-teal-200" : "text-teal-500"}`} />
-            <span>History</span>
-          </button>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      {/* Modern Navbar */}
+      <Navbar
+        title="Transporter Dashboard"
+        userName={userName}
+        onLogout={handleLogout}
+      />
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6">
+
+        {/* View Selector */}
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-2 mb-8">
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              onClick={() => handleViewChange("all")}
+              className={`flex-1 px-5 py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${view === "all"
+                ? "bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md"
+                : "bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              <Calendar className={`w-5 h-5 ${view === "all" ? "text-white" : "text-teal-500"}`} />
+              <span className="font-medium">Upcoming Tenders</span>
+            </button>
+            <button
+              onClick={() => handleViewChange("live")}
+              className={`flex-1 px-5 py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${view === "live"
+                ? "bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md"
+                : "bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              <Clock className={`w-5 h-5 ${view === "live" ? "text-white" : "text-teal-500"}`} />
+              <span className="font-medium">Live Bidding</span>
+            </button>
+            <button
+              onClick={() => handleViewChange("history")}
+              className={`flex-1 px-5 py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${view === "history"
+                ? "bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md"
+                : "bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              <History className={`w-5 h-5 ${view === "history" ? "text-white" : "text-teal-500"}`} />
+              <span className="font-medium">History</span>
+            </button>
+          </div>
         </div>
 
+
+
+        {/* Content Area */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mb-4"></div>
-            <p className="text-slate-600">Loading data...</p>
+            <div className="w-16 h-16 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-600 font-medium">Loading data...</p>
+            <p className="text-slate-500 text-sm mt-2">Please wait while we fetch the latest information</p>
           </div>
         ) : error ? (
-          <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200 text-red-600 shadow-sm">
-            <XCircle className="h-10 w-10 mx-auto mb-3" />
-            <p className="font-medium">{error}</p>
+          <div className="text-center p-10 bg-white rounded-xl border border-red-200 text-red-600 shadow-md">
+            <div className="bg-red-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+              <XCircle className="h-8 w-8 text-red-500" />
+            </div>
+            <p className="font-medium text-lg mb-2">{error}</p>
+            <p className="text-slate-500 mb-6">We couldn't load the data you requested. Please try again.</p>
             <button
               onClick={() => handleViewChange(view)}
-              className="mt-4 px-4 py-2 bg-white border border-red-200 rounded-md text-red-600 hover:bg-red-50 transition-colors text-sm"
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-colors shadow-md"
             >
               Try Again
             </button>
           </div>
         ) : tenders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-slate-200 text-center shadow-sm">
+          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-slate-200 text-center shadow-md">
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
               <Package className="h-10 w-10 text-slate-400" />
             </div>
@@ -170,7 +199,7 @@ const TransporterDashboardPage = () => {
             {view !== "all" && (
               <button
                 onClick={() => handleViewChange("all")}
-                className="px-4 py-2 bg-teal-50 border border-teal-200 rounded-md text-teal-600 hover:bg-teal-100 transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:from-teal-600 hover:to-emerald-700 transition-colors shadow-md"
               >
                 View Upcoming Tenders
               </button>
@@ -184,6 +213,8 @@ const TransporterDashboardPage = () => {
           <HistoryView tenders={tenders} />
         ) : null}
       </div>
+
+
     </div>
   )
 }

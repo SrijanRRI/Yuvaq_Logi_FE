@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { X, Plus, Package } from "lucide-react"
+import { X, Plus, Package, Info } from "lucide-react"
 
 export const MaterialModal = ({ close, onAdd }) => {
   const [item, setItem] = useState("")
@@ -146,124 +146,136 @@ export const MaterialModal = ({ close, onAdd }) => {
     }
 
     onAdd({ item, subItem, weight, quantity })
-    
+
     close()
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-lg shadow-lg p-6 relative max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-5">
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Package className="h-5 w-5 text-emerald-600" />
-            Add Material
-          </h2>
-          <button
-            onClick={close}
-            className="text-slate-500 hover:bg-slate-100 rounded-full p-1.5 transition-colors duration-200"
-            aria-label="Close modal"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white rounded-xl w-full max-w-lg shadow-xl p-0 relative max-h-[90vh] overflow-hidden">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Add Material
+            </h2>
+            <button
+              onClick={close}
+              className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-colors duration-200"
+              aria-label="Close modal"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <label htmlFor="material" className="block text-sm font-medium text-slate-700">
-              Material <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="material"
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              value={item}
-              onChange={(e) => {
-                setItem(e.target.value)
-                setSubItem("")
-              }}
-            >
-              <option value="">Select Material</option>
-              {items.map((mat) => (
-                <option key={mat} value={mat}>
-                  {mat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {subItems.length > 0 && (
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+          <div className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="subItem" className="block text-sm font-medium text-slate-700">
-                Sub Material <span className="text-red-500">*</span>
+              <label htmlFor="material" className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                Material <span className="text-red-500">*</span>
               </label>
               <select
-                id="subItem"
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                value={subItem}
-                onChange={(e) => setSubItem(e.target.value)}
+                id="material"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                value={item}
+                onChange={(e) => {
+                  setItem(e.target.value)
+                  setSubItem("")
+                }}
               >
-                <option value="">Select Sub Material</option>
-                {subItems.map((sub) => (
-                  <option key={sub} value={sub}>
-                    {sub}
+                <option value="">Select Material</option>
+                {items.map((mat) => (
+                  <option key={mat} value={mat}>
+                    {mat}
                   </option>
                 ))}
               </select>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="weight" className="block text-sm font-medium text-slate-700">
-                Weight (MT)
-              </label>
-              <input
-                type="number"
-                id="weight"
-                placeholder="Enter weight"
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                value={weight}
-                onChange={(e) => {
-                  const val = Number.parseFloat(e.target.value)
-                  if (val >= 0 || e.target.value === "") {
-                    setWeight(e.target.value)
-                  }
-                }}
-              />
+            {subItems.length > 0 && (
+              <div className="space-y-2">
+                <label htmlFor="subItem" className=" text-sm font-medium text-slate-700 flex items-center gap-1">
+                  Sub Material <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="subItem"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                  value={subItem}
+                  onChange={(e) => setSubItem(e.target.value)}
+                >
+                  <option value="">Select Sub Material</option>
+                  {subItems.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="weight" className=" text-sm font-medium text-slate-700 flex items-center gap-1">
+                  Weight (MT)
+                </label>
+                <input
+                  type="number"
+                  id="weight"
+                  placeholder="Enter weight"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                  value={weight}
+                  onChange={(e) => {
+                    const val = Number.parseFloat(e.target.value)
+                    if (val >= 0 || e.target.value === "") {
+                      setWeight(e.target.value)
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="quantity" className=" text-sm font-medium text-slate-700 flex items-center gap-1">
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  id="quantity"
+                  placeholder="Enter quantity"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = Number.parseFloat(e.target.value)
+                    if (val >= 0 || e.target.value === "") {
+                      setQuantity(e.target.value)
+                    }
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="quantity" className="block text-sm font-medium text-slate-700">
-                Quantity
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                placeholder="Enter quantity"
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                value={quantity}
-                onChange={(e) => {
-                  const val = Number.parseFloat(e.target.value)
-                  if (val >= 0 || e.target.value === "") {
-                    setQuantity(e.target.value)
-                  }
-                }}
-              />
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 text-sm text-blue-700">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <p>
+                Please ensure all measurements are accurate. Weight should be in metric tons (MT) and quantity in
+                pieces.
+              </p>
             </div>
-          </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              className="px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition-colors duration-200"
-              onClick={close}
-            >
-              Cancel
-            </button>
-            <button
-              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2"
-              onClick={handleAdd}
-            >
-              <Plus className="h-4 w-4" /> Add Material
-            </button>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                className="px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors duration-200 flex items-center gap-2"
+                onClick={close}
+              >
+                <X className="h-4 w-4" /> Cancel
+              </button>
+              <button
+                className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+                onClick={handleAdd}
+              >
+                <Plus className="h-4 w-4" /> Add Material
+              </button>
+            </div>
           </div>
         </div>
       </div>

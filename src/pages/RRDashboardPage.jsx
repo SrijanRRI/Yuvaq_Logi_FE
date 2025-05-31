@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import { useSelector } from "react-redux"
 import axios from "axios"
-import { ArrowLeft, History } from "lucide-react"
-import Navbar from "../components/Navbar"
+import { ArrowLeft, History, LogOut } from "lucide-react"
 import { MaterialModal } from "../modals/MaterialModal"
 import TenderForm from "./RRDashboardPages/TenderForm"
 import TenderHistoryAccordion from "./RRDashboardPages/TenderHistoryAccordion"
@@ -12,6 +11,8 @@ import API from "../API"
 import { useDispatch } from "react-redux"
 import { logout } from "../utils/UserSlice"
 import TransporterModal from "../modals/TransporterModal"
+import Logo from "/assets/LogiYatraIcon1.png"
+import Navbar from "../components/Navbar"
 
 const RRDashboardPage = () => {
   const navigate = useNavigate()
@@ -53,7 +54,7 @@ const RRDashboardPage = () => {
   const userInfo = useSelector((state) => state.User?.userInfo)
   const userName = userInfo?.name || "RR User"
 
-  const [formDisabled, setFormDisabled] = useState(false);
+  const [formDisabled, setFormDisabled] = useState(false)
 
   const fetchTenderHistory = async () => {
     try {
@@ -62,7 +63,6 @@ const RRDashboardPage = () => {
       })
       const data = response.data?.data || []
 
-      // console.log("Tender's responses histories : ", response.data)
       setTenderHistories(data)
     } catch (err) {
       console.error("Failed to fetch tender history", err)
@@ -71,7 +71,6 @@ const RRDashboardPage = () => {
   }
 
   useEffect(() => {
-
     if (viewHistory) {
       fetchTenderHistory()
       fetchTransporters()
@@ -98,7 +97,8 @@ const RRDashboardPage = () => {
     }
 
     else if (name === "maxBidAmount") {
-       const rounded = value ? parseInt(value, 10) : "";
+      // Fix the glitch: force integer, round input
+      const rounded = value ? parseInt(value, 10) : "";
       setForm((prev) => ({
         ...prev,
         maxBidAmount: rounded.toString(),
@@ -106,6 +106,7 @@ const RRDashboardPage = () => {
     }
 
     else if (name === "weight" || name === "quantity") {
+      // When user manually edits weight/quantity, enable manualTotals mode
       setForm((prev) => ({
         ...prev,
         [name]: value,
@@ -152,58 +153,58 @@ const RRDashboardPage = () => {
   const handleSend = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setFormDisabled(true);
+    setFormDisabled(true)
 
-    const { from, to } = form.deliveryWindow;
-    const { closingDate, biddingStart, biddingEnd } = form;
+    const { from, to } = form.deliveryWindow
+    const { closingDate, biddingStart, biddingEnd } = form
 
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    const closing = new Date(closingDate);
-    const bidStart = new Date(biddingStart);
-    const bidEnd = new Date(biddingEnd);
+    const fromDate = new Date(from)
+    const toDate = new Date(to)
+    const closing = new Date(closingDate)
+    const bidStart = new Date(biddingStart)
+    const bidEnd = new Date(biddingEnd)
 
     // --- VALIDATION START ---
     if (fromDate > toDate) {
-      toast.error("Delivery 'From' date must be before 'To' date.");
-      setLoading(false);
-      setFormDisabled(false);
-      return;
+      toast.error("Delivery 'From' date must be before 'To' date.")
+      setLoading(false)
+      setFormDisabled(false)
+      return
     }
 
     if (closing < fromDate || closing > toDate) {
-      toast.error("Closing Date must be within the Delivery Window.");
-      setLoading(false);
-      setFormDisabled(false);
-      return;
+      toast.error("Closing Date must be within the Delivery Window.")
+      setLoading(false)
+      setFormDisabled(false)
+      return
     }
 
     if (bidStart < fromDate || bidStart > toDate) {
-      toast.error("Bidding Start must be within the Delivery Window.");
-      setLoading(false);
-      setFormDisabled(false);
-      return;
+      toast.error("Bidding Start must be within the Delivery Window.")
+      setLoading(false)
+      setFormDisabled(false)
+      return
     }
 
     if (bidEnd < fromDate || bidEnd > toDate) {
-      toast.error("Bidding End must be within the Delivery Window.");
-      setLoading(false);
-      setFormDisabled(false);
-      return;
+      toast.error("Bidding End must be within the Delivery Window.")
+      setLoading(false)
+      setFormDisabled(false)
+      return
     }
 
     if (bidStart > bidEnd) {
-      toast.error("Bidding Start cannot be after Bidding End.");
-      setLoading(false);
-      setFormDisabled(false);
-      return;
+      toast.error("Bidding Start cannot be after Bidding End.")
+      setLoading(false)
+      setFormDisabled(false)
+      return
     }
 
     if (form.materials.length > 0 && (!form.weight || !form.quantity)) {
-      toast.warning("Please enter total weight and quantity.");
-      setLoading(false);
-      setFormDisabled(false);
-      return;
+      toast.warning("Please enter total weight and quantity.")
+      setLoading(false)
+      setFormDisabled(false)
+      return
     }
 
     const payload = {
@@ -242,8 +243,6 @@ const RRDashboardPage = () => {
       setTenderHistories((prev) => [response.data, ...prev])
       toast.success("Tender submitted successfully!")
 
-      // console.log("form submitted :" , payload);
-
       setForm({
         deliveryWindow: { from: "", to: "" },
         closingDate: "",
@@ -267,13 +266,12 @@ const RRDashboardPage = () => {
       })
 
       setSelectedTransporters([])
-
     } catch (error) {
       const errMessage = error?.response?.data?.message || "Something went wrong. Please try again."
       toast.error(errMessage)
     } finally {
       setLoading(false)
-      setFormDisabled(false);
+      setFormDisabled(false)
     }
   }
 
@@ -290,11 +288,11 @@ const RRDashboardPage = () => {
     }
   }
 
-
-  const navbarActions = (
+  // Create action buttons for the navbar
+  const historyButton = (
     <button
       onClick={() => setViewHistory(!viewHistory)}
-      className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+      className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 transition-all duration-200 flex items-center gap-2 shadow-sm"
     >
       {viewHistory ? (
         <>
@@ -302,19 +300,29 @@ const RRDashboardPage = () => {
         </>
       ) : (
         <>
-          <History className="h-4 w-4" /> Tenders History
+          <History className="h-4 w-4" /> View History
         </>
       )}
     </button>
-  )
+  );
 
   return (
-    <div className="min-h-screen bg-slate-200">
-      <Navbar title="RR Dashboard" userName={userName || "RR User"} actions={navbarActions} onLogout={handleLogout} />
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      {/* Use the new Navbar component */}
+      <Navbar
+        title="RRI Dashboard"
+        userName={userName}
+        actions={[historyButton]}
+        onLogout={handleLogout}
+      />
 
-      <div className="py-8 px-4 max-w-6xl mx-auto">
+      <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {viewHistory ? (
-          <TenderHistoryAccordion tenderHistories={tenderHistories} transporterList={transporterList} fetchTenderHistory={fetchTenderHistory} />
+          <TenderHistoryAccordion
+            tenderHistories={tenderHistories}
+            transporterList={transporterList}
+            fetchTenderHistory={fetchTenderHistory}
+          />
         ) : (
           <TenderForm
             form={form}
@@ -330,6 +338,7 @@ const RRDashboardPage = () => {
           />
         )}
       </div>
+
 
       {showMaterialModal && (
         <MaterialModal
@@ -365,7 +374,7 @@ const RRDashboardPage = () => {
         />
       )}
     </div>
-  )
+  );
 }
 
 export default RRDashboardPage
