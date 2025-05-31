@@ -13,7 +13,7 @@ const ReopenConfirmationModal = ({ onConfirm, onCancel }) => {
 
   const handleSubmit = () => {
     if (!reason.trim()) {
-      setError("Please provide a reason to reopen this tender")
+      setError("Please provide a reason to reopen this Quotation")
       return
     }
     onConfirm(reason)
@@ -41,8 +41,7 @@ const ReopenConfirmationModal = ({ onConfirm, onCancel }) => {
         {/* Content */}
         <div className="p-6">
           <p className="text-slate-600 mb-4">
-            Reopening a tender allows transporters to submit new quotations. Please provide a reason for reopening this
-            tender.
+            Reopening the quotation allows the tenderer to select a different transporter. Please provide a reason for reopening this quotation.
           </p>
 
           <div className="space-y-2">
@@ -55,7 +54,7 @@ const ReopenConfirmationModal = ({ onConfirm, onCancel }) => {
                 setReason(e.target.value)
                 if (error) setError("")
               }}
-              placeholder="Please explain why you need to reopen this tender..."
+              placeholder="Please explain why you need to reopen this Quotation..."
             />
             {error && (
               <p className="text-sm text-red-600 flex items-center gap-1.5">
@@ -78,7 +77,7 @@ const ReopenConfirmationModal = ({ onConfirm, onCancel }) => {
               className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 transition-colors shadow-md flex items-center justify-center gap-2"
             >
               <RefreshCcw className="h-4 w-4" />
-              Reopen Tender
+              Reopen Quotation
             </button>
           </div>
         </div>

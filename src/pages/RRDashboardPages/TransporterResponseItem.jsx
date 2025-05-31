@@ -39,10 +39,10 @@ const TransporterResponseItem = ({
   return (
     <div
       className={`rounded-xl shadow-sm transition duration-300 overflow-hidden ${isDimmed
-          ? "border border-slate-200 bg-slate-50"
-          : isSelected
-            ? "border-2 border-emerald-500 bg-white"
-            : "border border-slate-200 bg-white"
+        ? "border border-slate-200 bg-slate-50"
+        : isSelected
+          ? "border-2 border-emerald-500 bg-white"
+          : "border border-slate-200 bg-white"
         }`}
     >
       <div
@@ -55,7 +55,12 @@ const TransporterResponseItem = ({
             </div>
             <div>
               <h5 className="font-semibold text-slate-800">{getTransporterName(response.transportUser)}</h5>
-              <p className="text-sm text-slate-500">Rank: {response.rank}</p>
+              {/* <p className="text-md font-bold text-slate-600 rounded-full flex justify-center shadow-lg p-1 ">Rank: {response.rank}</p> */}
+
+              {/* Improved Rank Badge */}
+              <div className="mt-1 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-200 to-emerald-100 text-emerald-800 font-bold text-sm shadow-md">
+                Rank: {response.rank}
+              </div>
             </div>
           </div>
 
@@ -135,8 +140,8 @@ const TransporterResponseItem = ({
                   onClick={() => onReopen(tenderId)}
                   disabled={!canReopenQuotation}
                   className={`px-4 py-2 rounded-lg transition border flex items-center gap-2 ${canReopenQuotation
-                      ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
-                      : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
+                    ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
+                    : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
                     }`}
                 >
                   <RefreshCcw className="h-4 w-4" />

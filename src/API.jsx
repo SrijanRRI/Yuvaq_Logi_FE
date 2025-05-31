@@ -1,12 +1,13 @@
-// Development :
+// Development : 
 let serverUrl = "http://localhost:5000";
 
 // Production : 
-// let serverUrl = "https://logiyatrabe.rrispat.in"
+// let serverUrl = "https://logiyatrabe.rrispat.in" 
 
-// Render Deployed : 
-// let serverUrl = "https://tenderappbe.onrender.com"
 
+
+// (Deployed On Render)
+// let serverUrl = "https://tenderappbe.onrender.com" 
 
 // // // // Default API URLs --- while Deploying : 
 // // const DOMAIN_URL = "https://logiyatrabe.rrispat.in";
@@ -32,6 +33,7 @@ const API = {
  APPROVEREQUEST: `${serverUrl}/admin/approve-user/`,
  REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
  GETALLTENDER : `${serverUrl}/admin/all-tender`,
+ GET_ALL_REPORTS : `${serverUrl}/admin/tenders/ranked-best-report`,
 
   //Transport User
   FETCH_ALL_TRANSPORTER: `${serverUrl}/admin/transport-users`,
@@ -39,7 +41,6 @@ const API = {
   LIVE_BIDING_TENDERS: `${serverUrl}/tenders/assigned`,
   GET_QUOTATION_SLIDESHOW: `${serverUrl}/quotation/my-tender-quotes`,
   GET_MY_POSITION: `${serverUrl}/tenders/my-position`,
-  
   
   SUBMIT_QUOTATION: `${serverUrl}/quotation/submit`,
   SEE_QUOTATIONS: `${serverUrl}/tender/quotations`,
@@ -53,9 +54,9 @@ const API = {
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
 
   //API for session checking 
+
   CHECK_ME : `${serverUrl}/api/auth/me`,
-  
-};
+}; 
 
 // export const switchServerUrl = (mode) => {
 //   localStorage.setItem("serverUrl", mode);
