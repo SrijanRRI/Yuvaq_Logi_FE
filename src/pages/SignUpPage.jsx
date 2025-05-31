@@ -13,6 +13,10 @@ const SignUpPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // const handleChange = (e) => {
+  //   setForm({ ...form, [e.target.name]: e.target.value });
+  // };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -24,6 +28,7 @@ const SignUpPage = () => {
       setForm({ ...form, [name]: value });
     }
   };
+
 
   const getRoleFromUserType = (type) => {
     if (type === 'Transporter') return 'transportUser';
