@@ -266,6 +266,7 @@ const RRDashboardPage = () => {
       })
 
       setSelectedTransporters([])
+      
     } catch (error) {
       const errMessage = error?.response?.data?.message || "Something went wrong. Please try again."
       toast.error(errMessage)

@@ -1,4 +1,3 @@
-// src/pages/SignUpPage.jsx
 import React, { useState } from 'react';
 import InputField from '../components/InputField';
 import UserToggle from '../components/UserToggle';
@@ -53,7 +52,7 @@ const SignUpPage = () => {
     const payload = {
       name: form.name,
       email: form.email.toLowerCase().trim(),
-      phone: form.phone.trim(),
+      phone: `91${form.phone.trim()}`,
       password: form.password,
       confirmPassword: form.confirmPassword,
       role,
