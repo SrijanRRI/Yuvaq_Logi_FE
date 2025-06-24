@@ -115,7 +115,7 @@ const SignUpPage = () => {
             className="focus:ring-red-700 focus:border-red-800"
           />
           <InputField
-            label="Phone Number"
+            label="Whatsapp Phone Number"
             name="phone"
             type="text"
             value={form.phone}
