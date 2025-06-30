@@ -196,7 +196,7 @@ const LiveBidding = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                  {/* <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
                     <div className="bg-rose-100 p-2.5 rounded-full">
                       <Scale className="w-5 h-5 text-gray-600" />
                     </div>
@@ -207,7 +207,7 @@ const LiveBidding = () => {
                          {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : " - "}
                       </p>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {tender.remarks && (

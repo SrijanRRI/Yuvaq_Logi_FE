@@ -73,7 +73,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-5 shadow-sm border border-yellow-200 transition-all hover:shadow-md">
+        {/* <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-5 shadow-sm border border-yellow-200 transition-all hover:shadow-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-yellow-100 p-2.5 rounded-full shadow-sm">
@@ -88,7 +88,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">

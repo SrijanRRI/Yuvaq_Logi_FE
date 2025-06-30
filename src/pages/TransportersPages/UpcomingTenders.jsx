@@ -204,7 +204,7 @@ const UpcomingTenders = ({ tenders }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
+                  {/* <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
                     <div className="p-2.5 bg-indigo-100 rounded-full text-indigo-600 group-hover:bg-indigo-200 transition-colors">
                       <Scale className="w-5 h-5" />
                     </div>
@@ -215,7 +215,7 @@ const UpcomingTenders = ({ tenders }) => {
                         {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : "( - )"}
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200 sm:col-span-2 lg:col-span-2">
                     <div className="p-2.5 bg-purple-100 rounded-full text-purple-600 group-hover:bg-purple-200 transition-colors">

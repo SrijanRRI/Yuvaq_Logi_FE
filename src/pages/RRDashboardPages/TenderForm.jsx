@@ -168,7 +168,7 @@ const TenderForm = ({
               </div>
 
               {/* Maximum Bid Amount */}
-              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-xl border border-amber-200 shadow-sm">
+              {/* <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-xl border border-amber-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
                   <Scale className="h-5 w-5 text-amber-600" />
                   Maximum Bid Amount
@@ -190,7 +190,7 @@ const TenderForm = ({
                   />
                 </div>
 
-                {/* Enhanced Custom Dropdown */}
+                
                 <div className="relative">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Unit Type</label>
                   <div className="relative">
@@ -223,7 +223,7 @@ const TenderForm = ({
                       </div>
                     </button>
 
-                    {/* Dropdown Options */}
+                   
                     {isDropdownOpen && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
                         {unitOptions.map((option) => (
@@ -256,7 +256,7 @@ const TenderForm = ({
                   <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p className="text-xs">Enter the maximum amount transporters can quote for this tender.</p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Project Details */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
