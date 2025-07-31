@@ -6,52 +6,54 @@ const TenderCard = ({ tender, isOpen, onToggle }) => {
 
   return (
     <div
-      className={`p-5 cursor-pointer transition-all duration-300 ${isOpen ? "bg-slate-50" : "hover:bg-slate-50/70"}`}
+      className={`p-4 sm:p-5 cursor-pointer transition-all duration-300 ${isOpen ? "bg-slate-50" : "hover:bg-slate-50/70"}`}
       onClick={onToggle}
     >
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <div className="flex items-start md:items-center gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
           <div
-            className={`p-3 rounded-xl ${tender.status === "finalized" ? "bg-emerald-100 text-emerald-600" : tender.status === "closed" ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600"} shadow-sm`}
+            className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${
+              tender.status === "finalized"
+                ? "bg-emerald-100 text-emerald-600"
+                : tender.status === "closed"
+                  ? "bg-amber-100 text-amber-600"
+                  : "bg-blue-100 text-blue-600"
+            } shadow-sm`}
           >
-            <Package className="h-6 w-6" />
+            <Package className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-
-          <div>
-            <h3 className="font-semibold text-slate-800 text-lg">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-slate-800 text-base sm:text-lg break-words">
               {tender.projectName || `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
             </h3>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-2 mt-1 text-xs sm:text-sm text-slate-500">
               <div className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                {formatDate(new Date(tender.createdAt))}
+                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 flex-shrink-0" />
+                <span className="whitespace-nowrap">{formatDate(new Date(tender.createdAt))}</span>
               </div>
-
               <div className="flex items-center gap-1">
-                <Package className="h-3.5 w-3.5 text-slate-400" />
-                {tender.materials?.length || 0} materials
+                <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 flex-shrink-0" />
+                <span className="whitespace-nowrap">{tender.materials?.length || 0} materials</span>
               </div>
-
               {tender.projectCode && (
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-slate-600">Project Code:</span> {tender.projectCode}
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="font-medium text-slate-600 flex-shrink-0">Project Code:</span>
+                  <span className="truncate">{tender.projectCode}</span>
                 </div>
               )}
-
               {tender.dispatchLocation && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                  {tender.dispatchLocation}
+                <div className="flex items-center gap-1 min-w-0">
+                  <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 flex-shrink-0" />
+                  <span className="truncate">{tender.dispatchLocation}</span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 ml-12 md:ml-0">
+        <div className="flex items-center justify-between gap-3">
           <span
-            className={`px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide ${
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium uppercase tracking-wide flex-shrink-0 ${
               tender.status === "finalized"
                 ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                 : tender.status === "closed"
@@ -61,14 +63,15 @@ const TenderCard = ({ tender, isOpen, onToggle }) => {
           >
             {tender.status || "PENDING"}
           </span>
-
           <div
-            className={`p-2 rounded-full ${isOpen ? "bg-slate-200" : "bg-slate-100"} transition-colors duration-200`}
+            className={`p-1.5 sm:p-2 rounded-full flex-shrink-0 ${
+              isOpen ? "bg-slate-200" : "bg-slate-100"
+            } transition-colors duration-200`}
           >
             {isOpen ? (
-              <ChevronUp className="h-5 w-5 text-slate-600" />
+              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-slate-600" />
+              <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
             )}
           </div>
         </div>
