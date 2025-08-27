@@ -53,6 +53,9 @@ const API = {
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
 
+  //Shipment Details and Shipment Planned and shipment post api : 
+  SHIPMENT_DETAILS : `${serverUrl}/shipment-planning`,
+
   //API for session checking 
 
   CHECK_ME : `${serverUrl}/api/auth/me`,

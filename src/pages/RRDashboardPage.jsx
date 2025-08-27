@@ -10,7 +10,7 @@ import {
   FilePlus2,
   RotateCcw,
   Calendar,
-} from "lucide-react"; 
+} from "lucide-react";
 
 import API from "../API";
 import Navbar from "../components/Navbar";
@@ -97,6 +97,9 @@ const RRDashboardPage = () => {
   const [loading, setLoading] = useState(false);
   const [formDisabled, setFormDisabled] = useState(false);
   const [prefilledFromShipment, setPrefilledFromShipment] = useState(false);
+
+  const [sourceShipmentId, setSourceShipmentId] = useState(null);
+  // const [shipmentsRefreshSignal, setShipmentsRefreshSignal] = useState(0);
 
   // handlers
   const handleChange = (e) => {
@@ -225,11 +228,33 @@ const RRDashboardPage = () => {
       const response = await axios.post(`${API.CREATE_TENDER}`, payload, {
         withCredentials: true,
       });
+
       setTenderHistories((prev) => [response.data, ...prev]);
       toast.success("Tender submitted successfully!");
+
+      // NEW: if this tender was created from a shipment, mark that shipment as 'plannned'
+      if (sourceShipmentId) {
+        try {
+          await axios.put(
+            `${API.SHIPMENT_DETAILS}/${sourceShipmentId}`,
+            { status: "planned" }, 
+            { withCredentials: true }
+          );
+          
+          toast.success("Shipment marked as planned.");
+          // // tell the Shipments tab to refresh next time we view it
+          // setShipmentsRefreshSignal((n) => n + 1);
+        } catch (markErr) {
+          console.error("Failed to update shipment status:", markErr);
+          toast.warn("Tender created, but failed to mark shipment as planned.");
+        }
+      }
+
       setForm(initialFormState);
       setSelectedTransporters([]);
       setPrefilledFromShipment(false);
+      setSourceShipmentId(null);
+
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -265,6 +290,10 @@ const RRDashboardPage = () => {
       maxBidAmount: "",
       maxBidUnit: "",
     }));
+
+    // NEW: remember which shipment we’re creating a tender from
+    setSourceShipmentId(shipment?._id ?? null);
+
     setPrefilledFromShipment(true);
     setActiveTab("create");
     setTimeout(() => {
@@ -367,6 +396,7 @@ const RRDashboardPage = () => {
             {/* Content */}
             {activeTab === "shipment" ? (
               <ShipmentDetailsTab
+                isActive={activeTab === "shipment"}
                 onCreateFromShipment={handlePrefillFromShipment}
               />
             ) : activeTab === "create" ? (
