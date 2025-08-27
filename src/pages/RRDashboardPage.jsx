@@ -196,6 +196,7 @@ const RRDashboardPage = () => {
     }
 
     const payload = {
+      ...(sourceShipmentId && { shipmentPlanId: sourceShipmentId }),
       deliveryWindow: {
         from: form.deliveryWindow.from,
         to: form.deliveryWindow.to,
@@ -225,22 +226,34 @@ const RRDashboardPage = () => {
     };
 
     try {
-      const response = await axios.post(`${API.CREATE_TENDER}`, payload, {
+      const createRes  = await axios.post(`${API.CREATE_TENDER}`, payload, {
         withCredentials: true,
       });
 
-      setTenderHistories((prev) => [response.data, ...prev]);
+      // backend shape is { success: true, data: tender }
+      const createdTender = createRes?.data?.data || createRes?.data;
+      const tenderId = createdTender?._id;
+
+      if (!tenderId) {
+        console.warn("No tender _id returned from create API:", createRes?.data);
+        toast.warn("Tender created, but ID missing in response.");
+      }
+
+      // keep your history list consistent with the backend shape
+      if (createdTender) setTenderHistories((prev) => [createdTender, ...prev]);
+
+      // setTenderHistories((prev) => [response.data, ...prev]);
       toast.success("Tender submitted successfully!");
 
-      // NEW: if this tender was created from a shipment, mark that shipment as 'plannned'
+      // NEW: if this tender was created from a shipment, mark that shipment as 'planned'
       if (sourceShipmentId) {
         try {
           await axios.put(
             `${API.SHIPMENT_DETAILS}/${sourceShipmentId}`,
-            { status: "planned" }, 
+            { status: "planned" },
             { withCredentials: true }
           );
-          
+
           toast.success("Shipment marked as planned.");
           // // tell the Shipments tab to refresh next time we view it
           // setShipmentsRefreshSignal((n) => n + 1);
@@ -250,6 +263,24 @@ const RRDashboardPage = () => {
         }
       }
 
+      // 3) Notify users on WhatsApp using the tender ID
+      if (tenderId) {
+        try {
+          await axios.post(
+            `${API.WHATSAPP_NOTIFICATION}/${tenderId}/notify`,
+            {},
+            { withCredentials: true }
+          );
+
+          toast.success("WhatsApp notifications sent.");
+
+        } catch (notifyErr) {
+          console.error("Failed to send WhatsApp notifications:", notifyErr);
+          toast.warn("Tender created, but failed to send WhatsApp notifications.");
+        }
+      }
+
+      // Reset form
       setForm(initialFormState);
       setSelectedTransporters([]);
       setPrefilledFromShipment(false);

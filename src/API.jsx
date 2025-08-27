@@ -56,6 +56,9 @@ const API = {
   //Shipment Details and Shipment Planned and shipment post api : 
   SHIPMENT_DETAILS : `${serverUrl}/shipment-planning`,
 
+  //Whatsapp notification api : 
+  WHATSAPP_NOTIFICATION : `${serverUrl}/tenders`,
+
   //API for session checking 
 
   CHECK_ME : `${serverUrl}/api/auth/me`,
