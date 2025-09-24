@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react"
 import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles } from "lucide-react"
 
-const MAX_VISIBLE_TRANSPORTERS = 4
+const MAX_VISIBLE_TRANSPORTERS = 10
 
 const TenderDetails = ({ tender, getTransporterName }) => {
   const formatDate = (date) =>

@@ -250,139 +250,181 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
     // Build HTML
     return `
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<title>Tender Report - ${htmlEscape(tender.projectName || tender.projectCode || "Tender")}</title>
-<style>
-  @media print {
-    @page { size: A4; margin: 16mm; }
-  }
-  body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color: #0f172a; }
-  .header {
-    display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;
-  }
-  .brand { font-weight:800; font-size:18px; color:#059669; letter-spacing:0.5px; }
-  .title { font-size:18px; font-weight:700; }
-  .badge { font-size:12px; border:1px solid #bae6fd; background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:999px; }
-  h3 { margin:18px 0 8px; font-size:15px; color:#334155; }
-  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px 16px; }
-  .item { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
-  .label { font-size:11px; color:#64748b; margin-bottom:2px; }
-  .value { font-weight:600; }
-  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; }
-  th { text-align:left; background:#f1f5f9; color:#334155; }
-  th, td { border:1px solid #e2e8f0; padding:8px; vertical-align:top; }
-  .totals { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
-  .totalBox { background:#ecfeff; border:1px solid #cffafe; border-radius:8px; padding:10px; }
-  .tr-final { background:#ecfdf5; } /* green tint for finalized row */
-  .small { font-size:11px; color:#64748b; }
-  .footer { margin-top:24px; border-top:1px dashed #cbd5e1; padding-top:10px; font-size:12px; color:#64748b; display:flex; justify-content:space-between; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <div class="brand">RRI • Tender Report</div>
-    <div class="badge">${htmlEscape(tender.status || "Pending")}</div>
-  </div>
+    <!doctype html>
+    <html>
+    <head>
+    <meta charset="utf-8" />
+    <title>Tender Report - ${htmlEscape(tender.projectName || tender.projectCode || "Tender")}</title>
+    <style>
+      /* ==== Compact, one-page friendly styles (only CSS changed) ==== */
+      :root{
+        --fs-body: 11px;
+        --fs-small: 10px;
+        --fs-head: 12px;
+        --fs-title: 14px;
+        --pad-s: 6px;
+        --pad-m: 8px;
+        --gap: 8px;
+        --radius: 6px;
+      }
 
-  <div class="title">${htmlEscape(tender.projectName || `Tender for ${tender.dispatchLocation || "Location"}`)}</div>
+      @page { size: A4; margin: 8mm; }
 
-  <h3>Project Details</h3>
-  <div class="grid">
-    <div class="item"><div class="label">Project Name</div><div class="value">${htmlEscape(tender.projectName || "-")}</div></div>
-    <div class="item"><div class="label">Project Code</div><div class="value">${htmlEscape(tender.projectCode || "-")}</div></div>
-    <div class="item" style="grid-column: span 2;"><div class="label">Purchase Order</div><div class="value">${htmlEscape(tender.purchaseOrder || "-")}</div></div>
-  </div>
+      @media print {
+        html, body { width: 210mm; height: 297mm; }
+        body { zoom: 0.92; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        table, tr, td, th, h3, .item, .totalBox { page-break-inside: avoid !important; }
+      }
 
-  <h3>Windows & Dates</h3>
-  <div class="grid">
-    <div class="item"><div class="label">Delivery Window</div><div class="value">${tender.deliveryWindow?.from && tender.deliveryWindow?.to
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+        color: #0f172a;
+        font-size: var(--fs-body);
+        line-height: 1.35;
+        margin: 0;
+      }
+
+      .header {
+        display:flex; align-items:center; justify-content:space-between;
+        border-bottom:1px solid #e2e8f0; padding-bottom: var(--pad-s); margin-bottom: var(--pad-s);
+      }
+      .brand { font-weight:800; font-size: 13px; color:#059669; letter-spacing:0.3px; }
+      .title { font-size: var(--fs-title); font-weight:700; margin: 4px 0 2px; }
+      .badge {
+        font-size: var(--fs-small); border:1px solid #bae6fd; background:#e0f2fe; color:#0369a1;
+        padding:2px 6px; border-radius:999px;
+      }
+
+      h3 { margin: 10px 0 6px; font-size: var(--fs-head); color:#334155; }
+
+      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 6px var(--gap); }
+      .item {
+        background:#f8fafc; border:1px solid #e2e8f0; border-radius: var(--radius); padding: var(--pad-s);
+      }
+      .label { font-size: var(--fs-small); color:#64748b; margin-bottom:2px; }
+      .value { font-weight:600; }
+
+      table {
+        width:100%; border-collapse:collapse; margin-top:6px; font-size: 10px; table-layout: fixed;
+      }
+      th { text-align:left; background:#f1f5f9; color:#334155; }
+      th, td { border:1px solid #e2e8f0; padding: 6px; vertical-align:top; word-break: break-word; }
+
+      .totals { display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:6px; }
+      .totalBox {
+        background:#ecfeff; border:1px solid #cffafe; border-radius: var(--radius); padding: var(--pad-s);
+      }
+      .tr-final { background:#ecfdf5; } /* green tint for finalized row */
+      .small { font-size: var(--fs-small); color:#64748b; }
+
+      .footer {
+        margin-top: 10px; border-top:1px dashed #cbd5e1; padding-top: 6px;
+        font-size: var(--fs-small); color:#64748b; display:flex; justify-content:space-between;
+      }
+    </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="brand">RRI • Tender Report</div>
+        <div class="badge">${htmlEscape(tender.status || "Pending")}</div>
+      </div>
+
+      <div class="title">${htmlEscape(tender.projectName || `Tender for ${tender.dispatchLocation || "Location"}`)}</div>
+
+      <h3>Project Details</h3>
+      <div class="grid">
+        <div class="item"><div class="label">Project Name</div><div class="value">${htmlEscape(tender.projectName || "-")}</div></div>
+        <div class="item"><div class="label">Project Code</div><div class="value">${htmlEscape(tender.projectCode || "-")}</div></div>
+        <div class="item" style="grid-column: span 2;"><div class="label">Purchase Order</div><div class="value">${htmlEscape(tender.purchaseOrder || "-")}</div></div>
+      </div>
+
+      <h3>Windows & Dates</h3>
+      <div class="grid">
+        <div class="item"><div class="label">Delivery Window</div><div class="value">${tender.deliveryWindow?.from && tender.deliveryWindow?.to
         ? `${formatDatePretty(tender.deliveryWindow.from)} → ${formatDatePretty(tender.deliveryWindow.to)}`
         : "-"
       }</div></div>
-    <div class="item"><div class="label">Bidding Window</div><div class="value">${tender.biddingStart && tender.biddingEnd
+        <div class="item"><div class="label">Bidding Window</div><div class="value">${tender.biddingStart && tender.biddingEnd
         ? `${formatDateTimePretty(tender.biddingStart)} → ${formatDateTimePretty(tender.biddingEnd)}`
         : "-"
       }</div></div>
-    <div class="item"><div class="label">Closing Date</div><div class="value">${formatDatePretty(tender.closeDate)}</div></div>
-    <div class="item"><div class="label">Created</div><div class="value">${formatDatePretty(tender.createdAt)}</div></div>
-  </div>
+        <div class="item"><div class="label">Closing Date</div><div class="value">${formatDatePretty(tender.closeDate)}</div></div>
+        <div class="item"><div class="label">Created</div><div class="value">${formatDatePretty(tender.createdAt)}</div></div>
+      </div>
 
-  <h3>Location</h3>
-  <div class="item"><div class="label">Dispatch Address</div><div class="value">${htmlEscape(
+      <h3>Location</h3>
+      <div class="item"><div class="label">Dispatch Address</div><div class="value">${htmlEscape(
         [tender.dispatchLocation, tender.address, tender.pincode].filter(Boolean).join(", ")
       )}</div></div>
 
-  ${tender.projectRemark ? `<h3>Project Remark</h3><div class="item"><div class="value">${htmlEscape(tender.projectRemark)}</div></div>` : ""}
+      ${tender.projectRemark ? `<h3>Project Remark</h3><div class="item"><div class="value">${htmlEscape(tender.projectRemark)}</div></div>` : ""}
 
-  <h3>Materials</h3>
-  ${(materials || []).length
+      <h3>Materials</h3>
+      ${(materials || []).length
         ? `<table>
-          <thead><tr><th>Material</th><th>Sub Item</th><th>Weight (MT)</th><th>Quantity (pcs)</th></tr></thead>
-          <tbody>
-            ${materials
+              <thead><tr><th>Material</th><th>Sub Item</th><th>Weight (MT)</th><th>Quantity (pcs)</th></tr></thead>
+              <tbody>
+                ${materials
           .map(
             (m) => `
-                  <tr>
-                    <td>${htmlEscape(m.material || "-")}</td>
-                    <td>${htmlEscape(m.subMaterial || "-")}</td>
-                    <td>${m.weight ?? "-"}</td>
-                    <td>${m.quantity ?? "-"}</td>
-                  </tr>`
+                      <tr>
+                        <td>${htmlEscape(m.material || "-")}</td>
+                        <td>${htmlEscape(m.subMaterial || "-")}</td>
+                        <td>${m.weight ?? "-"}</td>
+                        <td>${m.quantity ?? "-"}</td>
+                      </tr>`
           )
           .join("")}
-          </tbody>
-        </table>`
+              </tbody>
+            </table>`
         : `<div class="item"><div class="value">No materials added</div></div>`
       }
 
-  <div class="totals">
-    <div class="totalBox"><div class="label">Total Weight</div><div class="value">${tender.totalWeight ?? "-"} MT</div></div>
-    <div class="totalBox"><div class="label">Total Quantity</div><div class="value">${tender.totalQuantity ?? "-"} pcs</div></div>
-  </div>
+      <div class="totals">
+        <div class="totalBox"><div class="label">Total Weight</div><div class="value">${tender.totalWeight ?? "-"} MT</div></div>
+        <div class="totalBox"><div class="label">Total Quantity</div><div class="value">${tender.totalQuantity ?? "-"} pcs</div></div>
+      </div>
 
-  <h3>Transporter Responses</h3>
-  ${rows.length
+      <h3>Transporter Responses</h3>
+      ${rows.length
         ? `<table>
-          <thead>
-            <tr>
-              <th>Name / Email</th>
-              <th>Rank</th>
-              <th>Amount (₹)</th>
-              <th>Vehicle No</th>
-              <th>Quoted At</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows
+              <thead>
+                <tr>
+                  <th>Name / Email</th>
+                  <th>Rank</th>
+                  <th>Amount (₹)</th>
+                  <th>Vehicle No</th>
+                  <th>Quoted At</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows
           .map(
             (r) => `
-                  <tr class="${r.isFinal ? "tr-final" : ""}">
-                    <td>${htmlEscape(r.name)}</td>
-                    <td>${htmlEscape(r.rank)}</td>
-                    <td>${htmlEscape(r.amount)}</td>
-                    <td>${htmlEscape(r.vehicle)}</td>
-                    <td>${htmlEscape(r.quotedAt)}</td>
-                    <td>${htmlEscape(r.status)}</td>
-                  </tr>`
+                      <tr class="${r.isFinal ? "tr-final" : ""}">
+                        <td>${htmlEscape(r.name)}</td>
+                        <td>${htmlEscape(r.rank)}</td>
+                        <td>${htmlEscape(r.amount)}</td>
+                        <td>${htmlEscape(r.vehicle)}</td>
+                        <td>${htmlEscape(r.quotedAt)}</td>
+                        <td>${htmlEscape(r.status)}</td>
+                      </tr>`
           )
           .join("")}
-          </tbody>
-        </table>`
+              </tbody>
+            </table>`
         : `<div class="item"><div class="value"> Transporters haven't submitted any quotations for this tender </div></div>`
       }
 
-  ${tender.remarks ? `<h3>Remarks</h3><div class="item"><div class="value">${htmlEscape(tender.remarks)}</div></div>` : ""}
+      ${tender.remarks ? `<h3>Remarks</h3><div class="item"><div class="value">${htmlEscape(tender.remarks)}</div></div>` : ""}
 
-  <div class="footer">
-    <div>Generated: ${new Date().toLocaleString("en-GB")}</div>
-    <div>Tender ID: ${htmlEscape(tender._id || "-")}</div>
-  </div>
-</body>
-</html>`
+      <div class="footer">
+        <div>Generated: ${new Date().toLocaleString("en-GB")}</div>
+        <div>Tender ID: ${htmlEscape(tender._id || "-")}</div>
+      </div>
+    </body>
+    </html>`
   }
 
   // =====================================
