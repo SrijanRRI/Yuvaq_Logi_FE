@@ -18,6 +18,7 @@ export const MaterialModal = ({ close, onAdd }) => {
     SPS: [],
     "Octagonal Poles": [],
     "Conical Poles": [],
+    "HR Coil": [],
     "Conical Poles PU Paint": [],
     HM: [],
     SM: [],

@@ -1,15 +1,46 @@
-import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock } from "lucide-react"
+import { useState, useMemo } from "react"
+import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles } from "lucide-react"
+
+const MAX_VISIBLE_TRANSPORTERS = 4
 
 const TenderDetails = ({ tender, getTransporterName }) => {
   const formatDate = (date) =>
-    new Date(date).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" })
+    new Date(date).toLocaleDateString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
 
   const formatDateWithTime = (dateStr) => {
     const date = new Date(dateStr)
-    const datePart = date.toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" })
-    const timePart = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true })
+    const datePart = date.toLocaleDateString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    const timePart = date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
     return `${datePart}, ${timePart}`
   }
+
+  const transporters = tender.transporters || []
+
+  const [showAllTransporters, setShowAllTransporters] = useState(false)
+
+  // totalHidden stays constant regardless of the toggle,
+  // so the button can appear for both "Show all" and "Show fewer".
+  const totalHidden = Math.max(transporters.length - MAX_VISIBLE_TRANSPORTERS, 0)
+
+  const visibleTransporters = useMemo(() => {
+    if (showAllTransporters) return transporters
+    return transporters.slice(0, MAX_VISIBLE_TRANSPORTERS)
+  }, [showAllTransporters, transporters])
+
+  // Only show the "+N more" pill when we're collapsed.
+  const hiddenCountDisplay = !showAllTransporters ? totalHidden : 0
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -17,15 +48,23 @@ const TenderDetails = ({ tender, getTransporterName }) => {
       <div className="space-y-4 sm:space-y-5">
         {(tender.projectName || tender.projectCode || tender.purchaseOrder) && (
           <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-            <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
-              <span className="truncate">Project Details</span>
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <h4 className="text-sm sm:text-base font-semibold text-slate-700 flex items-center gap-2">
+                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+                <span className="truncate text-pretty">Project Details</span>
+              </h4>
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">
+                <Sparkles className="h-3 w-3" />
+                Insight
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-3">
               {tender.projectName && (
                 <div className="min-w-0">
                   <span className="text-xs text-slate-500 block mb-1">Project Name</span>
-                  <p className="font-medium text-slate-800 text-sm sm:text-base break-words">{tender.projectName}</p>
+                  <p className="font-medium text-slate-800 text-sm sm:text-base break-words text-pretty">
+                    {tender.projectName}
+                  </p>
                 </div>
               )}
               {tender.projectCode && (
@@ -37,14 +76,16 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               {tender.purchaseOrder && (
                 <div className="min-w-0 sm:col-span-2">
                   <span className="text-xs text-slate-500 block mb-1">Purchase Order</span>
-                  <p className="font-medium text-slate-800 text-sm sm:text-base break-words">{tender.purchaseOrder}</p>
+                  <p className="font-medium text-slate-800 text-sm sm:text-base break-words text-pretty">
+                    {tender.purchaseOrder}
+                  </p>
                 </div>
               )}
             </div>
             {tender.projectRemark && (
               <div className="mt-3 pt-3 border-t border-slate-100">
                 <span className="text-xs text-slate-500 block mb-1">Remark</span>
-                <p className="text-slate-700 text-xs sm:text-sm break-words">{tender.projectRemark}</p>
+                <p className="text-slate-700 text-xs sm:text-sm break-words text-pretty">{tender.projectRemark}</p>
               </div>
             )}
           </div>
@@ -88,7 +129,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
               <span className="truncate">Location</span>
             </h4>
-            <p className="text-slate-800 text-xs sm:text-sm break-words">
+            <p className="text-slate-800 text-xs sm:text-sm break-words text-pretty">
               {tender.dispatchLocation}, {tender.address}, {tender.pincode}
             </p>
           </div>
@@ -100,7 +141,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
               <span className="truncate">Remarks</span>
             </h4>
-            <p className="text-slate-700 bg-slate-50 p-2 sm:p-3 rounded-lg text-xs sm:text-sm break-words">
+            <p className="text-slate-700 bg-slate-50 p-2 sm:p-3 rounded-lg text-xs sm:text-sm break-words text-pretty">
               {tender.remarks}
             </p>
           </div>
@@ -112,7 +153,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
         <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
           <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <Package className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
-            <span className="truncate">Materials</span>
+            <span className="truncate text-pretty">Materials</span>
           </h4>
           {tender.materials?.length > 0 ? (
             <div>
@@ -143,31 +184,31 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               </div>
 
               {/* Desktop Table Layout */}
-              <div className="hidden sm:block overflow-x-auto">
+              <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-100">
                 <table className="w-full text-xs sm:text-sm">
                   <thead>
                     <tr className="bg-slate-50 text-slate-600">
-                      <th className="px-2 sm:px-3 py-2 text-left rounded-tl-lg min-w-0">
+                      <th className="px-3 py-2 text-left rounded-tl-xl min-w-0">
                         <span className="truncate block">Material</span>
                       </th>
-                      <th className="px-2 sm:px-3 py-2 text-left min-w-0">
+                      <th className="px-3 py-2 text-left min-w-0">
                         <span className="truncate block">Sub Item</span>
                       </th>
-                      <th className="px-2 sm:px-3 py-2 text-right">Weight</th>
-                      <th className="px-2 sm:px-3 py-2 text-right rounded-tr-lg">Quantity</th>
+                      <th className="px-3 py-2 text-right">Weight</th>
+                      <th className="px-3 py-2 text-right rounded-tr-xl">Quantity</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tender.materials.map((mat, idx) => (
                       <tr key={idx} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="px-2 sm:px-3 py-2.5 font-medium min-w-0">
+                        <td className="px-3 py-2.5 font-medium min-w-0">
                           <span className="truncate block">{mat.material}</span>
                         </td>
-                        <td className="px-2 sm:px-3 py-2.5 min-w-0">
+                        <td className="px-3 py-2.5 min-w-0">
                           <span className="truncate block">{mat.subMaterial || "-"}</span>
                         </td>
-                        <td className="px-2 sm:px-3 py-2.5 text-right whitespace-nowrap">{mat.weight} MT</td>
-                        <td className="px-2 sm:px-3 py-2.5 text-right whitespace-nowrap">{mat.quantity} pcs</td>
+                        <td className="px-3 py-2.5 text-right whitespace-nowrap">{mat.weight} MT</td>
+                        <td className="px-3 py-2.5 text-right whitespace-nowrap">{mat.quantity} pcs</td>
                       </tr>
                     ))}
                   </tbody>
@@ -212,23 +253,57 @@ const TenderDetails = ({ tender, getTransporterName }) => {
         </div>
 
         <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-          <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
-            <span className="truncate">Selected Transporters</span>
-          </h4>
-          {tender.transporters?.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {tender.transporters.map((tid) => (
-                <div
-                  key={tid}
-                  className="bg-indigo-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border border-indigo-100 shadow-sm min-w-0 max-w-full"
-                >
-                  <div className="bg-indigo-100 p-0.5 sm:p-1 rounded-full flex-shrink-0">
-                    <Users className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 text-indigo-600" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <h4 className="text-sm sm:text-base font-semibold text-slate-700 flex items-center gap-2">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+              <span className="truncate">Selected Transporters</span>
+            </h4>
+            {transporters.length > 0 && (
+              <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                {transporters.length} transporter{transporters.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {transporters.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {visibleTransporters.map((tid) => (
+                  <div
+                    key={tid}
+                    className="group bg-indigo-50 px-3 py-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 border border-indigo-100 shadow-sm min-w-0 max-w-full transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="bg-indigo-100 p-1 rounded-full flex-shrink-0">
+                      <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" />
+                    </div>
+                    <span className="font-medium text-slate-700 truncate text-pretty">{getTransporterName(tid)}</span>
                   </div>
-                  <span className="font-medium text-slate-700 truncate">{getTransporterName(tid)}</span>
+                ))}
+
+                {hiddenCountDisplay > 0 && (
+                  <div className="px-3 py-2 rounded-lg border border-dashed border-indigo-200 bg-white text-xs sm:text-sm font-medium text-indigo-500 shadow-sm">
+                    +{hiddenCountDisplay} more
+                  </div>
+                )}
+              </div>
+
+              {/* Button shows if we *can* expand/collapse at all */}
+              {totalHidden > 0 && (
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTransporters((prev) => !prev)}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
+                      ${showAllTransporters
+                        ? "border-indigo-200 bg-white text-indigo-700 hover:bg-slate-50"
+                        : "border-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700"}`}
+                    aria-expanded={showAllTransporters}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {showAllTransporters ? "Show fewer transporters" : "Show all transporters"}
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           ) : (
             <p className="text-slate-500 italic bg-slate-50 p-3 rounded-lg text-center text-xs sm:text-sm">
