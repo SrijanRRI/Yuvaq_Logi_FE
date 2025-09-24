@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import * as XLSX from "xlsx"
 import ReportQuotationModal from "../../modals/ReportQuotationModal"
 import { FileText, Download, Search, Eye, ClipboardList } from "lucide-react"
@@ -8,6 +8,22 @@ const AdminReports = ({ data }) => {
   const [selectedQuotations, setSelectedQuotations] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    const onEsc = (e) => e.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "N/A"
@@ -102,6 +118,303 @@ const AdminReports = ({ data }) => {
     return matchesSearch && matchesStatus
   })
 
+  // ====== PDF HELPERS ======
+  // ====== PDF HELPERS ======
+  const htmlEscape = (s = "") =>
+    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+  const formatINR = (v) => {
+    if (v === null || v === undefined || v === "" || v === "-") return "-"
+    const n = Number(v)
+    if (Number.isNaN(n)) return String(v)
+    return `₹${n.toLocaleString("en-IN")}`
+  }
+
+  // Soft badge colors by status
+  const statusColors = (status = "") => {
+    const s = String(status).toLowerCase()
+    if (s === "finalized") return { bg: "#ecfdf5", bd: "#a7f3d0", fg: "#065f46" } // green
+    if (s === "open") return { bg: "#fffbeb", bd: "#fde68a", fg: "#92400e" }      // amber
+    if (s === "closed") return { bg: "#fef2f2", bd: "#fecaca", fg: "#991b1b" }    // red
+    return { bg: "#eff6ff", bd: "#bfdbfe", fg: "#1e40af" }                        // blue / default
+  }
+
+  /**
+   * Build compact, printable HTML for the Admin Reports table data.
+   * @param {Array} rows - your filteredData array (items with tenderInfo + quotations)
+   * NOTE: Uses formatDate and formatDateTime already defined in this component.
+   */
+  const buildAdminPrintableHTML = (rows = []) => {
+    const total = rows.length
+
+    const cardsHTML = rows.map((item, idx) => {
+      const info = item?.tenderInfo || {}
+      const status = info.status || "-"
+      const { bg, bd, fg } = statusColors(status)
+
+      const deliveryFrom = htmlEscape(
+        (typeof formatDate === "function" ? formatDate(info.deliveryWindow?.from) : info.deliveryWindow?.from) || "-"
+      )
+      const deliveryTo = htmlEscape(
+        (typeof formatDate === "function" ? formatDate(info.deliveryWindow?.to) : info.deliveryWindow?.to) || "-"
+      )
+      const closeDate = htmlEscape(
+        (typeof formatDate === "function" ? formatDate(info.closeDate) : info.closeDate) || "-"
+      )
+      const bidStart = htmlEscape(
+        (typeof formatDateTime === "function" ? formatDateTime(info.biddingStart) : info.biddingStart) || "-"
+      )
+      const bidEnd = htmlEscape(
+        (typeof formatDateTime === "function" ? formatDateTime(info.biddingEnd) : info.biddingEnd) || "-"
+      )
+      const maxBid = htmlEscape(formatINR(info.maxBidAmount))
+      const remarks = htmlEscape(info.remarks || "-")
+      const projectRemark = info.projectRemark ? htmlEscape(info.projectRemark) : ""
+
+      // Quotations table or a friendly “no quotes” line
+      const quotes = Array.isArray(item.quotations) ? item.quotations : []
+      const quotesBlock = quotes.length
+        ? `
+        <table class="qt">
+          <thead>
+            <tr>
+              <th>Transporter</th>
+              <th>Vendor Email</th>
+              <th>Vehicle Details</th>
+              <th>Quoted Price</th>
+              <th>Rank</th>
+              <th>Selected</th>
+              <th>Quotation DateTime</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${quotes.map((q) => {
+          const sel = (q.selected === true || String(q.selected).toLowerCase() === "yes")
+            ? "Yes ✅"
+            : "—"
+          const qdt = htmlEscape(
+            (typeof formatDateTime === "function" ? formatDateTime(q.quotationDateTime) : q.quotationDateTime) || "-"
+          )
+          return `
+                <tr>
+                  <td>${htmlEscape(q.transporterName || "-")}</td>
+                  <td>${htmlEscape(q.vendorEmail || "-")}</td>
+                  <td>${htmlEscape(q.vehicleNumber || "-")}</td>
+                  <td>${htmlEscape(formatINR(q.quotedPrice))}</td>
+                  <td>${htmlEscape(q.rank || "-")}</td>
+                  <td>${sel}</td>
+                  <td>${qdt}</td>
+                </tr>
+              `
+        }).join("")}
+          </tbody>
+        </table>
+      `
+        : `<div class="noq">Transporters haven't submitted any quotations for this tender.</div>`
+
+      return `
+      <div class="card">
+        <div class="card-hd">
+          <div class="title">${htmlEscape(info.projectName || "-")}</div>
+          <div class="badge" style="background:${bg};border-color:${bd};color:${fg};">${htmlEscape(status)}</div>
+        </div>
+
+        <div class="grid">
+          <div class="item">
+            <div class="label">Product</div>
+            <div class="value">${htmlEscape(info.product || "-")}</div>
+          </div>
+          <div class="item">
+            <div class="label">Project Code</div>
+            <div class="value">${htmlEscape(info.projectCode || "-")}</div>
+          </div>
+          <div class="item">
+            <div class="label">Purchase Order</div>
+            <div class="value">${htmlEscape(info.purchaseOrder || "-")}</div>
+          </div>
+
+          <div class="item">
+            <div class="label">Dispatch Location</div>
+            <div class="value">${htmlEscape(info.dispatchLocation || "-")}</div>
+          </div>
+          <div class="item">
+            <div class="label">Delivery Window</div>
+            <div class="value">${deliveryFrom} → ${deliveryTo}</div>
+          </div>
+          <div class="item">
+            <div class="label">Close Date</div>
+            <div class="value">${closeDate}</div>
+          </div>
+
+          <div class="item">
+            <div class="label">Bidding Start</div>
+            <div class="value">${bidStart}</div>
+          </div>
+          <div class="item">
+            <div class="label">Bidding End</div>
+            <div class="value">${bidEnd}</div>
+          </div>
+          <div class="item">
+            <div class="label">Remarks</div>
+            <div class="value">${remarks}</div>
+          </div>
+
+          <div class="item">
+            <div class="label">Total Weight (MT)</div>
+            <div class="value">${htmlEscape(String(info.totalWeight ?? "-"))}</div>
+          </div>
+          <div class="item">
+            <div class="label">Total Quantity (pcs)</div>
+            <div class="value">${htmlEscape(String(info.totalQuantity ?? "-"))}</div>
+          </div>
+          <div class="item">
+            <div class="label">Max Bid Amount</div>
+            <div class="value">${maxBid}</div>
+          </div>
+        </div>
+
+        ${projectRemark ? `<div class="remark"><span class="label">Project Remark:</span> <span class="value">${projectRemark}</span></div>` : ""}
+
+        <div class="quotes">
+          <div class="label">Quotations</div>
+          ${quotesBlock}
+        </div>
+      </div>
+    `
+    }).join("")
+
+    return `
+    <!doctype html>
+    <html>
+    <head>
+    <meta charset="utf-8" />
+    <title>Tender Summary Report</title>
+    <style>
+      /* compact, one-page-ish */
+      :root {
+        --fs-body: 11px; --fs-small: 10px; --fs-head: 12px;
+        --pad-xxs: 4px; --pad-s: 6px; --pad: 8px; --gap: 8px;
+        --radius: 8px;
+      }
+      @page { size: A4; margin: 10mm; }
+      @media print {
+        html, body { width: 210mm; height: 297mm; }
+        body { zoom: 0.92; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .card, table, tr, td, th, h3 { page-break-inside: avoid !important; }
+        .card { page-break-after: auto; }
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+        color:#0f172a; font-size:var(--fs-body); line-height:1.35; margin:0; background:#ffffff;
+      }
+      .header {
+        display:flex; align-items:center; justify-content:space-between;
+        padding: 10px 12px;
+        background: linear-gradient(90deg, #0f766e, #115e59);
+        color:#ecfeff;
+      }
+      .brand { font-weight:800; font-size: 16px; letter-spacing:.2px; }
+      .sub { font-size: var(--fs-small); opacity:.95; }
+      .wrap { padding: 10px; }
+      .card {
+        border:1px solid #e2e8f0; border-radius: var(--radius);
+        margin-bottom: var(--gap); background:#fff; overflow:hidden;
+        box-shadow: 0 1px 1px rgba(2,6,23,.04), 0 1px 2px rgba(2,6,23,.06);
+      }
+      .card-hd {
+        display:flex; justify-content:space-between; align-items:center;
+        padding: 8px 10px; background:#f8fafc; border-bottom:1px solid #e2e8f0;
+      }
+      .title { font-weight:700; font-size: var(--fs-head); color:#0f172a; }
+      .badge {
+        font-size: 10px; border:1px solid; padding:2px 8px; border-radius:999px; font-weight:600;
+      }
+      .grid {
+        display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px;
+      }
+      .item {
+        background:#ffffff; border:1px solid #e2e8f0; border-radius: 6px; padding: 8px;
+      }
+      .label { font-size: 10px; color:#64748b; margin-bottom:3px; }
+      .value { font-weight:600; color:#0f172a; word-break: break-word; }
+      .remark { padding: 0 10px 8px 10px; }
+      .quotes { padding: 0 10px 12px 10px; }
+      .qt { width:100%; border-collapse:collapse; font-size: 10px; table-layout: fixed; }
+      .qt th { text-align:left; background:#eef2f7; color:#334155; }
+      .qt th, .qt td { border:1px solid #e2e8f0; padding: 6px; vertical-align:top; word-break: break-word; }
+      .qt tbody tr:nth-child(even) td { background:#fafbfc; }
+      .noq {
+        padding: 8px; font-style: italic; color:#475569; background:#f8fafc; border:1px dashed #e2e8f0; border-radius:6px;
+      }
+      .footer {
+        margin: 8px 10px 12px; border-top:1px dashed #cbd5e1; padding-top: 8px;
+        display:flex; justify-content:space-between; font-size: var(--fs-small); color:#475569;
+      }
+    </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="brand">Tender Summary Report</div>
+          <div class="sub">Generated ${new Date().toLocaleString("en-GB")}</div>
+        </div>
+        <div class="sub">Total tenders: ${total}</div>
+      </div>
+
+      <div class="wrap">
+        ${cardsHTML}
+      </div>
+
+      <div class="footer">
+        <div>Generated: ${new Date().toLocaleString("en-GB")}</div>
+        <div>Tenders: ${total}</div>
+      </div>
+    </body>
+    </html>
+  `
+  }
+
+  /**
+   * Download/print PDF for current filtered rows (no popup; uses hidden iframe + print dialog).
+   * @param {Array} filteredRows - pass your filteredData here
+   */
+  const downloadPDF = (filteredRows) => {
+    const html = buildAdminPrintableHTML(filteredRows)
+    const blob = new Blob([html], { type: "text/html" })
+    const url = URL.createObjectURL(blob)
+
+    // Hidden iframe (no new tab), triggers browser print dialog (user selects "Save as PDF")
+    const iframe = document.createElement("iframe")
+    iframe.style.position = "fixed"
+    iframe.style.right = "0"
+    iframe.style.bottom = "0"
+    iframe.style.width = "0"
+    iframe.style.height = "0"
+    iframe.style.border = "0"
+    iframe.src = url
+
+    iframe.onload = () => {
+      try {
+        setTimeout(() => {
+          iframe.contentWindow?.focus()
+          iframe.contentWindow?.print()
+          setTimeout(() => {
+            URL.revokeObjectURL(url)
+            iframe.remove()
+          }, 800)
+        }, 150)
+      } catch {
+        URL.revokeObjectURL(url)
+        iframe.remove()
+      }
+    }
+
+    document.body.appendChild(iframe)
+  }
+
+
+
   // Get unique statuses for filter
   const statuses = ["all", ...new Set(safeData.map((item) => item.tenderInfo?.status).filter(Boolean))]
 
@@ -120,15 +433,51 @@ const AdminReports = ({ data }) => {
               {safeData.length} tender{safeData.length !== 1 ? "s" : ""} available
             </p>
           </div>
-          <button
-            onClick={downloadExcel}
-            className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors duration-200 flex items-center font-semibold text-lg shadow-md hover:shadow-lg"
+
+          {/* Download dropdown */}
+          <div
+            className="relative flex-shrink-0"
+            ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
           >
-            <Download className="h-5 w-5 mr-2" />
-            Download Excel
-          </button>
+            <button
+              onClick={() => setMenuOpen((s) => !s)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-lg shadow-md hover:shadow-lg transition-colors"
+              title="Download report"
+            >
+              <Download className="h-5 w-5" />
+              Download
+              <span className="ml-1 text-white/90 text-sm">▼</span>
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white text-slate-700 border border-slate-200 rounded-xl shadow-lg overflow-hidden z-10">
+                <button
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    downloadPDF(filteredData)
+                  }}
+                >
+                  <FileText className="h-4 w-4" />
+                  Download PDF
+                </button>
+                <button
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    downloadExcel()
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                  Download Excel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
 
       {/* Filters */}
       <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
@@ -356,15 +705,14 @@ const AdminReports = ({ data }) => {
                       <td className="px-4 py-3 border-r border-gray-100">
                         <span
                           className={`px-3 py-1.5 inline-flex text-xs font-semibold rounded-full capitalize
-                          ${
-                            info.status === "finalized"
+                          ${info.status === "finalized"
                               ? "bg-green-100 text-green-800 border border-green-200"
                               : info.status === "open"
                                 ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
                                 : info.status === "closed"
                                   ? "bg-red-100 text-red-800 border border-red-200"
                                   : "bg-blue-100 text-blue-800 border border-blue-200"
-                          }`}
+                            }`}
                         >
                           {info.status}
                         </span>
