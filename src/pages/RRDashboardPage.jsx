@@ -21,7 +21,7 @@ import TenderHistoryAccordion from "./RRDashboardPages/TenderHistoryAccordion";
 import { MaterialModal } from "../modals/MaterialModal";
 import TransporterModal from "../modals/TransporterModal";
 import ShipmentDetailsTab from "./RRDashboardPages/ShipmentDetailsTab";
-import ShipmentPlannedTab from "./RRDashboardPages/ShipmentPlannedTab"; // NEW
+import ShipmentPlannedTab from "./RRDashboardPages/ShipmentPlannedTab";
 
 const initialFormState = {
   deliveryWindow: { from: "", to: "" },
@@ -58,13 +58,49 @@ const RRDashboardPage = () => {
   const [tenderHistories, setTenderHistories] = useState([]);
   const [transporterList, setTransporterList] = useState([]);
 
-  const fetchTenderHistory = async () => {
+  // 🔢 pagination state for history
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit, setHistoryLimit] = useState(10);
+  const [historyMeta, setHistoryMeta] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalCount: 0,
+  });
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchTenderHistory = async (page = historyPage, limit = historyLimit) => {
     try {
-      const response = await axios.get(API.FETCH_ALL_TENDER_CREATED_BY_RRUSER, {
+      const response = await axios.get(`${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}`, {
         withCredentials: true,
       });
-      const data = response.data?.data || [];
+      const data = response?.data?.data || response?.data?.results || [];
+
+      const meta =
+        response?.data?.pagination ||
+        response?.data?.meta ||
+        {
+          page: response?.data?.page ?? page,
+          limit: response?.data?.limit ?? limit,
+          totalPages:
+            response?.data?.totalPages ??
+            Math.max(
+              1,
+              Math.ceil((response?.data?.total || response?.data?.totalCount || data.length) / (limit || 1))
+            ),
+          totalCount: response?.data?.totalCount ?? response?.data?.total ?? data.length,
+        }
+
       setTenderHistories(data);
+      setHistoryMeta({
+        page: Number(meta.page) || page,
+        limit: Number(meta.limit) || limit,
+        totalPages: Number(meta.totalPages) || 1,
+        totalCount: Number(meta.totalCount) || data.length,
+      });
+
+      console.log("tender history : ", response.data?.data);
+
     } catch (err) {
       console.error("Failed to fetch tender history", err);
       toast.error("Could not fetch tender history. Please try again later.");
@@ -84,10 +120,10 @@ const RRDashboardPage = () => {
 
   useEffect(() => {
     if (viewHistory) {
-      fetchTenderHistory();
+      fetchTenderHistory(historyPage, historyLimit);
       fetchTransporters();
     }
-  }, [viewHistory]);
+  }, [viewHistory, historyPage, historyLimit]);
 
   // --- Create Tender form state ---
   const [form, setForm] = useState(initialFormState);
@@ -226,7 +262,7 @@ const RRDashboardPage = () => {
     };
 
     try {
-      const createRes  = await axios.post(`${API.CREATE_TENDER}`, payload, {
+      const createRes = await axios.post(`${API.CREATE_TENDER}`, payload, {
         withCredentials: true,
       });
 
@@ -385,6 +421,16 @@ const RRDashboardPage = () => {
             tenderHistories={tenderHistories}
             transporterList={transporterList}
             fetchTenderHistory={fetchTenderHistory}
+            page={historyMeta.page}
+            limit={historyMeta.limit}
+            totalPages={historyMeta.totalPages}
+            totalCount={historyMeta.totalCount}
+            onPageChange={(p) => setHistoryPage(p)}
+            onLimitChange={(l) => {
+              setHistoryLimit(l);
+              setHistoryPage(1); // reset to first page when page size changes
+            }}
+            loading={historyLoading}
           />
         ) : (
           <>

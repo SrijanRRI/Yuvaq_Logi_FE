@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { toast } from "react-toastify"
 import axios from "axios"
-import { Clock, Search, Filter, X, Calendar, CheckCircle2 } from "lucide-react"
+import { Clock, Search, Filter, X, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import API from "../../API"
 
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
@@ -11,7 +11,14 @@ import TenderDetails from "./TenderDetails"
 import AttachmentPreviewModal from "../../modals/AttachmentPreviewModal"
 import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
 
-const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory }) => {
+const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
+  page = 1,
+  limit = 10,
+  totalPages = 1,
+  totalCount = 0,
+  onPageChange = () => { },
+  onLimitChange = () => { },
+  loading = false, }) => {
   const [openIdx, setOpenIdx] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [priceInput, setPriceInput] = useState("")
@@ -147,25 +154,40 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     setDateRange({ from: "", to: "" })
   }
 
-  const filteredTenders = tenderHistories.filter((t) => {
-    const matchSearch = [t.projectName, t.dispatchLocation, t.projectCode].some((val) =>
-      (val || "").toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+  // 🔎 Apply search + filters to CURRENT PAGE results
+  const filteredTenders = useMemo(() => {
+    return tenderHistories.filter((t) => {
+      const matchSearch = [t.projectName, t.dispatchLocation, t.projectCode].some((val) =>
+        (val || "").toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-    const matchStatus = statusFilter === "all" || t.status.toLowerCase() === statusFilter.toLowerCase()
+      const matchStatus = statusFilter === "all" || (t.status || "").toLowerCase() === statusFilter.toLowerCase();
 
-    let matchDate = true
-    if (dateRange.from && dateRange.to && t.deliveryWindow?.from && t.deliveryWindow?.to) {
-      const from = new Date(dateRange.from)
-      const to = new Date(dateRange.to)
-      const dwFrom = new Date(t.deliveryWindow.from)
-      const dwTo = new Date(t.deliveryWindow.to)
-      to.setHours(23, 59, 59, 999)
-      matchDate = dwFrom >= from && dwTo <= to
-    }
+      let matchDate = true;
+      if (dateRange.from && dateRange.to && t.deliveryWindow?.from && t.deliveryWindow?.to) {
+        const from = new Date(dateRange.from);
+        const to = new Date(dateRange.to);
+        const dwFrom = new Date(t.deliveryWindow.from);
+        const dwTo = new Date(t.deliveryWindow.to);
+        to.setHours(23, 59, 59, 999);
+        matchDate = dwFrom >= from && dwTo <= to;
+      }
 
-    return matchSearch && matchStatus && matchDate
-  })
+      return matchSearch && matchStatus && matchDate;
+    });
+  }, [tenderHistories, searchQuery, statusFilter, dateRange]);
+
+  // ========== Pagination Controls ==========
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+
+  const onFirst = () => canPrev && onPageChange(1);
+  const onPrev = () => canPrev && onPageChange(page - 1);
+  const onNext = () => canNext && onPageChange(page + 1);
+  const onLast = () => canNext && onPageChange(totalPages);
+
+  const pageStart = totalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const pageEnd = Math.min(page * limit, totalCount);
 
   // ---------- EXPORT HELPERS ----------
   const htmlEscape = (s = "") =>
@@ -825,9 +847,31 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                 )}
               </div>
             )}
+
+            {/* Count for current page after filters */}
+            <div className="mb-4 text-sm flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                {filteredTenders.length === 0 ? (
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <CheckCircle2 className="h-4 w-4 text-slate-400" />
+                    No results found in this page
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-emerald-600 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Showing {filteredTenders.length} item(s) on this page
+                  </div>
+                )}
+              </div>
+
+              {/* 🔢 Global range across pages */}
+              <div className="text-slate-500">
+                {loading ? "Loading…" : `Rows ${pageStart}-${pageEnd} of ${totalCount}`}
+              </div>
+            </div>
           </div>
 
-          <div className="mb-4 text-sm flex items-center gap-2">
+          {/* <div className="mb-4 text-sm flex items-center gap-2">
             {filteredTenders.length === 0 ? (
               <div className="flex items-center gap-2 text-slate-500">
                 <CheckCircle2 className="h-4 w-4 text-slate-400" />
@@ -839,7 +883,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                 Showing {filteredTenders.length} of {tenderHistories.length} tenders
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Tender List */}
           <div className="space-y-4">
@@ -895,9 +939,81 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                 <p className="text-slate-500 text-sm">Try adjusting your search or filter criteria</p>
               </div>
             )}
+            {!loading && filteredTenders.length === 0 && (
+              <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
+                <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
+                  <Search className="h-10 w-10 text-emerald-200" />
+                </div>
+                <p className="text-slate-700 font-medium mb-2">No tenders found</p>
+                <p className="text-slate-500 text-sm">Try adjusting your search or filter criteria</p>
+              </div>
+            )}
+          </div>
+
+          {/* ===== Pagination Bar ===== */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Page size */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Rows per page</span>
+              <select
+                className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"
+                value={limit}
+                onChange={(e) => onLimitChange(Number(e.target.value))}
+                disabled={loading}
+              >
+                {[5, 10, 20, 50, 100].map((sz) => (
+                  <option key={sz} value={sz}>
+                    {sz}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Pager */}
+            <div className="flex items-center gap-2">
+              <button
+                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                onClick={onFirst}
+                disabled={!canPrev || loading}
+                title="First"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button
+                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                onClick={onPrev}
+                disabled={!canPrev || loading}
+                title="Previous"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <span className="text-sm text-slate-600 px-2">
+                Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+              </span>
+
+              <button
+                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                onClick={onNext}
+                disabled={!canNext || loading}
+                title="Next"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                onClick={onLast}
+                disabled={!canNext || loading}
+                title="Last"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+
 
       {previewFile && <AttachmentPreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />}
 
