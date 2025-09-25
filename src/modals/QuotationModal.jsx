@@ -71,8 +71,74 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
         toast.error(res.data.message || "Submission failed")
       }
     } catch (err) {
-      console.error("Submit Error:", err)
-      toast.error("An error occurred while submitting your quotation.")
+      console.error("Submit Error:", err);
+
+      // Safely unwrap backend fields
+      const resp = err?.response?.data || {};
+      const backendMsg =
+        resp?.message ||
+        resp?.error ||
+        resp?.err ||
+        "Your quotation could not be submitted.";
+
+      // Meta may contain numbers we can show to the user
+      const meta = resp?.data || {};
+      // currentL1 might be a number or an object with .price
+      const l1Raw =
+        typeof meta?.currentL1 === "number"
+          ? meta.currentL1
+          : (meta?.currentL1?.price ?? null);
+
+      // backend may send either "minimumRequiredDifference" or "difference"
+      const requiredDiff =
+        (typeof meta?.minimumRequiredDifference === "number"
+          ? meta.minimumRequiredDifference
+          : null) ??
+        (typeof meta?.difference === "number" ? meta.difference : null) ??
+        (typeof tender?.priceDifference === "number"
+          ? tender.priceDifference
+          : Number(tender?.priceDifference) || null);
+
+      const yourPrice = typeof meta?.yourPrice === "number" ? meta.yourPrice : Number(price) || null;
+
+      const hasNumbers =
+        typeof l1Raw === "number" && typeof requiredDiff === "number";
+
+      const minAllowed = hasNumbers ? Math.max(0, l1Raw - requiredDiff) : null;
+
+      // Pretty bilingual toast (EN + HI) with backend message highlighted
+      const fmt = (n) =>
+        typeof n === "number" ? `₹${n.toLocaleString("en-IN")}` : "-";
+
+      toast.error(
+        <div className="space-y-2">
+          <div className="font-bold text-red-800">Bid Rejected • बोली अस्वीकृत</div>
+
+          {/* Show the backend's message exactly as returned */}
+          <div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800">
+            {backendMsg}
+          </div>
+
+          {/* Helpful numbers if present */}
+          {hasNumbers && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-sm">
+              <div className="font-medium text-red-800 mb-1">Rule • नियम</div>
+              <div className="text-red-700">
+                Your price must be ≤ <b>{fmt(minAllowed)}</b> (L1 {fmt(l1Raw)} − required difference {fmt(requiredDiff)}).
+              </div>
+              <div className="text-red-700">
+                आपकी बोली ≤ <b>{fmt(minAllowed)}</b> होनी चाहिए (L1 {fmt(l1Raw)} − आवश्यक अंतर {fmt(requiredDiff)}).
+              </div>
+              {typeof yourPrice === "number" && (
+                <div className="mt-1 text-red-700">
+                  Your price / आपकी बोली: <b>{fmt(yourPrice)}</b>
+                </div>
+              )}
+            </div>
+          )}
+        </div>,
+        { icon: "⚠️" }
+      );
     } finally {
       setIsSubmitting(false)
     }

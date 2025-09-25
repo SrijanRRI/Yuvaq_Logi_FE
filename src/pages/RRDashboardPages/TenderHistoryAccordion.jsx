@@ -18,7 +18,10 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   totalCount = 0,
   onPageChange = () => { },
   onLimitChange = () => { },
-  loading = false, }) => {
+  loading = false,
+  scope = "mine",
+  onScopeChange = () => { },
+  currentUserName = "You", }) => {
   const [openIdx, setOpenIdx] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [priceInput, setPriceInput] = useState("")
@@ -188,6 +191,21 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
   const pageStart = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const pageEnd = Math.min(page * limit, totalCount);
+
+  const ScopeChip = ({ value, label, desc, activeClass }) => (
+    <button
+      onClick={() => onScopeChange(value)}
+      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
+        ${scope === value
+          ? `${activeClass} text-white shadow-md scale-105`
+          : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300"}`}
+      title={desc}
+    >
+      {scope === value && <span className="mr-1">•</span>}
+      {label}
+    </button>
+  );
+
 
   // ---------- EXPORT HELPERS ----------
   const htmlEscape = (s = "") =>
@@ -407,6 +425,15 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         <div class="totalBox"><div class="label">Total Quantity</div><div class="value">${tender.totalQuantity ?? "-"} pcs</div></div>
       </div>
 
+      <!-- NEW: Bidding Rule -->
+      <div class="totals" style="margin-top:6px;">
+        <div class="totalBox" style="grid-column: span 2;">
+          <div class="label">Price Difference Rule</div>
+          <div class="value">₹${tender.priceDifference != null ? Number(tender.priceDifference).toLocaleString() : "-"} (minimum decrement to beat L1)</div>
+          <div class="small">Example: If L1 is ₹300 and price difference is ₹20, next valid quote must be ₹280 or lower.</div>
+        </div>
+      </div>
+
       <h3>Transporter Responses</h3>
       ${rows.length
         ? `<table>
@@ -556,6 +583,14 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     push("Total Weight (MT)", tender.totalWeight ?? "-")
     push("Total Quantity (pcs)", tender.totalQuantity ?? "-")
 
+    // NEW: Price Difference rule line
+    rows.push([])
+    rows.push(["==== BIDDING RULE ====", ""])
+    push(
+      "Price Difference (₹) — min decrement to beat L1",
+      tender.priceDifference != null ? `₹${Number(tender.priceDifference).toLocaleString()}` : "-"
+    )
+
     // =========================
     //          MATERIALS
     // =========================
@@ -690,6 +725,37 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         </div>
 
         <div className="p-6">
+
+          {/* ===== Scope Selector + Search/Filter ===== */}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* NEW: scope segmented control */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Show</span>
+              <div className="flex gap-2">
+                <ScopeChip
+                  value="mine"
+                  label="My tenders"
+                  desc="Only tenders created by you"
+                  activeClass="bg-gradient-to-r from-emerald-500 to-emerald-600"
+                />
+                <ScopeChip
+                  value="all"
+                  label="All tenders"
+                  desc="All tenders in the database"
+                  activeClass="bg-gradient-to-r from-sky-500 to-blue-600"
+                />
+              </div>
+              <span
+                className={`ml-2 text-xs px-2 py-0.5 rounded-full
+                  ${scope === "mine" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}
+              >
+                {scope === "mine" ? `Created by ${currentUserName}` : "Entire DB"}
+              </span>
+            </div>
+
+            {/* (optional) keep your existing “Rows X-Y of Z” small label here too if you want */}
+          </div>
+
           {/* Enhanced Search and Filter */}
           <div className="mb-8">
             <div className="relative group">

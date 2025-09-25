@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles } from "lucide-react"
+import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles, Info } from "lucide-react"
 
 const MAX_VISIBLE_TRANSPORTERS = 10
 
@@ -146,6 +146,25 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </p>
           </div>
         )}
+
+        {/* NEW: Price Difference rule card (left column) */}
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <h4 className="text-xs sm:text-sm font-medium text-emerald-700 mb-2 flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
+            <span className="truncate">Price Difference Rule</span>
+          </h4>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="text-slate-800 text-xs sm:text-sm">
+              Minimum decrement required to beat the current lowest bid (L1).
+              {/* <div className="text-slate-600 mt-1">
+                Example: L1 ₹300, difference ₹20 → next valid quote must be <b>₹280 or lower</b>.
+              </div> */}
+            </div>
+            <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 font-semibold whitespace-nowrap">
+              ₹{tender.priceDifference != null ? Number(tender.priceDifference).toLocaleString() : "-"}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Right Column */}

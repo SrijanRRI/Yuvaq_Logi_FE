@@ -43,6 +43,7 @@ const initialFormState = {
   isManualTotals: false,
   maxBidAmount: "",
   maxBidUnit: "",
+  priceDifference: "",
 };
 
 const RRDashboardPage = () => {
@@ -50,15 +51,18 @@ const RRDashboardPage = () => {
   const navigate = useNavigate();
   const userInfo = useSelector((state) => state.User?.userInfo);
   const userName = userInfo?.name || "RR User";
+  const userId = userInfo?._id;
 
-  const [activeTab, setActiveTab] = useState("shipment"); // "shipment" | "create" | "planned"  // NEW
+  const [historyScope, setHistoryScope] = useState("mine");
+
+  const [activeTab, setActiveTab] = useState("shipment");
   const [viewHistory, setViewHistory] = useState(false);
 
   // history bits
   const [tenderHistories, setTenderHistories] = useState([]);
   const [transporterList, setTransporterList] = useState([]);
 
-  // 🔢 pagination state for history
+  // pagination state for history
   const [historyPage, setHistoryPage] = useState(1);
   const [historyLimit, setHistoryLimit] = useState(10);
   const [historyMeta, setHistoryMeta] = useState({
@@ -69,27 +73,24 @@ const RRDashboardPage = () => {
   });
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const fetchTenderHistory = async (page = historyPage, limit = historyLimit) => {
+  const fetchTenderHistory = async (page = historyPage, limit = historyLimit, scope = historyScope) => {
     try {
-      const response = await axios.get(`${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}`, {
-        withCredentials: true,
-      });
+      // Build URL: include userId only when scope === 'mine'
+      const qUser = scope === "mine" && userId ? `&userId=${encodeURIComponent(userId)}` : "";
+      const url = `${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}${qUser}`;
+
+      const response = await axios.get(url, { withCredentials: true });
       const data = response?.data?.data || response?.data?.results || [];
 
       const meta =
         response?.data?.pagination ||
-        response?.data?.meta ||
-        {
+        response?.data?.meta || {
           page: response?.data?.page ?? page,
           limit: response?.data?.limit ?? limit,
-          totalPages:
-            response?.data?.totalPages ??
-            Math.max(
-              1,
-              Math.ceil((response?.data?.total || response?.data?.totalCount || data.length) / (limit || 1))
-            ),
+          totalPages: response?.data?.totalPages ??
+            Math.max(1, Math.ceil((response?.data?.total || response?.data?.totalCount || data.length) / (limit || 1))),
           totalCount: response?.data?.totalCount ?? response?.data?.total ?? data.length,
-        }
+        };
 
       setTenderHistories(data);
       setHistoryMeta({
@@ -98,9 +99,6 @@ const RRDashboardPage = () => {
         totalPages: Number(meta.totalPages) || 1,
         totalCount: Number(meta.totalCount) || data.length,
       });
-
-      console.log("tender history : ", response.data?.data);
-
     } catch (err) {
       console.error("Failed to fetch tender history", err);
       toast.error("Could not fetch tender history. Please try again later.");
@@ -120,10 +118,16 @@ const RRDashboardPage = () => {
 
   useEffect(() => {
     if (viewHistory) {
-      fetchTenderHistory(historyPage, historyLimit);
+      // include scope dependency so switching “mine/all” refetches
+      fetchTenderHistory(historyPage, historyLimit, historyScope);
       fetchTransporters();
     }
-  }, [viewHistory, historyPage, historyLimit]);
+  }, [viewHistory, historyPage, historyLimit, historyScope]);
+
+  const handleHistoryScopeChange = (scope) => {
+    setHistoryScope(scope);
+    setHistoryPage(1); // reset pagination
+  };
 
   // --- Create Tender form state ---
   const [form, setForm] = useState(initialFormState);
@@ -149,6 +153,10 @@ const RRDashboardPage = () => {
     } else if (name === "maxBidAmount") {
       const rounded = value ? parseInt(value, 10) : "";
       setForm((p) => ({ ...p, maxBidAmount: rounded.toString() }));
+    } else if (name === "priceDifference") {
+      // accept only non-negative integers
+      const v = value === "" ? "" : Math.max(0, parseInt(value, 10) || 0);
+      setForm((p) => ({ ...p, priceDifference: v === "" ? "" : String(v) }));
     } else if (name === "weight" || name === "quantity") {
       setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
     } else {
@@ -231,6 +239,14 @@ const RRDashboardPage = () => {
       return;
     }
 
+    // OPTIONAL validation: priceDifference present and non-negative integer
+    if (form.priceDifference !== "" && Number.isNaN(parseInt(form.priceDifference, 10))) {
+      toast.error("Price Difference must be a number (₹).");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
     const payload = {
       ...(sourceShipmentId && { shipmentPlanId: sourceShipmentId }),
       deliveryWindow: {
@@ -253,6 +269,7 @@ const RRDashboardPage = () => {
       transporters: form.transporter,
       maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
       maxBidUnit: form.maxBidUnit || null,
+      priceDifference: form.priceDifference === "" ? null : parseInt(form.priceDifference, 10),
       materials: form.materials.map((m) => ({
         material: m.item,
         subMaterial: m.subItem || null,
@@ -431,6 +448,9 @@ const RRDashboardPage = () => {
               setHistoryPage(1); // reset to first page when page size changes
             }}
             loading={historyLoading}
+            scope={historyScope}
+            onScopeChange={handleHistoryScopeChange}
+            currentUserName={userName}
           />
         ) : (
           <>

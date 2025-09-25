@@ -49,7 +49,7 @@ const TenderCard = ({ tender, isOpen, onToggle, onExportPDF, onExportExcel }) =>
               >
                 <button
                   onClick={() => setMenuOpen((s) => !s)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-emerald-600 text-white hover:bg-emerald-800 shadow-lg transition"
                   title="Export report"
                 >
                   <Download className="h-4 w-4" />

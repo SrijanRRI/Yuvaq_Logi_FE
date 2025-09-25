@@ -312,6 +312,48 @@ const TenderForm = ({
                     />
                   </div>
                 </div>
+
+                {/* NEW: Price Difference Rule */}
+                <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Price Difference (₹)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <span className="text-slate-500">₹</span>
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        name="priceDifference"
+                        value={form.priceDifference}
+                        onChange={handleChange}
+                        placeholder="e.g., 20"
+                        className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-emerald-50/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-emerald-100 p-2 rounded-lg shrink-0">
+                          <Info className="h-4 w-4 text-emerald-700" />
+                        </div>
+                        <div className="text-sm text-emerald-800">
+                          <p className="font-medium">Minimum decrement to beat L1</p>
+                          <p className="mt-1">
+                            Set the minimum amount (in ₹) by which a transporter must undercut the current lowest bid (L1)
+                            for their quote to be accepted. For example, if <b>L1 = ₹300</b> and
+                            <b> Price Difference = ₹20</b>, then the next valid quote must be <b>₹280 or lower</b>.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Location Details */}

@@ -47,6 +47,7 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
+      console.log("live bidding",res.data.data);
     } catch (err) {
       console.error("Error fetching live biding tenders:", err)
       setError("Failed to load tenders.")
@@ -64,6 +65,7 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
+      // console.log("upcoming bidding",res.data.data);
     } catch (err) {
       console.error("Error fetching all tenders:", err)
       setError("Failed to load tenders.")
