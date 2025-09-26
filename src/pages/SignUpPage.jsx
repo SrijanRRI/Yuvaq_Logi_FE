@@ -73,6 +73,7 @@ const SignUpPage = () => {
       name: form.name,
       email: form.email.toLowerCase().trim(),
       phone: `91${form.phone.trim()}`,
+      gstn: form.gstn,
       password: form.password,
       confirmPassword: form.confirmPassword,
       role,
@@ -156,6 +157,8 @@ const SignUpPage = () => {
             placeholder="15-character GSTIN (e.g., 27ABCDE1234F1Z5)"
             maxLength={15}
             autoCapitalize="characters"
+            autoComplete="off"
+            title="Format: 2 digits (state) + 10-char PAN + 1 entity code + Z + 1 check"
             className="focus:ring-red-700 focus:border-red-800"
             required
           />
