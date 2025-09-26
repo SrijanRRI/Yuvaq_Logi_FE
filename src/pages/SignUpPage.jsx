@@ -8,40 +8,36 @@ import { toast } from 'react-toastify';
 
 const SignUpPage = () => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', gstn: '', password: '', confirmPassword: '' });
-  const [userType, setUserType] = useState('Transporter'); // UI toggle state
+  const [userType, setUserType] = useState('Transporter'); // 'Transporter' | 'RR User'
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // const handleChange = (e) => {
-  //   setForm({ ...form, [e.target.name]: e.target.value });
-  // };
-
-  // India GSTN pattern: 15 chars (State 2d + PAN 10 + Entity 1 + Z + Check 1)
+  // India GSTIN pattern
   const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+  const isTransporter = userType === 'Transporter';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === 'phone') {
       const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
-      setForm({ ...form, [name]: digitsOnly });
+      setForm((f) => ({ ...f, [name]: digitsOnly }));
       return;
     }
 
     if (name === 'gstn') {
-      // Keep alphanumerics, uppercase, max 15 chars
       const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 15);
-      setForm({ ...form, gstn: clean });
+      setForm((f) => ({ ...f, gstn: clean }));
       return;
     }
 
-    setForm({ ...form, [name]: value });
+    setForm((f) => ({ ...f, [name]: value }));
   };
-
 
   const getRoleFromUserType = (type) => {
     if (type === 'Transporter') return 'transportUser';
-    return 'user'; // Default RR user
+    return 'user'; // RR User
   };
 
   const handleSubmit = async (e) => {
@@ -57,31 +53,33 @@ const SignUpPage = () => {
       return;
     }
 
-    // GSTN required + format validation
-    if (!form.gstn) {
-      toast.error("GST Number is required.");
-      return;
-    }
-    if (!GSTIN_REGEX.test(form.gstn)) {
-      toast.error("Please enter a valid 15-character GST Number (GSTIN).");
-      return;
+    // GSTN validation ONLY for Transporters
+    if (isTransporter) {
+      if (!form.gstn) {
+        toast.error("GST Number is required for Transport users.");
+        return;
+      }
+      if (!GSTIN_REGEX.test(form.gstn)) {
+        toast.error("Please enter a valid 15-character GST Number (GSTIN).");
+        return;
+      }
     }
 
     const role = getRoleFromUserType(userType);
 
+    // Build payload; omit gstn for RR User
     const payload = {
       name: form.name,
       email: form.email.toLowerCase().trim(),
       phone: `91${form.phone.trim()}`,
-      gstn: form.gstn,
       password: form.password,
       confirmPassword: form.confirmPassword,
       role,
+      ...(isTransporter ? { gstn: form.gstn } : {}), // only include for transporters
     };
 
     try {
       setLoading(true);
-
       const res = await axios.post(`${API.SIGNUP}`, payload);
 
       if (res.data.success) {
@@ -92,16 +90,22 @@ const SignUpPage = () => {
       }
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(error?.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Dynamic labels for RR User vs Transporter
+  const nameLabel = isTransporter ? "Full Company Name" : "Name";
+  const emailLabel = isTransporter ? "Company Email" : "Email";
+  const phoneLabel = isTransporter ? "Whatsapp Phone Number" : "Phone Number";
+  const phonePlaceholder = isTransporter ? "10-digit mobile number" : "10-digit phone number";
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-        {/* Logo Section */}
+        {/* Logo */}
         <div className="flex justify-center ">
           <div className="w-60 h-24 flex items-center justify-center ">
             <img
@@ -112,22 +116,22 @@ const SignUpPage = () => {
           </div>
         </div>
 
-
         <p className="text-center text-gray-500 mb-6">Join us and start your journey</p>
 
         <UserToggle userType={userType} setUserType={setUserType} />
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <InputField
-            label="Full Company Name"
+            label={nameLabel}
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="Company Name"
+            placeholder={isTransporter ? "Company Name" : "Your Name"}
             className="focus:ring-red-700 focus:border-red-800"
           />
+
           <InputField
-            label="Company Email"
+            label={emailLabel}
             name="email"
             type="email"
             value={form.email}
@@ -135,33 +139,36 @@ const SignUpPage = () => {
             placeholder="johndoe@example.com"
             className="focus:ring-red-700 focus:border-red-800"
           />
+
           <InputField
-            label="Whatsapp Phone Number"
+            label={phoneLabel}
             name="phone"
             type="text"
             value={form.phone}
             onChange={handleChange}
             maxLength={10}
             inputMode="numeric"
-            placeholder="10-digit mobile number"
+            placeholder={phonePlaceholder}
             className="focus:ring-red-700 focus:border-red-800"
           />
 
-          {/* NEW: GST Number */}
-          <InputField
-            label="GST Number"
-            name="gstn"
-            type="text"
-            value={form.gstn}
-            onChange={handleChange}
-            placeholder="15-character GSTIN (e.g., 27ABCDE1234F1Z5)"
-            maxLength={15}
-            autoCapitalize="characters"
-            autoComplete="off"
-            title="Format: 2 digits (state) + 10-char PAN + 1 entity code + Z + 1 check"
-            className="focus:ring-red-700 focus:border-red-800"
-            required
-          />
+          {/* GST Number — ONLY for Transporters */}
+          {isTransporter && (
+            <InputField
+              label="GST Number"
+              name="gstn"
+              type="text"
+              value={form.gstn}
+              onChange={handleChange}
+              placeholder="15-character GSTIN (e.g., 27ABCDE1234F1Z5)"
+              maxLength={15}
+              autoCapitalize="characters"
+              autoComplete="off"
+              title="Format: 2 digits (state) + 10-char PAN + 1 entity code + Z + 1 check"
+              className="focus:ring-red-700 focus:border-red-800"
+              // don't use HTML required; we handle it conditionally in JS
+            />
+          )}
 
           <InputField
             label="Set Password"

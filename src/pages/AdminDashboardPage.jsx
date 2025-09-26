@@ -35,6 +35,7 @@ const AdminDashboardPage = () => {
 
     const userInfo = useSelector((state) => state.User?.userInfo)
     const userName = userInfo?.name || "Admin User"
+    const currentAdminId = userInfo?._id
 
     useEffect(() => {
         if (activeTab === "requests") {
@@ -78,7 +79,7 @@ const AdminDashboardPage = () => {
     const fetchPendingUsers = async () => {
         setLoading(true)
         try {
-            const res = await axios.get(`${API.ALLAPPROVALREQUEST}`)
+            const res = await axios.get(`${API.ALLAPPROVALREQUEST}`, { withCredentials: true })
             console.log("pending approvals : ", res.data);
 
             if (res.data.success) {
@@ -100,13 +101,25 @@ const AdminDashboardPage = () => {
 
     const handleApprove = async (index) => {
         const user = requests[index]
+
+        // If this admin already approved, don't call API again
+        const approvers = user?.approvals?.approvedBy || []
+        const alreadyApprovedByMe = approvers.some(id => String(id) === String(currentAdminId))
+        if (alreadyApprovedByMe) {
+            toast.info("You've already recorded your approval for this user.")
+            return
+        }
+
         setApprovingIndex(index)
 
         try {
-            const res = await axios.put(`${API.APPROVEREQUEST}${user._id}`)
+            const res = await axios.put(`${API.APPROVEREQUEST}${user._id}/approve`,
+                {},
+                { withCredentials: true }
+            )
 
             if (res.data.success) {
-                toast.success(`${user.name} approved successfully.`)
+                toast.success(res.data.message || `${user.name} approved successfully.`)
                 setRequests((prev) => prev.filter((_, i) => i !== index))
             } else {
                 toast.error("Failed to approve user.")
@@ -429,6 +442,7 @@ const AdminDashboardPage = () => {
                             handleApprove={handleApprove}
                             handleReject={handleReject}
                             onToast={(msg) => toast.info(msg)}
+                            currentAdminId={currentAdminId}
                         />
                     )}
 

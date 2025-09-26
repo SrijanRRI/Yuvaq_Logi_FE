@@ -995,16 +995,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                 </div>
               )
             })}
-
-            {filteredTenders.length === 0 && (
-              <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
-                <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
-                  <Search className="h-10 w-10 text-emerald-200" />
-                </div>
-                <p className="text-slate-700 font-medium mb-2">No tenders found</p>
-                <p className="text-slate-500 text-sm">Try adjusting your search or filter criteria</p>
-              </div>
-            )}
+            
             {!loading && filteredTenders.length === 0 && (
               <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
                 <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">

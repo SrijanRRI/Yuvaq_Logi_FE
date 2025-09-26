@@ -30,7 +30,7 @@ const API = {
 
  //Admin API :
  ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
- APPROVEREQUEST: `${serverUrl}/admin/approve-user/`,
+ APPROVEREQUEST: `${serverUrl}/admin/users/`,
  REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
  GETALLTENDER : `${serverUrl}/admin/all-tender`,
  GET_ALL_REPORTS : `${serverUrl}/admin/tenders/ranked-best-report`,
