@@ -7,7 +7,7 @@ import API from '../API';
 import { toast } from 'react-toastify';
 
 const SignUpPage = () => {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', gstn: '', password: '', confirmPassword: '' });
   const [userType, setUserType] = useState('Transporter'); // UI toggle state
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -16,16 +16,26 @@ const SignUpPage = () => {
   //   setForm({ ...form, [e.target.name]: e.target.value });
   // };
 
+  // India GSTN pattern: 15 chars (State 2d + PAN 10 + Entity 1 + Z + Check 1)
+  const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === 'phone') {
-      // Allow only digits and limit to 10 characters
       const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
       setForm({ ...form, [name]: digitsOnly });
-    } else {
-      setForm({ ...form, [name]: value });
+      return;
     }
+
+    if (name === 'gstn') {
+      // Keep alphanumerics, uppercase, max 15 chars
+      const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 15);
+      setForm({ ...form, gstn: clean });
+      return;
+    }
+
+    setForm({ ...form, [name]: value });
   };
 
 
@@ -44,6 +54,16 @@ const SignUpPage = () => {
 
     if (!/^\d{10}$/.test(form.phone)) {
       toast.error("Phone number must be exactly 10 digits.");
+      return;
+    }
+
+    // GSTN required + format validation
+    if (!form.gstn) {
+      toast.error("GST Number is required.");
+      return;
+    }
+    if (!GSTIN_REGEX.test(form.gstn)) {
+      toast.error("Please enter a valid 15-character GST Number (GSTIN).");
       return;
     }
 
@@ -125,6 +145,21 @@ const SignUpPage = () => {
             placeholder="10-digit mobile number"
             className="focus:ring-red-700 focus:border-red-800"
           />
+
+          {/* NEW: GST Number */}
+          <InputField
+            label="GST Number"
+            name="gstn"
+            type="text"
+            value={form.gstn}
+            onChange={handleChange}
+            placeholder="15-character GSTIN (e.g., 27ABCDE1234F1Z5)"
+            maxLength={15}
+            autoCapitalize="characters"
+            className="focus:ring-red-700 focus:border-red-800"
+            required
+          />
+
           <InputField
             label="Set Password"
             name="password"
