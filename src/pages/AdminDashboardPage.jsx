@@ -79,7 +79,7 @@ const AdminDashboardPage = () => {
         setLoading(true)
         try {
             const res = await axios.get(`${API.ALLAPPROVALREQUEST}`)
-            // console.log(res);
+            console.log("pending approvals : ", res.data);
 
             if (res.data.success) {
                 setRequests(res.data.data)
@@ -428,6 +428,7 @@ const AdminDashboardPage = () => {
                             approvingIndex={approvingIndex}
                             handleApprove={handleApprove}
                             handleReject={handleReject}
+                            onToast={(msg) => toast.info(msg)}
                         />
                     )}
 
