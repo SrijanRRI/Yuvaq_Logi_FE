@@ -15,6 +15,7 @@ export const MaterialModal = ({ close, onAdd }) => {
     Portal: [],
     TTC: [],
     MAST: [],
+    "W-BEAM": [],
     SPS: [],
     "Octagonal Poles": [],
     "Conical Poles": [],
