@@ -534,7 +534,7 @@ const TenderForm = ({
                 {selectedTransporters.length > 0 ? (
                   <div className="bg-slate-50 rounded-xl p-5 mb-4 border border-slate-200">
                     <div className="flex flex-wrap gap-2">
-                      {selectedTransporters.map((transporter) => (
+                      {/* {selectedTransporters.map((transporter) => (
                         <div
                           key={transporter._id}
                           className="bg-white px-4 py-2 rounded-lg border border-slate-200 text-sm flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 hover:border-emerald-200"
@@ -544,7 +544,24 @@ const TenderForm = ({
                           </div>
                           <span className="font-medium text-slate-700">{transporter.name || transporter.email}</span>
                         </div>
+                      ))} */}
+
+                      {selectedTransporters.map((transporter, index) => (
+                        <div
+                          key={transporter._id}
+                          className="bg-white px-4 py-2 rounded-lg border border-slate-200 text-sm flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 hover:border-emerald-200"
+                        >
+                          <div className="bg-emerald-100 p-1.5 rounded-full">
+                            <Users className="h-3.5 w-3.5 text-emerald-600" />
+                          </div>
+
+                          {/* ✅ DEMO: show only demo names */}
+                          <span className="font-medium text-slate-700">
+                            Transporter {index + 1}
+                          </span>
+                        </div>
                       ))}
+
                     </div>
                   </div>
                 ) : (

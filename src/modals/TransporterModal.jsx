@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Truck, X, Check, Search, Loader2 } from "lucide-react"
 import axios from "axios"
 import API from "../API"
@@ -46,6 +46,15 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
     )
   }
 
+  // ✅ Stable demo labels: Transporter 1, Transporter 2... (based on full list order)
+  const demoLabelById = useMemo(() => {
+    const map = {};
+    transporterList.forEach((t, idx) => {
+      map[t._id] = `Transporter ${idx + 1}`;
+    });
+    return map;
+  }, [transporterList]);
+
   // const toggleSelectAll = () => {
   //   if (localSelection.length === transporterList.length) {
   //     setLocalSelection([]) // Unselect all
@@ -59,11 +68,24 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
     onClose()
   }
 
-  const filteredTransporters = transporterList.filter(
-    (t) =>
-      (t.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.email || "").toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  // const filteredTransporters = transporterList.filter(
+  //   (t) =>
+  //     (t.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     (t.email || "").toLowerCase().includes(searchQuery.toLowerCase()),
+  // )
+
+  const filteredTransporters = transporterList.filter((t) => {
+    const q = searchQuery.toLowerCase();
+    const demoLabel = (demoLabelById[t._id] || "").toLowerCase();
+
+    // ✅ You can still search by real name/email (even though hidden),
+    // and also by "Transporter 1" etc.
+    return (
+      demoLabel.includes(q) ||
+      (t.name || "").toLowerCase().includes(q) ||
+      (t.email || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fadeIn">
@@ -84,7 +106,7 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
           </div>
         </div>
 
-        <div className="p-4 border-b border-slate-200">
+        {/* <div className="p-4 border-b border-slate-200">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <Search className="h-4 w-4 text-slate-400" />
@@ -97,7 +119,7 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
               className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
@@ -174,18 +196,21 @@ const TransporterModal = ({ selected, onClose, onSave, setTransporterList: updat
                         disabled
                       />
                       <div
-                        className={`w-5 h-5 rounded transition-all duration-200 transform ${
-                          localSelection.includes(transporter._id)
-                            ? "bg-emerald-600 border-emerald-600 hover:bg-emerald-700"
-                            : "border-slate-300 hover:border-emerald-400"
-                        } border flex items-center justify-center`}
+                        className={`w-5 h-5 rounded transition-all duration-200 transform ${localSelection.includes(transporter._id)
+                          ? "bg-emerald-600 border-emerald-600 hover:bg-emerald-700"
+                          : "border-slate-300 hover:border-emerald-400"
+                          } border flex items-center justify-center`}
                       >
                         {localSelection.includes(transporter._id) && <Check className="h-3.5 w-3.5 text-white" />}
                       </div>
                     </div>
                     <div className="flex-1">
-                      <span className="text-slate-800 font-medium">{transporter.name || "Unnamed Transporter"}</span>
-                      {transporter.email && <p className="text-sm text-slate-500">{transporter.email}</p>}
+                      {/* <span className="text-slate-800 font-medium">{transporter.name || "Unnamed Transporter"}</span>
+                      {transporter.email && <p className="text-sm text-slate-500">{transporter.email}</p>} */}
+
+                      <span className="text-slate-800 font-medium">
+                        {demoLabelById[transporter._id] || "Transporter"}
+                      </span>
                     </div>
                   </label>
                 ))}
