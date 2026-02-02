@@ -426,7 +426,7 @@ const RRDashboardPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <Navbar
-        title="RRI Dashboard"
+        title="Dashboard"
         userName={userName}
         actions={[historyButton]}
         onLogout={onLogout}
