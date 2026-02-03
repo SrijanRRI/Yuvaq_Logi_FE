@@ -1,14 +1,22 @@
-import { AlertTriangle } from "lucide-react"
+import { useMemo, useState } from "react"
+import { AlertTriangle, CheckCircle2 } from "lucide-react"
 
-export const TenderTermsModal = ({ finalPrice, onCancel, onAgree }) => {
+export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = false }) => {
+  const [agreed, setAgreed] = useState(false)
+
+  const priceText = useMemo(() => {
+    const n = Number(finalPrice)
+    return Number.isFinite(n) ? n.toLocaleString() : "-"
+  }, [finalPrice])
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
       <button
         type="button"
-        onClick={onCancel}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0"
         aria-label="Close"
+        disabled={isLoading}
       />
 
       {/* Modal */}
@@ -22,7 +30,7 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree }) => {
               <h3 className="text-lg font-bold">Caution • Terms & Conditions</h3>
               <p className="text-white/90 text-sm mt-1">
                 You’re proceeding to finalize this quotation at{" "}
-                <span className="font-semibold">₹{Number(finalPrice).toLocaleString()}</span>.
+                <span className="font-semibold">₹{priceText}</span>.
               </p>
             </div>
           </div>
@@ -51,27 +59,57 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree }) => {
             </ul>
           </div>
 
-          <p className="text-xs text-slate-500">
-            By clicking <b>“I Agree”</b>, you accept the above terms and move to the final confirmation step.
-          </p>
+          {/* ✅ Checkbox */}
+          <label className="flex items-start gap-3 select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              disabled={isLoading}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <div>
+              <p className="text-sm font-medium text-slate-800">
+                I have read and agree to the terms & conditions.
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pay Now will be enabled only after you accept.
+              </p>
+            </div>
+          </label>
         </div>
 
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-2 justify-end">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition"
+            disabled={isLoading}
+            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
           >
             Cancel
           </button>
 
-          <button
-            type="button"
-            onClick={onAgree}
-            className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
-          >
-            I Agree
-          </button>
+          {/* ✅ Show Pay Now ONLY after tick */}
+          {agreed ? (
+            <button
+              type="button"
+              onClick={onAgree}
+              disabled={isLoading}
+              className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-60 inline-flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  Processing…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Pay Now
+                </>
+              )}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

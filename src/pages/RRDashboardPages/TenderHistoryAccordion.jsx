@@ -29,7 +29,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [confirmedIdxMap, setConfirmedIdxMap] = useState({})
   const [allResponses, setAllResponses] = useState({})
   const [previewFile, setPreviewFile] = useState(null)
-  const [confirmDialog, setConfirmDialog] = useState(null)
+  // const [confirmDialog, setConfirmDialog] = useState(null)
   const [reopenModalTenderId, setReopenModalTenderId] = useState(null)
 
   const [fetchedResponseIds, setFetchedResponseIds] = useState(new Set())
@@ -169,33 +169,60 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     })
   }
 
-  const proceedFinalizeAfterTerms = ({ tenderId, idx, quotationId, finalPrice }) => {
-    // ✅ Step 2: after Agree → show your existing ConfirmationModal
-    setConfirmDialog({
-      message: `Are you sure you want to finalize this quotation at price ₹${Number(finalPrice).toLocaleString()}?`,
-      onConfirm: async () => {
-        setIsFinalizing(true)
-        try {
-          await axios.put(
-            `${API.FINALIZE_TENDER}/${tenderId}`,
-            { quotationId, finalPrice },
-            { withCredentials: true }
-          )
+  // const proceedFinalizeAfterTerms = ({ tenderId, idx, quotationId, finalPrice }) => {
+  //   // ✅ Step 2: after Agree → show your existing ConfirmationModal
+  //   setConfirmDialog({
+  //     message: `Are you sure you want to finalize this quotation at price ₹${Number(finalPrice).toLocaleString()}?`,
+  //     onConfirm: async () => {
+  //       setIsFinalizing(true)
+  //       try {
+  //         await axios.put(
+  //           `${API.FINALIZE_TENDER}/${tenderId}`,
+  //           { quotationId, finalPrice },
+  //           { withCredentials: true }
+  //         )
 
-          setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
-          toast.success("Tender finalized successfully")
+  //         setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
+  //         toast.success("Tender finalized successfully")
 
-          if (fetchTenderHistory) await fetchTenderHistory()
-        } catch (err) {
-          toast.error("Finalization failed")
-        } finally {
-          setConfirmDialog(null)
-          setIsFinalizing(false)
-          setPriceInput("")
-        }
-      },
-      onCancel: () => setConfirmDialog(null),
-    })
+  //         if (fetchTenderHistory) await fetchTenderHistory()
+  //       } catch (err) {
+  //         toast.error("Finalization failed")
+  //       } finally {
+  //         setConfirmDialog(null)
+  //         setIsFinalizing(false)
+  //         setPriceInput("")
+  //       }
+  //     },
+  //     onCancel: () => setConfirmDialog(null),
+  //   })
+  // }
+
+  const proceedFinalizeAfterTerms = async ({ tenderId, idx, quotationId, finalPrice }) => {
+    setIsFinalizing(true)
+    try {
+      /**
+       * ✅ FUTURE RAZORPAY INTEGRATION POINT:
+       * 1) create order
+       * 2) open Razorpay
+       * 3) on success -> call FINALIZE_TENDER (or verify payment + finalize)
+       */
+      await axios.put(
+        `${API.FINALIZE_TENDER}/${tenderId}`,
+        { quotationId, finalPrice },
+        { withCredentials: true }
+      )
+
+      setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
+      toast.success("Tender finalized successfully")
+      if (fetchTenderHistory) await fetchTenderHistory()
+      setPriceInput("")
+      setTermsFinalize(null) // ✅ close modal only after success
+    } catch (err) {
+      toast.error("Finalization failed")
+    } finally {
+      setIsFinalizing(false)
+    }
   }
 
   const handleReopenSubmit = async (reason) => {
@@ -1175,23 +1202,22 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       {termsFinalize && (
         <TenderTermsModal
           finalPrice={termsFinalize.finalPrice}
-          onCancel={() => setTermsFinalize(null)}
-          onAgree={() => {
-            const payload = termsFinalize
-            setTermsFinalize(null)
-            proceedFinalizeAfterTerms(payload)
+          isLoading={isFinalizing}
+          onCancel={() => {
+            if (!isFinalizing) setTermsFinalize(null)
           }}
+          onAgree={() => proceedFinalizeAfterTerms(termsFinalize)}
         />
       )}
 
-      {confirmDialog && (
+      {/* {confirmDialog && (
         <ConfirmationModal
           message={confirmDialog.message}
           onConfirm={confirmDialog.onConfirm}
           onCancel={confirmDialog.onCancel}
           isLoading={isFinalizing}
         />
-      )}
+      )} */}
     </div>
   )
 }
