@@ -10,6 +10,7 @@ import TransporterResponses from "./TransporterResponses"
 import TenderDetails from "./TenderDetails"
 import AttachmentPreviewModal from "../../modals/AttachmentPreviewModal"
 import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
+import { TenderTermsModal } from "../../modals/TenderTermsModal"
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -41,6 +42,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [dateRange, setDateRange] = useState({ from: "", to: "" })
   const [isFinalizing, setIsFinalizing] = useState(false)
 
+  const [termsFinalize, setTermsFinalize] = useState(null)
+
   const getTransporterName = (transporter) => {
     if (!transporter) return "Unknown"
     if (typeof transporter === "object") {
@@ -71,33 +74,124 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       })
   }
 
-  const handleDone = async (tenderId, idx, directPrice = null) => {
+  // const handleDone = async (tenderId, idx, directPrice = null) => {
+  //   const responses = allResponses[tenderId] || []
+  //   const sorted = responses.slice().sort((a, b) => a.price - b.price)
+  //   const quotation = sorted[idx]
+
+  //   if (!quotation?._id) {
+  //     toast.error("Quotation not found. Please refresh and try again.")
+  //     return
+  //   }
+
+  //   if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+  //     toast.error("Invalid final price.")
+  //     return
+  //   }
+
+  //   const finalPrice =
+  //     directPrice !== null
+  //       ? Number(directPrice)
+  //       : priceInput.trim() !== ""
+  //         ? Number(priceInput)
+  //         : Number(quotation.price)
+
+  //   // ✅ Step 1: show Terms modal first
+  //   setTermsFinalize({
+  //     tenderId,
+  //     idx,
+  //     quotationId: quotation._id,
+  //     finalPrice,
+  //   })
+
+  //   // const finalPrice =
+  //   //   directPrice !== null ? directPrice : priceInput.trim() !== "" ? Number(priceInput) : quotation.price
+
+  //   // setConfirmDialog({
+  //   //   message: `Are you sure you want to finalize this quotation at price ₹${finalPrice}?`,
+  //   //   onConfirm: async () => {
+  //   //     setIsFinalizing(true)
+  //   //     try {
+  //   //       await axios.put(
+  //   //         `${API.FINALIZE_TENDER}/${tenderId}`,
+  //   //         { quotationId: quotation._id, finalPrice },
+  //   //         { withCredentials: true },
+  //   //       )
+  //   //       setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
+  //   //       toast.success("Tender finalized successfully")
+  //   //       if (fetchTenderHistory) await fetchTenderHistory()
+  //   //     } catch (err) {
+  //   //       toast.error("Finalization failed")
+  //   //     } finally {
+  //   //       setConfirmDialog(null)
+  //   //       setIsFinalizing(false)
+  //   //       setPriceInput("") // Clear input after done
+  //   //     }
+  //   //   },
+  //   //   onCancel: () => setConfirmDialog(null),
+  //   // })
+  // }
+
+  const handleDone = (tenderId, idx, directPrice = null) => {
     const responses = allResponses[tenderId] || []
-    const sorted = responses.slice().sort((a, b) => a.price - b.price)
+
+    const numOrInf = (v) => {
+      const n = Number(v)
+      return Number.isFinite(n) ? n : Infinity
+    }
+
+    const sorted = responses.slice().sort((a, b) => numOrInf(a.price) - numOrInf(b.price))
     const quotation = sorted[idx]
 
-    const finalPrice =
-      directPrice !== null ? directPrice : priceInput.trim() !== "" ? Number(priceInput) : quotation.price
+    if (!quotation?._id) {
+      toast.error("Quotation not found. Please refresh and try again.")
+      return
+    }
 
+    const finalPrice =
+      directPrice !== null && directPrice !== undefined
+        ? Number(directPrice)
+        : priceInput.trim() !== ""
+          ? Number(priceInput)
+          : Number(quotation.price)
+
+    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+      toast.error("Invalid final price.")
+      return
+    }
+
+    // ✅ Step 1: show Terms modal first
+    setTermsFinalize({
+      tenderId,
+      idx,
+      quotationId: quotation._id,
+      finalPrice,
+    })
+  }
+
+  const proceedFinalizeAfterTerms = ({ tenderId, idx, quotationId, finalPrice }) => {
+    // ✅ Step 2: after Agree → show your existing ConfirmationModal
     setConfirmDialog({
-      message: `Are you sure you want to finalize this quotation at price ₹${finalPrice}?`,
+      message: `Are you sure you want to finalize this quotation at price ₹${Number(finalPrice).toLocaleString()}?`,
       onConfirm: async () => {
         setIsFinalizing(true)
         try {
           await axios.put(
             `${API.FINALIZE_TENDER}/${tenderId}`,
-            { quotationId: quotation._id, finalPrice },
-            { withCredentials: true },
+            { quotationId, finalPrice },
+            { withCredentials: true }
           )
+
           setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
           toast.success("Tender finalized successfully")
+
           if (fetchTenderHistory) await fetchTenderHistory()
         } catch (err) {
           toast.error("Finalization failed")
         } finally {
           setConfirmDialog(null)
           setIsFinalizing(false)
-          setPriceInput("") // Clear input after done
+          setPriceInput("")
         }
       },
       onCancel: () => setConfirmDialog(null),
@@ -995,7 +1089,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                 </div>
               )
             })}
-            
+
             {!loading && filteredTenders.length === 0 && (
               <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
                 <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
@@ -1076,6 +1170,18 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
       {reopenModalTenderId && (
         <ReopenConfirmationModal onConfirm={handleReopenSubmit} onCancel={() => setReopenModalTenderId(null)} />
+      )}
+
+      {termsFinalize && (
+        <TenderTermsModal
+          finalPrice={termsFinalize.finalPrice}
+          onCancel={() => setTermsFinalize(null)}
+          onAgree={() => {
+            const payload = termsFinalize
+            setTermsFinalize(null)
+            proceedFinalizeAfterTerms(payload)
+          }}
+        />
       )}
 
       {confirmDialog && (

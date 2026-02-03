@@ -191,7 +191,7 @@ const RRDashboardPage = () => {
   };
 
   const handleSend = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     setLoading(true);
     setFormDisabled(true);
 
@@ -473,7 +473,7 @@ const RRDashboardPage = () => {
                     : "text-slate-700 hover:bg-slate-50"
                     }`}
                   onClick={() => setActiveTab("create")}
-                 >
+                >
                   <FilePlus2 className="h-4 w-4" /> Create Tender
                 </button>
 

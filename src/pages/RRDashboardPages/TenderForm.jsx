@@ -31,6 +31,20 @@ const TenderForm = ({
   formDisabled,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const openConfirmModal = (e) => {
+    e?.preventDefault?.();
+    if (loading || formDisabled) return; // safety
+    setShowConfirm(true);
+  };
+
+  const cancelConfirm = () => setShowConfirm(false);
+
+  const agreeAndSubmit = async () => {
+    setShowConfirm(false);
+    await handleSend(); // ✅ submits only after user agrees
+  };
 
   const unitOptions = [
     { value: "Per MT", label: "Per MT", description: "Price per metric ton" },
@@ -64,7 +78,7 @@ const TenderForm = ({
         {loading ? (
           <FullScreenLoader />
         ) : (
-          <form onSubmit={handleSend} className="p-6">
+          <form onSubmit={openConfirmModal} className="p-6">
             <fieldset disabled={formDisabled} className="space-y-8">
               {/* Delivery Window & Closing Date */}
               <div className="grid md:grid-cols-2 gap-8">
@@ -633,6 +647,62 @@ const TenderForm = ({
               </div>
             </fieldset>
           </form>
+        )}
+
+        {showConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+              <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-800 text-white">
+                <h3 className="text-lg font-bold">Confirm Tender Submission</h3>
+                <p className="text-white/90 text-sm mt-1">
+                  Please read the caution and terms before submitting.
+                </p>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm text-amber-900 font-semibold mb-2">Caution</p>
+                  <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
+                    <li>Verify all tender details (dates, location, materials, weight/quantity, remarks) before submitting.</li>
+                    <li>Once submitted, transporters may start bidding immediately based on the details you entered.</li>
+                  </ul>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-900 font-semibold mb-2">Terms & Disclaimer</p>
+                  <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                    <li>YuvaQ is a technology platform that facilitates tender creation and bidding.</li>
+                    <li>YuvaQ does not verify, guarantee, or take responsibility for tender accuracy or outcomes.</li>
+                    <li>Any transporter backout, delay, dispute, or non-performance is between the tender creator and transporter.</li>
+                    <li>YuvaQ is not responsible for any loss, damage, or claims arising from bidding, backout, or fulfillment issues.</li>
+                  </ul>
+                  {/* <p className="text-xs text-slate-500 mt-3">
+                    (Review with your legal/compliance team if you need stricter wording.)
+                  </p> */}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={cancelConfirm}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={agreeAndSubmit}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm disabled:opacity-60"
+                  >
+                    I Agree & Submit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
