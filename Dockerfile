@@ -30,13 +30,13 @@ EXPOSE ${PORT}
 CMD ["nginx", "-g", "daemon off;"]
 
 
-# docker build  --no-cache -t 192.168.13.72:5000/Logiq_fe .      
-# docker run -d --name Logiq_fe -p 85:85 Logiq_fe_image
+# docker build  --no-cache -t 192.168.13.72:5000/logiq_fe .      
+# docker run -d --name logiq_fe -p 85:85 logiq_fe_image
 
-# docker tag Logiq_fe_image 192.168.13.72:5000/Logiq_fe
-# docker push 192.168.13.72:5000/Logiq_fe
-# docker pull 192.168.13.72:5000/Logiq_fe
-# docker run -d --name Logiq_fe -p 85:85 192.168.13.72:5000/Logiq_fe
+# docker tag logiq_fe_image 192.168.13.72:5000/logiq_fe
+# docker push 192.168.13.72:5000/logiq_fe
+# docker pull 192.168.13.72:5000/logiq_fe
+# docker run -d --name logiq_fe -p 85:85 192.168.13.72:5000/logiq_fe
 
 
 # docker pull 192.168.13.72:5000/rrcomplaint_frontend
