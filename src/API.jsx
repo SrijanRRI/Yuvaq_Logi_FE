@@ -62,6 +62,11 @@ const API = {
   //API for session checking 
 
   CHECK_ME : `${serverUrl}/api/auth/me`,
+
+FINALIZE_TENDER_CREATE_ORDER: `${serverUrl}/tenders`, // use with /:id/finalize/payment/order
+
+FINALIZE_TENDER_VERIFY_PAYMENT: `${serverUrl}/tenders`, // use with /:id/finalize/payment/verify
+
 }; 
 
 // export const switchServerUrl = (mode) => {

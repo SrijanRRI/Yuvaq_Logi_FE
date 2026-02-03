@@ -11,6 +11,7 @@ import TenderDetails from "./TenderDetails"
 import AttachmentPreviewModal from "../../modals/AttachmentPreviewModal"
 import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
 import { TenderTermsModal } from "../../modals/TenderTermsModal"
+import { loadRazorpayScript } from "../../lib/loadRazorpay"
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -74,64 +75,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       })
   }
 
-  // const handleDone = async (tenderId, idx, directPrice = null) => {
-  //   const responses = allResponses[tenderId] || []
-  //   const sorted = responses.slice().sort((a, b) => a.price - b.price)
-  //   const quotation = sorted[idx]
-
-  //   if (!quotation?._id) {
-  //     toast.error("Quotation not found. Please refresh and try again.")
-  //     return
-  //   }
-
-  //   if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
-  //     toast.error("Invalid final price.")
-  //     return
-  //   }
-
-  //   const finalPrice =
-  //     directPrice !== null
-  //       ? Number(directPrice)
-  //       : priceInput.trim() !== ""
-  //         ? Number(priceInput)
-  //         : Number(quotation.price)
-
-  //   // ✅ Step 1: show Terms modal first
-  //   setTermsFinalize({
-  //     tenderId,
-  //     idx,
-  //     quotationId: quotation._id,
-  //     finalPrice,
-  //   })
-
-  //   // const finalPrice =
-  //   //   directPrice !== null ? directPrice : priceInput.trim() !== "" ? Number(priceInput) : quotation.price
-
-  //   // setConfirmDialog({
-  //   //   message: `Are you sure you want to finalize this quotation at price ₹${finalPrice}?`,
-  //   //   onConfirm: async () => {
-  //   //     setIsFinalizing(true)
-  //   //     try {
-  //   //       await axios.put(
-  //   //         `${API.FINALIZE_TENDER}/${tenderId}`,
-  //   //         { quotationId: quotation._id, finalPrice },
-  //   //         { withCredentials: true },
-  //   //       )
-  //   //       setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
-  //   //       toast.success("Tender finalized successfully")
-  //   //       if (fetchTenderHistory) await fetchTenderHistory()
-  //   //     } catch (err) {
-  //   //       toast.error("Finalization failed")
-  //   //     } finally {
-  //   //       setConfirmDialog(null)
-  //   //       setIsFinalizing(false)
-  //   //       setPriceInput("") // Clear input after done
-  //   //     }
-  //   //   },
-  //   //   onCancel: () => setConfirmDialog(null),
-  //   // })
-  // }
-
   const handleDone = (tenderId, idx, directPrice = null) => {
     const responses = allResponses[tenderId] || []
 
@@ -169,61 +112,120 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     })
   }
 
-  // const proceedFinalizeAfterTerms = ({ tenderId, idx, quotationId, finalPrice }) => {
-  //   // ✅ Step 2: after Agree → show your existing ConfirmationModal
-  //   setConfirmDialog({
-  //     message: `Are you sure you want to finalize this quotation at price ₹${Number(finalPrice).toLocaleString()}?`,
-  //     onConfirm: async () => {
-  //       setIsFinalizing(true)
-  //       try {
-  //         await axios.put(
-  //           `${API.FINALIZE_TENDER}/${tenderId}`,
-  //           { quotationId, finalPrice },
-  //           { withCredentials: true }
-  //         )
-
-  //         setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
-  //         toast.success("Tender finalized successfully")
-
-  //         if (fetchTenderHistory) await fetchTenderHistory()
-  //       } catch (err) {
-  //         toast.error("Finalization failed")
-  //       } finally {
-  //         setConfirmDialog(null)
-  //         setIsFinalizing(false)
-  //         setPriceInput("")
-  //       }
-  //     },
-  //     onCancel: () => setConfirmDialog(null),
-  //   })
-  // }
-
   const proceedFinalizeAfterTerms = async ({ tenderId, idx, quotationId, finalPrice }) => {
-    setIsFinalizing(true)
-    try {
-      /**
-       * ✅ FUTURE RAZORPAY INTEGRATION POINT:
-       * 1) create order
-       * 2) open Razorpay
-       * 3) on success -> call FINALIZE_TENDER (or verify payment + finalize)
-       */
-      await axios.put(
-        `${API.FINALIZE_TENDER}/${tenderId}`,
-        { quotationId, finalPrice },
-        { withCredentials: true }
-      )
+    setIsFinalizing(true);
 
-      setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
-      toast.success("Tender finalized successfully")
-      if (fetchTenderHistory) await fetchTenderHistory()
-      setPriceInput("")
-      setTermsFinalize(null) // ✅ close modal only after success
+    try {
+      const ok = await loadRazorpayScript();
+      if (!ok) {
+        toast.error("Razorpay SDK failed to load. Check internet.");
+        setIsFinalizing(false);
+        return;
+      }
+
+      const token = localStorage.getItem("session_token");
+
+      // 1) Create order on backend
+      const orderRes = await axios.post(
+        `${API.FINALIZE_TENDER_CREATE_ORDER}/${tenderId}/finalize/payment/order`,
+        {
+          quotationId,
+          finalPrice,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      );
+
+      const { keyId, orderId, amount, currency } = orderRes.data;
+
+      // 2) Open Razorpay Checkout
+      const options = {
+        key: keyId,
+        amount, // paise
+        currency,
+        name: "YuvaQ",
+        description: `Tender Finalization • ₹${Number(finalPrice).toLocaleString()}`,
+        order_id: orderId,
+
+        handler: async function (response) {
+
+          const token = localStorage.getItem("session_token");
+
+          const authCfg = {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          };
+
+          try {
+            // 1) Verify payment (should also store payment details)
+            await axios.post(
+              `${API.FINALIZE_TENDER_VERIFY_PAYMENT}/${tenderId}/finalize/payment/verify`,
+              {
+                quotationId,
+                finalPrice,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+              authCfg
+            );
+
+            // 2) ✅ Call your OLD finalize API to keep existing side-effects intact
+            await axios.put(
+              `${API.FINALIZE_TENDER}/${tenderId}`,
+              { quotationId, finalPrice },
+              authCfg
+            );
+
+            setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }));
+            toast.success("Payment successful. Tender finalized!");
+            setPriceInput("");
+            setTermsFinalize(null);
+            if (fetchTenderHistory) await fetchTenderHistory();
+          } catch (e) {
+            const msg =
+              e?.response?.data?.message ||
+              e?.response?.data?.err ||
+              e?.message ||
+              "Payment succeeded but finalization failed.";
+            toast.error(msg);
+            console.error("Finalize after payment error:", e);
+          } finally {
+            setIsFinalizing(false);
+          }
+        },
+
+        modal: {
+          ondismiss: () => {
+            toast.info("Payment cancelled/closed.");
+            setIsFinalizing(false);
+          },
+        },
+
+        theme: { color: "#059669" },
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      rzp.on("payment.failed", function (resp) {
+        toast.error(resp?.error?.description || "Payment failed");
+        setIsFinalizing(false);
+      });
+
+      rzp.open();
     } catch (err) {
-      toast.error("Finalization failed")
-    } finally {
-      setIsFinalizing(false)
+      toast.error("Could not start payment.");
+      setIsFinalizing(false);
     }
-  }
+  };
 
   const handleReopenSubmit = async (reason) => {
     if (!reason.trim()) {
