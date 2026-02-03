@@ -287,7 +287,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           {transporters.length > 0 ? (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                {visibleTransporters.map((tid) => (
+                {/* {visibleTransporters.map((tid) => (
                   <div
                     key={tid}
                     className="group bg-indigo-50 px-3 py-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 border border-indigo-100 shadow-sm min-w-0 max-w-full transition hover:-translate-y-0.5 hover:shadow-md"
@@ -296,6 +296,22 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                       <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" />
                     </div>
                     <span className="font-medium text-slate-700 truncate text-pretty">{getTransporterName(tid)}</span>
+                  </div>
+                ))} */}
+
+                {visibleTransporters.map((tid, index) => (
+                  <div
+                    key={tid}
+                    className="group bg-indigo-50 px-3 py-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 border border-indigo-100 shadow-sm min-w-0 max-w-full transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="bg-indigo-100 p-1 rounded-full flex-shrink-0">
+                      <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" />
+                    </div>
+
+                    {/* ✅ DEMO MODE: hide transporter name */}
+                    <span className="font-medium text-slate-700 truncate text-pretty">
+                      Transporter {index + 1}
+                    </span>
                   </div>
                 ))}
 

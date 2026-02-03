@@ -10,6 +10,8 @@ import TransporterResponses from "./TransporterResponses"
 import TenderDetails from "./TenderDetails"
 import AttachmentPreviewModal from "../../modals/AttachmentPreviewModal"
 import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
+import { TenderTermsModal } from "../../modals/TenderTermsModal"
+import { loadRazorpayScript } from "../../lib/loadRazorpay"
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -28,7 +30,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [confirmedIdxMap, setConfirmedIdxMap] = useState({})
   const [allResponses, setAllResponses] = useState({})
   const [previewFile, setPreviewFile] = useState(null)
-  const [confirmDialog, setConfirmDialog] = useState(null)
+  // const [confirmDialog, setConfirmDialog] = useState(null)
   const [reopenModalTenderId, setReopenModalTenderId] = useState(null)
 
   const [fetchedResponseIds, setFetchedResponseIds] = useState(new Set())
@@ -40,6 +42,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateRange, setDateRange] = useState({ from: "", to: "" })
   const [isFinalizing, setIsFinalizing] = useState(false)
+
+  const [termsFinalize, setTermsFinalize] = useState(null)
 
   const getTransporterName = (transporter) => {
     if (!transporter) return "Unknown"
@@ -71,38 +75,157 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       })
   }
 
-  const handleDone = async (tenderId, idx, directPrice = null) => {
+  const handleDone = (tenderId, idx, directPrice = null) => {
     const responses = allResponses[tenderId] || []
-    const sorted = responses.slice().sort((a, b) => a.price - b.price)
+
+    const numOrInf = (v) => {
+      const n = Number(v)
+      return Number.isFinite(n) ? n : Infinity
+    }
+
+    const sorted = responses.slice().sort((a, b) => numOrInf(a.price) - numOrInf(b.price))
     const quotation = sorted[idx]
 
-    const finalPrice =
-      directPrice !== null ? directPrice : priceInput.trim() !== "" ? Number(priceInput) : quotation.price
+    if (!quotation?._id) {
+      toast.error("Quotation not found. Please refresh and try again.")
+      return
+    }
 
-    setConfirmDialog({
-      message: `Are you sure you want to finalize this quotation at price ₹${finalPrice}?`,
-      onConfirm: async () => {
-        setIsFinalizing(true)
-        try {
-          await axios.put(
-            `${API.FINALIZE_TENDER}/${tenderId}`,
-            { quotationId: quotation._id, finalPrice },
-            { withCredentials: true },
-          )
-          setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }))
-          toast.success("Tender finalized successfully")
-          if (fetchTenderHistory) await fetchTenderHistory()
-        } catch (err) {
-          toast.error("Finalization failed")
-        } finally {
-          setConfirmDialog(null)
-          setIsFinalizing(false)
-          setPriceInput("") // Clear input after done
-        }
-      },
-      onCancel: () => setConfirmDialog(null),
+    const finalPrice =
+      directPrice !== null && directPrice !== undefined
+        ? Number(directPrice)
+        : priceInput.trim() !== ""
+          ? Number(priceInput)
+          : Number(quotation.price)
+
+    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+      toast.error("Invalid final price.")
+      return
+    }
+
+    // ✅ Step 1: show Terms modal first
+    setTermsFinalize({
+      tenderId,
+      idx,
+      quotationId: quotation._id,
+      finalPrice,
     })
   }
+
+  const proceedFinalizeAfterTerms = async ({ tenderId, idx, quotationId, finalPrice }) => {
+    setIsFinalizing(true);
+
+    try {
+      const ok = await loadRazorpayScript();
+      if (!ok) {
+        toast.error("Razorpay SDK failed to load. Check internet.");
+        setIsFinalizing(false);
+        return;
+      }
+
+      const token = localStorage.getItem("session_token");
+
+      // 1) Create order on backend
+      const orderRes = await axios.post(
+        `${API.FINALIZE_TENDER_CREATE_ORDER}/${tenderId}/finalize/payment/order`,
+        {
+          quotationId,
+          finalPrice,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      );
+
+      const { keyId, orderId, amount, currency } = orderRes.data;
+
+      // 2) Open Razorpay Checkout
+      const options = {
+        key: keyId,
+        amount, // paise
+        currency,
+        name: "YuvaQ",
+        description: `Tender Finalization • ₹${Number(finalPrice).toLocaleString()}`,
+        order_id: orderId,
+
+        handler: async function (response) {
+
+          const token = localStorage.getItem("session_token");
+
+          const authCfg = {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          };
+
+          try {
+            // 1) Verify payment (should also store payment details)
+            await axios.post(
+              `${API.FINALIZE_TENDER_VERIFY_PAYMENT}/${tenderId}/finalize/payment/verify`,
+              {
+                quotationId,
+                finalPrice,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+              authCfg
+            );
+
+            // 2) ✅ Call your OLD finalize API to keep existing side-effects intact
+            await axios.put(
+              `${API.FINALIZE_TENDER}/${tenderId}`,
+              { quotationId, finalPrice },
+              authCfg
+            );
+
+            setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }));
+            toast.success("Payment successful. Tender finalized!");
+            setPriceInput("");
+            setTermsFinalize(null);
+            if (fetchTenderHistory) await fetchTenderHistory();
+          } catch (e) {
+            const msg =
+              e?.response?.data?.message ||
+              e?.response?.data?.err ||
+              e?.message ||
+              "Payment succeeded but finalization failed.";
+            toast.error(msg);
+            console.error("Finalize after payment error:", e);
+          } finally {
+            setIsFinalizing(false);
+          }
+        },
+
+        modal: {
+          ondismiss: () => {
+            toast.info("Payment cancelled/closed.");
+            setIsFinalizing(false);
+          },
+        },
+
+        theme: { color: "#059669" },
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      rzp.on("payment.failed", function (resp) {
+        toast.error(resp?.error?.description || "Payment failed");
+        setIsFinalizing(false);
+      });
+
+      rzp.open();
+    } catch (err) {
+      toast.error("Could not start payment.");
+      setIsFinalizing(false);
+    }
+  };
 
   const handleReopenSubmit = async (reason) => {
     if (!reason.trim()) {
@@ -995,7 +1118,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                 </div>
               )
             })}
-            
+
             {!loading && filteredTenders.length === 0 && (
               <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
                 <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
@@ -1078,14 +1201,25 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         <ReopenConfirmationModal onConfirm={handleReopenSubmit} onCancel={() => setReopenModalTenderId(null)} />
       )}
 
-      {confirmDialog && (
+      {termsFinalize && (
+        <TenderTermsModal
+          finalPrice={termsFinalize.finalPrice}
+          isLoading={isFinalizing}
+          onCancel={() => {
+            if (!isFinalizing) setTermsFinalize(null)
+          }}
+          onAgree={() => proceedFinalizeAfterTerms(termsFinalize)}
+        />
+      )}
+
+      {/* {confirmDialog && (
         <ConfirmationModal
           message={confirmDialog.message}
           onConfirm={confirmDialog.onConfirm}
           onCancel={confirmDialog.onCancel}
           isLoading={isFinalizing}
         />
-      )}
+      )} */}
     </div>
   )
 }

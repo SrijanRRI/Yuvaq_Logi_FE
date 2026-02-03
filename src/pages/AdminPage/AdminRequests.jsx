@@ -314,7 +314,7 @@ const AdminRequests = ({
                                 }}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700"
                                 title="Open official GST search portal"
-                              >
+                               >
                                 <ExternalLink className="h-4 w-4" />
                                 Verify on GST Portal
                               </button>

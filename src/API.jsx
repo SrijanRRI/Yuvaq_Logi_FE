@@ -1,8 +1,8 @@
 // Development : 
-// let serverUrl = "http://localhost:5000";
+let serverUrl = "http://localhost:5000";
 
 // Production : 
-let serverUrl = "https://logiyatrabe.rrispat.in" 
+// let serverUrl = "https://logiyatrabe.rrispat.in" 
 
 
 
@@ -62,6 +62,11 @@ const API = {
   //API for session checking 
 
   CHECK_ME : `${serverUrl}/api/auth/me`,
+
+FINALIZE_TENDER_CREATE_ORDER: `${serverUrl}/tenders`, // use with /:id/finalize/payment/order
+
+FINALIZE_TENDER_VERIFY_PAYMENT: `${serverUrl}/tenders`, // use with /:id/finalize/payment/verify
+
 }; 
 
 // export const switchServerUrl = (mode) => {

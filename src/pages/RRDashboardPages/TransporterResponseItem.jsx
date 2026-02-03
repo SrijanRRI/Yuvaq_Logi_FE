@@ -61,7 +61,8 @@ const TransporterResponseItem = ({
             </div>
             <div className="min-w-0 flex-1">
               <h5 className="font-semibold text-slate-800 text-sm sm:text-base truncate">
-                {getTransporterName(response.transportUser)}
+                {/* {getTransporterName(response.transportUser)} */}
+                Transporter {idx + 1}
               </h5>
               {/* Improved Rank Badge */}
               <div className="mt-1 inline-flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full bg-gradient-to-r from-emerald-200 to-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm shadow-md">

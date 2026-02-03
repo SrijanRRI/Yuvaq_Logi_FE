@@ -55,7 +55,7 @@ const RRDashboardPage = () => {
 
   const [historyScope, setHistoryScope] = useState("mine");
 
-  const [activeTab, setActiveTab] = useState("shipment");
+  const [activeTab, setActiveTab] = useState("create");
   const [viewHistory, setViewHistory] = useState(false);
 
   // history bits
@@ -191,7 +191,7 @@ const RRDashboardPage = () => {
   };
 
   const handleSend = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     setLoading(true);
     setFormDisabled(true);
 
@@ -426,7 +426,7 @@ const RRDashboardPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <Navbar
-        title="RRI Dashboard"
+        title="Dashboard"
         userName={userName}
         actions={[historyButton]}
         onLogout={onLogout}
@@ -457,15 +457,15 @@ const RRDashboardPage = () => {
             {/* Tabs */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 mb-6">
               <div className="flex">
-                <button
+                {/* <button
                   className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === "shipment"
                     ? "bg-emerald-600 text-white shadow"
                     : "text-slate-700 hover:bg-slate-50"
                     }`}
                   onClick={() => setActiveTab("shipment")}
-                >
+                 >
                   <ClipboardList className="h-4 w-4" /> Shipment Details
-                </button>
+                </button> */}
 
                 <button
                   className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === "create"
@@ -478,15 +478,15 @@ const RRDashboardPage = () => {
                 </button>
 
                 {/* NEW tab */}
-                <button
+                {/* <button
                   className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === "planned"
                     ? "bg-emerald-600 text-white shadow"
                     : "text-slate-700 hover:bg-slate-50"
                     }`}
                   onClick={() => setActiveTab("planned")}
-                >
+                 >
                   <Calendar className="h-4 w-4" /> Shipment Planned
-                </button>
+                </button> */}
               </div>
             </div>
 
