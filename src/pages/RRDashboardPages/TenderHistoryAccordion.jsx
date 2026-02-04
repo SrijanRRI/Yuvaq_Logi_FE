@@ -644,7 +644,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   //   PRINT WITHOUT POPUPS (hidden IFRAME)
   // =====================================
   const handleExportPDF = (tender, responses = [], transporterList = []) => {
-    const html = buildPrintableHTML(tender, responses, transporterList , true)
+    const html = buildPrintableHTML(tender, responses, transporterList, true)
 
     // Create a Blob URL for the HTML
     const blob = new Blob([html], { type: "text/html" })

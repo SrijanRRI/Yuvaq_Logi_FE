@@ -14,7 +14,7 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import FullScreenLoader from "../../components/FullScreenLoader"
 
@@ -63,6 +63,90 @@ const TenderForm = ({
   }
 
   const selectedOption = unitOptions.find((option) => option.value === form.maxBidUnit)
+
+  const [pinStatus, setPinStatus] = useState("idle"); // idle | loading | success | error
+  const [pinStatusMsg, setPinStatusMsg] = useState("");
+  const lastPinRef = useRef(null);
+
+  useEffect(() => {
+    const raw = String(form.pincode ?? "").trim();
+    const pin = raw.replace(/\D/g, "").slice(0, 6);
+
+    // only run when 6 digits
+    if (pin.length !== 6) {
+      setPinStatus("idle");
+      setPinStatusMsg("");
+      lastPinRef.current = null; // allow fetch again once 6 digits complete
+      return;
+    }
+
+    // prevent re-fetch for same pin
+    if (lastPinRef.current === pin) return;
+
+    const ctrl = new AbortController();
+
+    const timeout = setTimeout(async () => {
+      setPinStatus("loading");
+      setPinStatusMsg("Looking up city & state…");
+
+      const setSuccess = (city, state) => {
+        setForm((prev) => ({
+          ...prev,
+          dispatchLocation: state || prev.dispatchLocation, // Location -> State
+          address: city || prev.address,                   // Address -> City
+          pincode: pin, // keep normalized 6 digits
+        }));
+
+        setPinStatus("success");
+        setPinStatusMsg(`${city}${city && state ? ", " : ""}${state}`);
+        lastPinRef.current = pin;
+      };
+
+      try {
+        // 1) India Postal API
+        try {
+          const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`, {
+            signal: ctrl.signal,
+            mode: "cors",
+          });
+          const json = await res.json();
+          const d = Array.isArray(json) ? json[0] : null;
+
+          if (d?.Status === "Success" && d?.PostOffice?.length) {
+            const po = d.PostOffice[0];
+            const city =
+              po?.District || po?.Block || po?.Division || po?.Name || "";
+            const state = po?.State || "";
+            setSuccess(city, state);
+            return;
+          }
+          throw new Error("Postal API returned no result");
+        } catch {
+          // 2) Fallback: Zippopotam
+          const res2 = await fetch(`https://api.zippopotam.us/IN/${pin}`, {
+            signal: ctrl.signal,
+            mode: "cors",
+          });
+          if (!res2.ok) throw new Error("Zippopotam not ok");
+          const j2 = await res2.json();
+          const place = j2?.places?.[0];
+          const city = place?.["place name"] || "";
+          const state = place?.state || "";
+          setSuccess(city, state);
+        }
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+        setPinStatus("error");
+        setPinStatusMsg("Could not fetch details. Please fill manually.");
+        lastPinRef.current = null;
+      }
+    }, 350);
+
+    return () => {
+      ctrl.abort();
+      clearTimeout(timeout);
+    };
+  }, [form.pincode, setForm]);
 
   return (
     <div className="space-y-8">
@@ -378,7 +462,7 @@ const TenderForm = ({
                 </h2>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Location (State)</label>
                     <input
                       type="text"
                       name="dispatchLocation"
@@ -390,7 +474,7 @@ const TenderForm = ({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Address (City/District)</label>
                     <textarea
                       name="address"
                       value={form.address}
@@ -403,14 +487,32 @@ const TenderForm = ({
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d{6}"
+                      maxLength={6}
                       name="pincode"
                       value={form.pincode}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        handleChange({ target: { name: "pincode", value: pin } });
+                      }}
                       placeholder="Enter pincode"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
                       required
                     />
+                    {pinStatus !== "idle" && (
+                      <p
+                        className={`mt-1 text-xs ${pinStatus === "loading"
+                            ? "text-slate-500"
+                            : pinStatus === "success"
+                              ? "text-emerald-700"
+                              : "text-amber-700"
+                          }`}
+                      >
+                        {pinStatusMsg}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
