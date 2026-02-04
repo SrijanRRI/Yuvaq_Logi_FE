@@ -1,8 +1,8 @@
 // Development : 
-let serverUrl = "http://localhost:5000";
+// let serverUrl = "http://localhost:5000";
 
 // Production : 
-// let serverUrl = "https://Logiqbe.yuvaq.com" 
+let serverUrl = "https://logiqbe.yuvaq.com" 
 
 
 
