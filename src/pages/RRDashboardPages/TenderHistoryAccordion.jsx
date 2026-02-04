@@ -12,6 +12,7 @@ import AttachmentPreviewModal from "../../modals/AttachmentPreviewModal"
 import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
 import { TenderTermsModal } from "../../modals/TenderTermsModal"
 import { loadRazorpayScript } from "../../lib/loadRazorpay"
+import { calcAdvancePayment, toNumber } from "../../lib/tenderPayment";
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -75,44 +76,57 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       })
   }
 
-  const handleDone = (tenderId, idx, directPrice = null) => {
-    const responses = allResponses[tenderId] || []
-
-    const numOrInf = (v) => {
-      const n = Number(v)
-      return Number.isFinite(n) ? n : Infinity
-    }
-
-    const sorted = responses.slice().sort((a, b) => numOrInf(a.price) - numOrInf(b.price))
-    const quotation = sorted[idx]
-
+  const handleDone = ({ tender, quotation }) => {
     if (!quotation?._id) {
-      toast.error("Quotation not found. Please refresh and try again.")
-      return
+      toast.error("Quotation not found. Please refresh and try again.");
+      return;
     }
 
-    const finalPrice =
-      directPrice !== null && directPrice !== undefined
-        ? Number(directPrice)
-        : priceInput.trim() !== ""
-          ? Number(priceInput)
-          : Number(quotation.price)
-
-    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
-      toast.error("Invalid final price.")
-      return
+    const finalPricePerMt = Number(quotation.price); // per MT
+    if (!Number.isFinite(finalPricePerMt) || finalPricePerMt <= 0) {
+      toast.error("Invalid price per MT.");
+      return;
     }
 
-    // ✅ Step 1: show Terms modal first
+    // Prefer tender.totalWeight; fallback to sum of materials
+    const totalWeightMt =
+      toNumber(tender.totalWeight) ||
+      (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
+
+    if (!Number.isFinite(totalWeightMt) || totalWeightMt <= 0) {
+      toast.error("Total weight (MT) is missing. Please check tender totals.");
+      return;
+    }
+
+    const calc = calcAdvancePayment({
+      pricePerMt: finalPricePerMt,
+      totalWeightMt,
+      percent: 5,
+    });
+
+    // ✅ Open terms modal with full breakdown
     setTermsFinalize({
-      tenderId,
-      idx,
+      tenderId: tender._id,
       quotationId: quotation._id,
-      finalPrice,
-    })
-  }
+      finalPricePerMt,
+      totalWeightMt: calc.totalWeightMt,
+      totalRupees: calc.totalRupees,
+      advancePercent: calc.percent,
+      advanceRupees: calc.advanceRupees,
+      advancePaise: calc.advancePaise,
+    });
+  };
 
-  const proceedFinalizeAfterTerms = async ({ tenderId, idx, quotationId, finalPrice }) => {
+  const proceedFinalizeAfterTerms = async ({
+    tenderId,
+    quotationId,
+    finalPricePerMt,
+    totalWeightMt,
+    advancePaise,
+    advanceRupees,
+    totalRupees,
+    advancePercent,
+  }) => {
     setIsFinalizing(true);
 
     try {
@@ -125,12 +139,15 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
       const token = localStorage.getItem("session_token");
 
-      // 1) Create order on backend
+      // ✅ create order for advance only (5% in paise)
       const orderRes = await axios.post(
         `${API.FINALIZE_TENDER_CREATE_ORDER}/${tenderId}/finalize/payment/order`,
         {
           quotationId,
-          finalPrice,
+          finalPricePerMt,     // per MT (for backend validation)
+          totalWeightMt,       // for backend validation
+          advancePercentNotice: advancePercent, // optional (backend can ignore)
+          // do NOT trust client amount; backend should compute again
         },
         {
           withCredentials: true,
@@ -142,20 +159,18 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       );
 
       const { keyId, orderId, amount, currency } = orderRes.data;
+      // amount should be advancePaise computed by backend (authoritative)
 
-      // 2) Open Razorpay Checkout
       const options = {
         key: keyId,
-        amount, // paise
+        amount, // paise (advance only)
         currency,
         name: "YuvaQ",
-        description: `Tender Finalization • ₹${Number(finalPrice).toLocaleString()}`,
+        description: `Advance Payment (${advancePercent}% of total) • ₹${Number(advanceRupees).toLocaleString()} (Total ₹${Number(totalRupees).toLocaleString()})`,
         order_id: orderId,
 
         handler: async function (response) {
-
           const token = localStorage.getItem("session_token");
-
           const authCfg = {
             withCredentials: true,
             headers: {
@@ -165,12 +180,14 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           };
 
           try {
-            // 1) Verify payment (should also store payment details)
+            // 1) Verify payment
             await axios.post(
               `${API.FINALIZE_TENDER_VERIFY_PAYMENT}/${tenderId}/finalize/payment/verify`,
               {
                 quotationId,
-                finalPrice,
+                finalPricePerMt,
+                totalWeightMt,
+                advancePercent: advancePercent,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
@@ -178,26 +195,25 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
               authCfg
             );
 
-            // 2) ✅ Call your OLD finalize API to keep existing side-effects intact
-            await axios.put(
+            // 2) Keep your existing finalize side-effects
+            const finalizeRes = await axios.put(
               `${API.FINALIZE_TENDER}/${tenderId}`,
-              { quotationId, finalPrice },
+              { quotationId, finalPrice: finalPricePerMt }, // keep as per-MT in your DB if that’s your model
               authCfg
             );
 
-            setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }));
+            // NEW: toast based on backend email status (doesn't affect Razorpay errors)
+            if (finalizeRes?.data?.emailSent === true) {
+              toast.success("Email notification sent to transporter.");
+            } else if (finalizeRes?.data?.emailSent === false) {
+              toast.warn("Tender finalized, but email could not be sent.");
+            }
+
             toast.success("Payment successful. Tender finalized!");
-            setPriceInput("");
             setTermsFinalize(null);
             if (fetchTenderHistory) await fetchTenderHistory();
           } catch (e) {
-            const msg =
-              e?.response?.data?.message ||
-              e?.response?.data?.err ||
-              e?.message ||
-              "Payment succeeded but finalization failed.";
-            toast.error(msg);
-            console.error("Finalize after payment error:", e);
+            toast.error(e?.response?.data?.message || "Payment succeeded but finalization failed.");
           } finally {
             setIsFinalizing(false);
           }
@@ -214,8 +230,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       };
 
       const rzp = new window.Razorpay(options);
-
-      rzp.on("payment.failed", function (resp) {
+      rzp.on("payment.failed", (resp) => {
         toast.error(resp?.error?.description || "Payment failed");
         setIsFinalizing(false);
       });
@@ -1203,7 +1218,11 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
       {termsFinalize && (
         <TenderTermsModal
-          finalPrice={termsFinalize.finalPrice}
+          finalPricePerMt={termsFinalize.finalPricePerMt}
+          totalWeightMt={termsFinalize.totalWeightMt}
+          totalRupees={termsFinalize.totalRupees}
+          advancePercent={termsFinalize.advancePercent}
+          advanceRupees={termsFinalize.advanceRupees}
           isLoading={isFinalizing}
           onCancel={() => {
             if (!isFinalizing) setTermsFinalize(null)

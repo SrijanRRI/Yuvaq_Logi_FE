@@ -1,25 +1,48 @@
-import { useMemo, useState } from "react"
-import { AlertTriangle, CheckCircle2 } from "lucide-react"
+import { useMemo, useState } from "react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
-export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = false }) => {
-  const [agreed, setAgreed] = useState(false)
+export const TenderTermsModal = ({
+  finalPricePerMt,
+  totalWeightMt,
+  totalRupees,
+  advancePercent,
+  advanceRupees,
+  onCancel,
+  onAgree,
+  isLoading = false,
+}) => {
+  const [agreed, setAgreed] = useState(false);
 
-  const priceText = useMemo(() => {
-    const n = Number(finalPrice)
-    return Number.isFinite(n) ? n.toLocaleString() : "-"
-  }, [finalPrice])
+  const pricePerMtText = useMemo(() => {
+    const n = Number(finalPricePerMt);
+    return Number.isFinite(n) ? n.toLocaleString("en-IN") : "-";
+  }, [finalPricePerMt]);
+
+  const weightText = useMemo(() => {
+    const n = Number(totalWeightMt);
+    return Number.isFinite(n) ? n.toLocaleString("en-IN") : "-";
+  }, [totalWeightMt]);
+
+  const totalText = useMemo(() => {
+    const n = Number(totalRupees);
+    return Number.isFinite(n) ? n.toLocaleString("en-IN") : "-";
+  }, [totalRupees]);
+
+  const advanceText = useMemo(() => {
+    const n = Number(advanceRupees);
+    return Number.isFinite(n) ? n.toLocaleString("en-IN") : "-";
+  }, [advanceRupees]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Backdrop */}
       <button
         type="button"
         className="absolute inset-0"
         aria-label="Close"
+        onClick={onCancel}
         disabled={isLoading}
       />
 
-      {/* Modal */}
       <div className="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-800 p-5 text-white">
           <div className="flex items-start gap-3">
@@ -29,8 +52,10 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = fa
             <div className="min-w-0">
               <h3 className="text-lg font-bold">Caution • Terms & Conditions</h3>
               <p className="text-white/90 text-sm mt-1">
-                You’re proceeding to finalize this quotation at{" "}
-                <span className="font-semibold">₹{priceText}</span>.
+                Quotation price is{" "}
+                <span className="font-semibold">₹{pricePerMtText}</span> / MT.
+                You will pay{" "}
+                <span className="font-semibold">{advancePercent}%</span> advance now.
               </p>
             </div>
           </div>
@@ -43,23 +68,44 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = fa
                 <b>YuvaQ</b> is a technology platform for tender creation and bid collection.
               </li>
               <li>
-                Tender details (materials, weights, dates, locations, terms) are provided by the tender creator.
+                Tender details are provided by the tender creator.
                 <b> YuvaQ does not verify</b> the accuracy or completeness of these details.
               </li>
               <li>
-                Any backout, cancellation, delay, dispute, negotiation, or non-performance by any transporter is strictly
-                between the involved parties. <b>YuvaQ is not liable</b> for resulting loss or damages.
+                Any dispute / delay / cancellation is strictly between parties.
+                <b> YuvaQ is not liable</b>.
               </li>
               <li>
-                YuvaQ does not guarantee bid participation, bid validity, transporter availability, or delivery performance.
-              </li>
-              <li>
-                Proceed only if you have reviewed the tender and quotation details thoroughly.
+                <b>Important:</b> Price is <b>per MT</b>. Total is calculated as <b>(Price/MT × Total MT)</b>.
+                You will pay <b>{advancePercent}%</b> of the total amount via Razorpay as advance.
               </li>
             </ul>
           </div>
 
-          {/* ✅ Checkbox */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm">
+            <div className="flex justify-between">
+              <span>Price / MT</span>
+              <b>₹{pricePerMtText}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Weight</span>
+              <b>{weightText} MT</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Amount</span>
+              <b>₹{totalText}</b>
+            </div>
+
+            <div className="flex justify-between mt-2 pt-2 border-t border-emerald-200">
+              <span>Payable Now ({advancePercent}% Advance)</span>
+              <b className="text-emerald-700">₹{advanceText}</b>
+            </div>
+
+            <p className="text-xs text-emerald-700 mt-2">
+              Note: You are paying only {advancePercent}% of total as advance via Razorpay.
+            </p>
+          </div>
+
           <label className="flex items-start gap-3 select-none cursor-pointer">
             <input
               type="checkbox"
@@ -89,7 +135,6 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = fa
             Cancel
           </button>
 
-          {/* ✅ Show Pay Now ONLY after tick */}
           {agreed ? (
             <button
               type="button"
@@ -105,7 +150,7 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = fa
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
-                  Pay Now
+                  Pay Now ₹{advanceText}
                 </>
               )}
             </button>
@@ -113,5 +158,5 @@ export const TenderTermsModal = ({ finalPrice, onCancel, onAgree, isLoading = fa
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

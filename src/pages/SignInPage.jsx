@@ -139,24 +139,6 @@ const SignInPage = () => {
           <div className="absolute inset-0 opacity-35 [background:radial-gradient(circle_at_18%_20%,rgba(16,185,129,0.25),transparent_45%),radial-gradient(circle_at_78%_65%,rgba(45,212,191,0.18),transparent_55%)]" />
 
           <div className="relative">
-            {/* Brand header */}
-            <div className="inline-flex items-center gap-3 rounded-2xl bg-white/8 p-4 ring-1 ring-white/10 backdrop-blur">
-              <div className="rounded-xl bg-white/10 p-2 ring-1 ring-white/10">
-                <img
-                  src="/assets/LogiYatraLogo.png"
-                  alt="Company Logo"
-                  className="h-11 w-auto object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.35)]"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-semibold tracking-wide text-white/95">
-                  Tender Management System
-                </p>
-                <p className="text-xs text-white/70">
-                  Verified bidding • Transparent L1/L2/L3
-                </p>
-              </div>
-            </div>
 
             <h1 className="mt-8 text-3xl font-bold tracking-tight">
               Sign in to continue

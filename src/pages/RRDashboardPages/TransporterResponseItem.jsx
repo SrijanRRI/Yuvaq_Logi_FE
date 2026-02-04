@@ -36,23 +36,21 @@ const TransporterResponseItem = ({
 
   return (
     <div
-      className={`rounded-lg sm:rounded-xl shadow-sm transition duration-300 overflow-hidden ${
-        isDimmed
+      className={`rounded-lg sm:rounded-xl shadow-sm transition duration-300 overflow-hidden ${isDimmed
           ? "border border-slate-200 bg-slate-50"
           : isSelected
             ? "border-2 border-emerald-500 bg-white"
             : "border border-slate-200 bg-white"
-      }`}
+        }`}
     >
       {/* Header Section */}
       <div
-        className={`${
-          isSelected
+        className={`${isSelected
             ? "bg-emerald-50 border-b border-emerald-100"
             : isDimmed
               ? "bg-slate-100 border-b border-slate-200"
               : "bg-indigo-50 border-b border-indigo-100"
-        } px-4 sm:px-5 py-3`}
+          } px-4 sm:px-5 py-3`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex items-center gap-3">
@@ -199,11 +197,10 @@ const TransporterResponseItem = ({
                 <button
                   onClick={() => onReopen(tenderId)}
                   disabled={!canReopenQuotation}
-                  className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${
-                    canReopenQuotation
+                  className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${canReopenQuotation
                       ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
                       : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   <RefreshCcw className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate">
@@ -225,7 +222,13 @@ const TransporterResponseItem = ({
               <p className="text-slate-700 text-sm sm:text-base">Would you like to confirm this quotation?</p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => onConfirmFinal(tenderId, idx, response.price)}
+                  // onClick={() => onConfirmFinal(tenderId, idx, response.price)}
+                  onClick={() =>
+                    onConfirmFinal({
+                      tender,
+                      quotation: response, // has _id + price + rank etc.
+                    })
+                  }
                   className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm sm:text-base min-w-0"
                 >
                   <Check className="h-4 w-4 flex-shrink-0" />
