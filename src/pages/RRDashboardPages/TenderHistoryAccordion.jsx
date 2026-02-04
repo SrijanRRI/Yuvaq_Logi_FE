@@ -344,6 +344,26 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     </button>
   );
 
+  // ✅ Build deterministic aliases like "Transporter 1", "Transporter 2" for a given response list
+  const buildAliasResolver = (sortedResponses = []) => {
+    const map = new Map(); // key -> number
+    let counter = 1;
+
+    for (const r of sortedResponses) {
+      const key = asId(r?.transportUser) || r?._id || String(counter);
+      if (!map.has(key)) map.set(key, counter++);
+    }
+
+    return (r) => {
+      const key = asId(r?.transportUser) || r?._id;
+      const n = map.get(key);
+      return `Transporter ${n ?? "—"}`;
+    };
+  };
+
+  // ✅ Toggle (later you can make it config-based)
+  const MASK_TRANSPORTER_NAMES_IN_EXPORT = true;
+
 
   // ---------- EXPORT HELPERS ----------
   const htmlEscape = (s = "") =>
@@ -364,7 +384,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   // ===============================
   //     PRINTABLE HTML (A4)
   // ===============================
-  const buildPrintableHTML = (tender, responses = [], transporterList = []) => {
+  const buildPrintableHTML = (tender, responses = [], transporterList = [], maskNames = true) => {
     const materials = tender.materials || []
 
     // Sort responses by rank then price (same as Excel)
@@ -379,6 +399,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       return (a.price ?? Infinity) - (b.price ?? Infinity)
     })
 
+    const getAliasName = buildAliasResolver(sortedResponses);
+
     const isFinalized = tender.status === "finalized"
     const selectedQuotationId = tender?.selectedQuotation?._id || null
 
@@ -386,7 +408,11 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
     const rows = hasQuotes ? sortedResponses.map((r) => {
 
-      const name = r.name || getNameFromList(r.transportUser, transporterList) || "-"
+      // const name = r.name || getNameFromList(r.transportUser, transporterList) || "-"
+
+      const name = (maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT)
+        ? getAliasName(r)
+        : (r.name || getNameFromList(r.transportUser, transporterList) || "-");
 
       const isThisFinal =
         isFinalized &&
@@ -577,7 +603,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         ? `<table>
               <thead>
                 <tr>
-                  <th>Name / Email</th>
+                  <th>${(maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT) ? "Transporter" : "Name / Email"}</th>
                   <th>Rank</th>
                   <th>Amount (₹)</th>
                   <th>Vehicle No</th>
@@ -618,7 +644,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   //   PRINT WITHOUT POPUPS (hidden IFRAME)
   // =====================================
   const handleExportPDF = (tender, responses = [], transporterList = []) => {
-    const html = buildPrintableHTML(tender, responses, transporterList)
+    const html = buildPrintableHTML(tender, responses, transporterList , true)
 
     // Create a Blob URL for the HTML
     const blob = new Blob([html], { type: "text/html" })
@@ -689,6 +715,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       return (a.price ?? Infinity) - (b.price ?? Infinity)
     })
 
+    const getAliasName = buildAliasResolver(sortedResponses);
+
     const asText = (v) => (v == null ? "" : `\u200C${String(v)}`)
 
     // =========================
@@ -747,11 +775,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     // =========================
     rows.push([])
     rows.push(["==== TRANSPORTERS ====", ""])
-    rows.push(["Name / Email", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
+    // rows.push(["Name / Email", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
+    rows.push(["Transporter", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
 
     if (sortedResponses.length > 0) {
       sortedResponses.forEach((r) => {
-        const name = getTransporterName(r.transportUser) || "-"   // ✅ robust name resolver
+        // const name = getTransporterName(r.transportUser) || "-"   // ✅ robust name resolver
+        const name = (MASK_TRANSPORTER_NAMES_IN_EXPORT ? getAliasName(r) : (getTransporterName(r.transportUser) || "-"));
 
         const isThisFinal =
           isFinalized &&
