@@ -1,6 +1,6 @@
 FROM node:18 AS build
 
-ENV PORT=80
+ENV PORT=85
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 
@@ -40,4 +40,4 @@ CMD ["nginx", "-g", "daemon off;"]
 
 
 # docker pull 192.168.13.72:5000/rrcomplaint_frontend
-# docker run -d --name rrcomplaint_frontend -p 8003:85 192.168.13.72:5000/rrcomplaint_frontend
+# docker run -d --name rrcomplaint_frontend -p 85:85 192.168.13.72:5000/rrcomplaint_frontend
