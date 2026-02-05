@@ -235,7 +235,7 @@ const SignInPage = () => {
               Sign in
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Tender Management System
+              Reverse Auction System
             </p>
           </div>
 

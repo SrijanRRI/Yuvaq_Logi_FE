@@ -46,6 +46,44 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
   const [termsFinalize, setTermsFinalize] = useState(null)
 
+  const [contactByTender, setContactByTender] = useState({});
+  const [contactLoading, setContactLoading] = useState({});
+
+  const fetchFinalizedContact = async (tenderId) => {
+    if (!tenderId) return;
+
+    // toggle: if already fetched, just toggle visibility (optional)
+    if (contactByTender[tenderId]) {
+      setContactByTender((p) => ({ ...p, [tenderId]: null }));
+      return;
+    }
+
+    try {
+      setContactLoading((p) => ({ ...p, [tenderId]: true }));
+
+      const token = localStorage.getItem("session_token");
+      const res = await axios.get(
+        `${API.FETCH_FINALIZED_TRANSPORTER_CONTACT}/${tenderId}/finalized-contact`,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      );
+
+      console.log("transporter contact ", res.data);
+
+      const contact = res?.data?.data || res?.data;
+      setContactByTender((p) => ({ ...p, [tenderId]: contact }));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not load transporter contact.");
+    } finally {
+      setContactLoading((p) => ({ ...p, [tenderId]: false }));
+    }
+  };
+
   const getTransporterName = (transporter) => {
     if (!transporter) return "Unknown"
     if (typeof transporter === "object") {
@@ -202,11 +240,31 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
               authCfg
             );
 
-            // NEW: toast based on backend email status (doesn't affect Razorpay errors)
-            if (finalizeRes?.data?.emailSent === true) {
-              toast.success("Email notification sent to transporter.");
-            } else if (finalizeRes?.data?.emailSent === false) {
-              toast.warn("Tender finalized, but email could not be sent.");
+            // FIX: handle new backend response structure
+            const email = finalizeRes?.data?.email;
+
+            if (email) {
+              if (email.transporterEmailSent) {
+                toast.success("Email sent to transporter.");
+              } else {
+                toast.warn(
+                  `Tender finalized, but transporter email failed${email.transporterEmailError ? `: ${email.transporterEmailError}` : "."
+                  }`
+                );
+              }
+
+              if (email.rrEmailSent) {
+                toast.success("Email sent to you (with transporter contact).");
+              } else {
+                toast.warn(
+                  `Tender finalized, but RR email failed${email.rrEmailError ? `: ${email.rrEmailError}` : "."
+                  }`
+                );
+              }
+            } else {
+              // fallback (if you still return old emailSent)
+              if (finalizeRes?.data?.emailSent === true) toast.success("Email sent.");
+              if (finalizeRes?.data?.emailSent === false) toast.warn("Email failed.");
             }
 
             toast.success("Payment successful. Tender finalized!");
@@ -1157,6 +1215,9 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                         getTransporterName={getTransporterName}
                         setPreviewFile={setPreviewFile}
                         responseError={responseErrors[tenderId]}
+                        contact={contactByTender[tenderId]}
+                        contactLoading={!!contactLoading[tenderId]}
+                        onRevealContact={() => fetchFinalizedContact(tenderId)}
                       />
                     </div>
                   )}
