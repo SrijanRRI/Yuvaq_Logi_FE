@@ -11,6 +11,9 @@ const TransporterResponseItem = ({
   onReopen,
   getTransporterName,
   setPreviewFile,
+  contact,
+  contactLoading,
+  onRevealContact,
 }) => {
   const tenderId = tender._id
   const isFinalizedView =
@@ -34,25 +37,60 @@ const TransporterResponseItem = ({
   const currentRank = response.rank
   const canConfirm = rankOrder[allowedRankIndex] === currentRank
 
+  const formatPhoneIN = (phone) => {
+    if (!phone) return "-";
+
+    // keep digits only
+    let d = String(phone).replace(/\D/g, "");
+
+    // handle 00 prefix (e.g. 0091...)
+    if (d.startsWith("00")) d = d.slice(2);
+
+    // If it looks like India: 91 + 10 digits
+    if (d.length === 12 && d.startsWith("91")) {
+      const cc = d.slice(0, 2);
+      const num = d.slice(2); // 10 digits
+      return `+${cc} ${num.slice(0, 5)} ${num.slice(5)}`; // +91 91746 799500
+    }
+
+    // If it's a plain 10-digit Indian mobile
+    if (d.length === 10) {
+      return `+91 ${d.slice(0, 5)} ${d.slice(5)}`;
+    }
+
+    // fallback: if long, show +<cc> ...
+    if (d.length > 10) {
+      const cc = d.slice(0, d.length - 10);
+      const num = d.slice(-10);
+      return `+${cc} ${num.slice(0, 5)} ${num.slice(5)}`;
+    }
+
+    return phone; // last fallback
+  };
+
+  const telHref = (phone) => {
+    const d = String(phone || "").replace(/\D/g, "");
+    if (!d) return "";
+    return d.length === 10 ? `tel:+91${d}` : `tel:+${d}`;
+  };
+
   return (
     <div
-      className={`rounded-lg sm:rounded-xl shadow-sm transition duration-300 overflow-hidden ${
-        isDimmed
-          ? "border border-slate-200 bg-slate-50"
-          : isSelected
-            ? "border-2 border-emerald-500 bg-white"
-            : "border border-slate-200 bg-white"
-      }`}
+      className={`rounded-lg sm:rounded-xl shadow-sm transition duration-300 overflow-hidden ${isDimmed
+        ? "border border-slate-200 bg-slate-50"
+        : isSelected
+          ? "border-2 border-emerald-500 bg-white"
+          : "border border-slate-200 bg-white"
+        }`}
     >
       {/* Header Section */}
       <div
-        className={`${
-          isSelected
-            ? "bg-emerald-50 border-b border-emerald-100"
-            : isDimmed
-              ? "bg-slate-100 border-b border-slate-200"
-              : "bg-indigo-50 border-b border-indigo-100"
-        } px-4 sm:px-5 py-3`}
+        className={`${isSelected
+          ? "bg-emerald-50 border-b border-emerald-100"
+          : isDimmed
+            ? "bg-slate-100 border-b border-slate-200"
+            : "bg-indigo-50 border-b border-indigo-100"
+          } px-4 sm:px-5 py-3`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex items-center gap-3">
@@ -70,10 +108,58 @@ const TransporterResponseItem = ({
               </div>
             </div>
           </div>
-          {isSelected && tender.status === "finalized" && (
+          {/* {isSelected && tender.status === "finalized" && (
             <div className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 border border-emerald-200 self-start sm:self-center flex-shrink-0">
               <Award className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="whitespace-nowrap">Finalized</span>
+            </div>
+          )} */}
+
+          {isSelected && tender.status === "finalized" && (
+            <div className="mt-3 bg-white border border-emerald-200 rounded-lg p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-slate-700">
+                  Transporter Contact
+                </div>
+
+                <button
+                  onClick={onRevealContact}
+                  className="text-xs px-3 py-1.5 rounded-full border border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
+                  disabled={contactLoading}
+                  title="Reveal finalized transporter contact details"
+                >
+                  {contactLoading ? "Loading..." : contact ? "Hide" : "Reveal"}
+                </button>
+              </div>
+
+              {contact ? (
+                <div className="mt-2 text-sm text-slate-700 space-y-1">
+                  <div><span className="text-slate-500">Name:</span> {contact.name || "-"}</div>
+                  <div>
+                    <span className="text-slate-500">Email:</span>{" "}
+                    <a
+                      href={`mailto:${contact.email || ""}`}
+                      className="text-emerald-700 hover:underline font-medium break-all"
+                    >
+                      {contact.email || "-"}
+                    </a>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Phone:</span>{" "}
+                    <a
+                      href={telHref(contact.phone)}
+                      className="text-emerald-700 hover:underline font-medium"
+                      title="Call transporter"
+                    >
+                      {formatPhoneIN(contact.phone)}
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 text-xs text-slate-500">
+                  Hidden until revealed.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -199,11 +285,10 @@ const TransporterResponseItem = ({
                 <button
                   onClick={() => onReopen(tenderId)}
                   disabled={!canReopenQuotation}
-                  className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${
-                    canReopenQuotation
-                      ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
-                      : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
-                  }`}
+                  className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${canReopenQuotation
+                    ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
+                    : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
+                    }`}
                 >
                   <RefreshCcw className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate">
@@ -225,7 +310,13 @@ const TransporterResponseItem = ({
               <p className="text-slate-700 text-sm sm:text-base">Would you like to confirm this quotation?</p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => onConfirmFinal(tenderId, idx, response.price)}
+                  // onClick={() => onConfirmFinal(tenderId, idx, response.price)}
+                  onClick={() =>
+                    onConfirmFinal({
+                      tender,
+                      quotation: response, // has _id + price + rank etc.
+                    })
+                  }
                   className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm sm:text-base min-w-0"
                 >
                   <Check className="h-4 w-4 flex-shrink-0" />

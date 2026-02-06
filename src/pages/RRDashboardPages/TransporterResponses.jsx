@@ -16,6 +16,9 @@ const TransporterResponses = ({
   getTransporterName,
   setPreviewFile,
   responseError,
+  contact,
+  contactLoading,
+  onRevealContact,
 }) => {
   return (
     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
@@ -61,6 +64,9 @@ const TransporterResponses = ({
               onReopen={onReopen}
               getTransporterName={getTransporterName}
               setPreviewFile={setPreviewFile}
+              contact={contact}
+              contactLoading={contactLoading}
+              onRevealContact={onRevealContact}
             />
           ))}
         </div>

@@ -12,6 +12,7 @@ import AttachmentPreviewModal from "../../modals/AttachmentPreviewModal"
 import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
 import { TenderTermsModal } from "../../modals/TenderTermsModal"
 import { loadRazorpayScript } from "../../lib/loadRazorpay"
+import { calcAdvancePayment, toNumber } from "../../lib/tenderPayment";
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -45,6 +46,44 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
   const [termsFinalize, setTermsFinalize] = useState(null)
 
+  const [contactByTender, setContactByTender] = useState({});
+  const [contactLoading, setContactLoading] = useState({});
+
+  const fetchFinalizedContact = async (tenderId) => {
+    if (!tenderId) return;
+
+    // toggle: if already fetched, just toggle visibility (optional)
+    if (contactByTender[tenderId]) {
+      setContactByTender((p) => ({ ...p, [tenderId]: null }));
+      return;
+    }
+
+    try {
+      setContactLoading((p) => ({ ...p, [tenderId]: true }));
+
+      const token = localStorage.getItem("session_token");
+      const res = await axios.get(
+        `${API.FETCH_FINALIZED_TRANSPORTER_CONTACT}/${tenderId}/finalized-contact`,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      );
+
+      console.log("transporter contact ", res.data);
+
+      const contact = res?.data?.data || res?.data;
+      setContactByTender((p) => ({ ...p, [tenderId]: contact }));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not load transporter contact.");
+    } finally {
+      setContactLoading((p) => ({ ...p, [tenderId]: false }));
+    }
+  };
+
   const getTransporterName = (transporter) => {
     if (!transporter) return "Unknown"
     if (typeof transporter === "object") {
@@ -75,44 +114,57 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       })
   }
 
-  const handleDone = (tenderId, idx, directPrice = null) => {
-    const responses = allResponses[tenderId] || []
-
-    const numOrInf = (v) => {
-      const n = Number(v)
-      return Number.isFinite(n) ? n : Infinity
-    }
-
-    const sorted = responses.slice().sort((a, b) => numOrInf(a.price) - numOrInf(b.price))
-    const quotation = sorted[idx]
-
+  const handleDone = ({ tender, quotation }) => {
     if (!quotation?._id) {
-      toast.error("Quotation not found. Please refresh and try again.")
-      return
+      toast.error("Quotation not found. Please refresh and try again.");
+      return;
     }
 
-    const finalPrice =
-      directPrice !== null && directPrice !== undefined
-        ? Number(directPrice)
-        : priceInput.trim() !== ""
-          ? Number(priceInput)
-          : Number(quotation.price)
-
-    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
-      toast.error("Invalid final price.")
-      return
+    const finalPricePerMt = Number(quotation.price); // per MT
+    if (!Number.isFinite(finalPricePerMt) || finalPricePerMt <= 0) {
+      toast.error("Invalid price per MT.");
+      return;
     }
 
-    // ✅ Step 1: show Terms modal first
+    // Prefer tender.totalWeight; fallback to sum of materials
+    const totalWeightMt =
+      toNumber(tender.totalWeight) ||
+      (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
+
+    if (!Number.isFinite(totalWeightMt) || totalWeightMt <= 0) {
+      toast.error("Total weight (MT) is missing. Please check tender totals.");
+      return;
+    }
+
+    const calc = calcAdvancePayment({
+      pricePerMt: finalPricePerMt,
+      totalWeightMt,
+      percent: 5,
+    });
+
+    // ✅ Open terms modal with full breakdown
     setTermsFinalize({
-      tenderId,
-      idx,
+      tenderId: tender._id,
       quotationId: quotation._id,
-      finalPrice,
-    })
-  }
+      finalPricePerMt,
+      totalWeightMt: calc.totalWeightMt,
+      totalRupees: calc.totalRupees,
+      advancePercent: calc.percent,
+      advanceRupees: calc.advanceRupees,
+      advancePaise: calc.advancePaise,
+    });
+  };
 
-  const proceedFinalizeAfterTerms = async ({ tenderId, idx, quotationId, finalPrice }) => {
+  const proceedFinalizeAfterTerms = async ({
+    tenderId,
+    quotationId,
+    finalPricePerMt,
+    totalWeightMt,
+    advancePaise,
+    advanceRupees,
+    totalRupees,
+    advancePercent,
+  }) => {
     setIsFinalizing(true);
 
     try {
@@ -125,12 +177,15 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
       const token = localStorage.getItem("session_token");
 
-      // 1) Create order on backend
+      // ✅ create order for advance only (5% in paise)
       const orderRes = await axios.post(
         `${API.FINALIZE_TENDER_CREATE_ORDER}/${tenderId}/finalize/payment/order`,
         {
           quotationId,
-          finalPrice,
+          finalPricePerMt,     // per MT (for backend validation)
+          totalWeightMt,       // for backend validation
+          advancePercentNotice: advancePercent, // optional (backend can ignore)
+          // do NOT trust client amount; backend should compute again
         },
         {
           withCredentials: true,
@@ -142,20 +197,18 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       );
 
       const { keyId, orderId, amount, currency } = orderRes.data;
+      // amount should be advancePaise computed by backend (authoritative)
 
-      // 2) Open Razorpay Checkout
       const options = {
         key: keyId,
-        amount, // paise
+        amount, // paise (advance only)
         currency,
         name: "YuvaQ",
-        description: `Tender Finalization • ₹${Number(finalPrice).toLocaleString()}`,
+        description: `Advance Payment (${advancePercent}% of total) • ₹${Number(advanceRupees).toLocaleString()} (Total ₹${Number(totalRupees).toLocaleString()})`,
         order_id: orderId,
 
         handler: async function (response) {
-
           const token = localStorage.getItem("session_token");
-
           const authCfg = {
             withCredentials: true,
             headers: {
@@ -165,12 +218,14 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           };
 
           try {
-            // 1) Verify payment (should also store payment details)
+            // 1) Verify payment
             await axios.post(
               `${API.FINALIZE_TENDER_VERIFY_PAYMENT}/${tenderId}/finalize/payment/verify`,
               {
                 quotationId,
-                finalPrice,
+                finalPricePerMt,
+                totalWeightMt,
+                advancePercent: advancePercent,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
@@ -178,26 +233,45 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
               authCfg
             );
 
-            // 2) ✅ Call your OLD finalize API to keep existing side-effects intact
-            await axios.put(
+            // 2) Keep your existing finalize side-effects
+            const finalizeRes = await axios.put(
               `${API.FINALIZE_TENDER}/${tenderId}`,
-              { quotationId, finalPrice },
+              { quotationId, finalPrice: finalPricePerMt }, // keep as per-MT in your DB if that’s your model
               authCfg
             );
 
-            setConfirmedIdxMap((prev) => ({ ...prev, [tenderId]: idx }));
+            // FIX: handle new backend response structure
+            const email = finalizeRes?.data?.email;
+
+            if (email) {
+              if (email.transporterEmailSent) {
+                toast.success("Email sent to transporter.");
+              } else {
+                toast.warn(
+                  `Tender finalized, but transporter email failed${email.transporterEmailError ? `: ${email.transporterEmailError}` : "."
+                  }`
+                );
+              }
+
+              if (email.rrEmailSent) {
+                toast.success("Email sent to you (with transporter contact).");
+              } else {
+                toast.warn(
+                  `Tender finalized, but RR email failed${email.rrEmailError ? `: ${email.rrEmailError}` : "."
+                  }`
+                );
+              }
+            } else {
+              // fallback (if you still return old emailSent)
+              if (finalizeRes?.data?.emailSent === true) toast.success("Email sent.");
+              if (finalizeRes?.data?.emailSent === false) toast.warn("Email failed.");
+            }
+
             toast.success("Payment successful. Tender finalized!");
-            setPriceInput("");
             setTermsFinalize(null);
             if (fetchTenderHistory) await fetchTenderHistory();
           } catch (e) {
-            const msg =
-              e?.response?.data?.message ||
-              e?.response?.data?.err ||
-              e?.message ||
-              "Payment succeeded but finalization failed.";
-            toast.error(msg);
-            console.error("Finalize after payment error:", e);
+            toast.error(e?.response?.data?.message || "Payment succeeded but finalization failed.");
           } finally {
             setIsFinalizing(false);
           }
@@ -214,8 +288,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       };
 
       const rzp = new window.Razorpay(options);
-
-      rzp.on("payment.failed", function (resp) {
+      rzp.on("payment.failed", (resp) => {
         toast.error(resp?.error?.description || "Payment failed");
         setIsFinalizing(false);
       });
@@ -329,6 +402,26 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     </button>
   );
 
+  // ✅ Build deterministic aliases like "Transporter 1", "Transporter 2" for a given response list
+  const buildAliasResolver = (sortedResponses = []) => {
+    const map = new Map(); // key -> number
+    let counter = 1;
+
+    for (const r of sortedResponses) {
+      const key = asId(r?.transportUser) || r?._id || String(counter);
+      if (!map.has(key)) map.set(key, counter++);
+    }
+
+    return (r) => {
+      const key = asId(r?.transportUser) || r?._id;
+      const n = map.get(key);
+      return `Transporter ${n ?? "—"}`;
+    };
+  };
+
+  // ✅ Toggle (later you can make it config-based)
+  const MASK_TRANSPORTER_NAMES_IN_EXPORT = true;
+
 
   // ---------- EXPORT HELPERS ----------
   const htmlEscape = (s = "") =>
@@ -349,7 +442,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   // ===============================
   //     PRINTABLE HTML (A4)
   // ===============================
-  const buildPrintableHTML = (tender, responses = [], transporterList = []) => {
+  const buildPrintableHTML = (tender, responses = [], transporterList = [], maskNames = true) => {
     const materials = tender.materials || []
 
     // Sort responses by rank then price (same as Excel)
@@ -364,6 +457,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       return (a.price ?? Infinity) - (b.price ?? Infinity)
     })
 
+    const getAliasName = buildAliasResolver(sortedResponses);
+
     const isFinalized = tender.status === "finalized"
     const selectedQuotationId = tender?.selectedQuotation?._id || null
 
@@ -371,7 +466,11 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
     const rows = hasQuotes ? sortedResponses.map((r) => {
 
-      const name = r.name || getNameFromList(r.transportUser, transporterList) || "-"
+      // const name = r.name || getNameFromList(r.transportUser, transporterList) || "-"
+
+      const name = (maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT)
+        ? getAliasName(r)
+        : (r.name || getNameFromList(r.transportUser, transporterList) || "-");
 
       const isThisFinal =
         isFinalized &&
@@ -562,7 +661,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         ? `<table>
               <thead>
                 <tr>
-                  <th>Name / Email</th>
+                  <th>${(maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT) ? "Transporter" : "Name / Email"}</th>
                   <th>Rank</th>
                   <th>Amount (₹)</th>
                   <th>Vehicle No</th>
@@ -603,7 +702,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   //   PRINT WITHOUT POPUPS (hidden IFRAME)
   // =====================================
   const handleExportPDF = (tender, responses = [], transporterList = []) => {
-    const html = buildPrintableHTML(tender, responses, transporterList)
+    const html = buildPrintableHTML(tender, responses, transporterList, true)
 
     // Create a Blob URL for the HTML
     const blob = new Blob([html], { type: "text/html" })
@@ -674,6 +773,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       return (a.price ?? Infinity) - (b.price ?? Infinity)
     })
 
+    const getAliasName = buildAliasResolver(sortedResponses);
+
     const asText = (v) => (v == null ? "" : `\u200C${String(v)}`)
 
     // =========================
@@ -732,11 +833,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     // =========================
     rows.push([])
     rows.push(["==== TRANSPORTERS ====", ""])
-    rows.push(["Name / Email", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
+    // rows.push(["Name / Email", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
+    rows.push(["Transporter", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
 
     if (sortedResponses.length > 0) {
       sortedResponses.forEach((r) => {
-        const name = getTransporterName(r.transportUser) || "-"   // ✅ robust name resolver
+        // const name = getTransporterName(r.transportUser) || "-"   // ✅ robust name resolver
+        const name = (MASK_TRANSPORTER_NAMES_IN_EXPORT ? getAliasName(r) : (getTransporterName(r.transportUser) || "-"));
 
         const isThisFinal =
           isFinalized &&
@@ -1112,6 +1215,9 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                         getTransporterName={getTransporterName}
                         setPreviewFile={setPreviewFile}
                         responseError={responseErrors[tenderId]}
+                        contact={contactByTender[tenderId]}
+                        contactLoading={!!contactLoading[tenderId]}
+                        onRevealContact={() => fetchFinalizedContact(tenderId)}
                       />
                     </div>
                   )}
@@ -1203,7 +1309,11 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
       {termsFinalize && (
         <TenderTermsModal
-          finalPrice={termsFinalize.finalPrice}
+          finalPricePerMt={termsFinalize.finalPricePerMt}
+          totalWeightMt={termsFinalize.totalWeightMt}
+          totalRupees={termsFinalize.totalRupees}
+          advancePercent={termsFinalize.advancePercent}
+          advanceRupees={termsFinalize.advanceRupees}
           isLoading={isFinalizing}
           onCancel={() => {
             if (!isFinalizing) setTermsFinalize(null)

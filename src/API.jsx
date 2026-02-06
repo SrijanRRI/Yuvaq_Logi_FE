@@ -1,8 +1,8 @@
 // Development : 
-// let serverUrl = "http://localhost:5000";
+let serverUrl = "http://localhost:5000";
 
 // Production : 
-let serverUrl = "https://Logiqbe.yuvaq.com" 
+// let serverUrl = "https://logiqbe.yuvaq.com" 
 
 
 
@@ -52,6 +52,7 @@ const API = {
   FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER: `${serverUrl}/tenders/quotations`,
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
+  FETCH_FINALIZED_TRANSPORTER_CONTACT : `${serverUrl}/tenders/transporter-contact`,
 
   //Shipment Details and Shipment Planned and shipment post api : 
   SHIPMENT_DETAILS : `${serverUrl}/shipment-planning`,
