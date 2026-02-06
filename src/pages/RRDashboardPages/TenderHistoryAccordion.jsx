@@ -73,7 +73,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         }
       );
 
-      console.log("transporter contact ", res.data);
+      // console.log("transporter contact ", res.data);
 
       const contact = res?.data?.data || res?.data;
       setContactByTender((p) => ({ ...p, [tenderId]: contact }));
@@ -160,72 +160,97 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     quotationId,
     finalPricePerMt,
     totalWeightMt,
-    advancePaise,
     advanceRupees,
     totalRupees,
     advancePercent,
   }) => {
     setIsFinalizing(true);
 
+    const token = localStorage.getItem("session_token");
+    const authCfg = {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    };
+
+    let handedToRazorpay = false;
+
     try {
-      const ok = await loadRazorpayScript();
-      if (!ok) {
-        toast.error("Razorpay SDK failed to load. Check internet.");
-        setIsFinalizing(false);
+      // 1) Create/Reuse order OR detect alreadyPaid
+      const orderRes = await axios.post(
+        `${API.FINALIZE_TENDER_CREATE_ORDER}/${tenderId}/finalize/payment/order`,
+        { quotationId, finalPricePerMt, totalWeightMt, advancePercentNotice: advancePercent },
+        authCfg
+      );
+
+      const { alreadyPaid, alreadyFinalized, keyId, orderId, amount, currency } = orderRes.data;
+
+      // (optional) if backend returns alreadyFinalized
+      if (alreadyFinalized) {
+        toast.info("Tender already finalized.");
+        setTermsFinalize(null);
+        if (fetchTenderHistory) await fetchTenderHistory();
         return;
       }
 
-      const token = localStorage.getItem("session_token");
+      // 2) If payment already done -> ONLY finalize, no Razorpay popup
+      if (alreadyPaid) {
+        try {
+          const finalizeRes = await axios.put(
+            `${API.FINALIZE_TENDER}/${tenderId}`,
+            { quotationId, finalPrice: finalPricePerMt },
+            authCfg
+          );
 
-      // ✅ create order for advance only (5% in paise)
-      const orderRes = await axios.post(
-        `${API.FINALIZE_TENDER_CREATE_ORDER}/${tenderId}/finalize/payment/order`,
-        {
-          quotationId,
-          finalPricePerMt,     // per MT (for backend validation)
-          totalWeightMt,       // for backend validation
-          advancePercentNotice: advancePercent, // optional (backend can ignore)
-          // do NOT trust client amount; backend should compute again
-        },
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          // your email handling (keep same)
+          const email = finalizeRes?.data?.email;
+          if (email) {
+            if (email.transporterEmailSent) toast.success("Email sent to transporter.");
+            else toast.warn(`Tender finalized, but transporter email failed${email.transporterEmailError ? `: ${email.transporterEmailError}` : "."}`);
+
+            if (email.rrEmailSent) toast.success("Email sent to you (with transporter contact).");
+            else toast.warn(`Tender finalized, but RR email failed${email.rrEmailError ? `: ${email.rrEmailError}` : "."}`);
+          }
+
+          toast.success("Payment already received. Tender finalized!");
+          setTermsFinalize(null);
+          if (fetchTenderHistory) await fetchTenderHistory();
+        } catch (e) {
+          toast.error(e?.response?.data?.message || "Payment done, but finalization failed. Try finalize again.");
         }
-      );
+        return;
+      }
 
-      const { keyId, orderId, amount, currency } = orderRes.data;
-      // amount should be advancePaise computed by backend (authoritative)
+      // 3) Need payment -> load Razorpay only now
+      const ok = await loadRazorpayScript();
+      if (!ok) {
+        toast.error("Razorpay SDK failed to load. Check internet.");
+        return;
+      }
 
       const options = {
         key: keyId,
-        amount, // paise (advance only)
+        amount, // paise (advance only) from backend
         currency,
         name: "YuvaQ",
         description: `Advance Payment (${advancePercent}% of total) • ₹${Number(advanceRupees).toLocaleString()} (Total ₹${Number(totalRupees).toLocaleString()})`,
         order_id: orderId,
 
         handler: async function (response) {
-          const token = localStorage.getItem("session_token");
-          const authCfg = {
-            withCredentials: true,
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          };
+
+          setIsFinalizing(true);
 
           try {
-            // 1) Verify payment
+            // 4) Verify payment
             await axios.post(
               `${API.FINALIZE_TENDER_VERIFY_PAYMENT}/${tenderId}/finalize/payment/verify`,
               {
                 quotationId,
                 finalPricePerMt,
                 totalWeightMt,
-                advancePercent: advancePercent,
+                advancePercent,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
@@ -233,38 +258,20 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
               authCfg
             );
 
-            // 2) Keep your existing finalize side-effects
+            // 5) Finalize tender
             const finalizeRes = await axios.put(
               `${API.FINALIZE_TENDER}/${tenderId}`,
-              { quotationId, finalPrice: finalPricePerMt }, // keep as per-MT in your DB if that’s your model
+              { quotationId, finalPrice: finalPricePerMt },
               authCfg
             );
 
-            // FIX: handle new backend response structure
             const email = finalizeRes?.data?.email;
-
             if (email) {
-              if (email.transporterEmailSent) {
-                toast.success("Email sent to transporter.");
-              } else {
-                toast.warn(
-                  `Tender finalized, but transporter email failed${email.transporterEmailError ? `: ${email.transporterEmailError}` : "."
-                  }`
-                );
-              }
+              if (email.transporterEmailSent) toast.success("Email sent to transporter.");
+              else toast.warn(`Tender finalized, but transporter email failed${email.transporterEmailError ? `: ${email.transporterEmailError}` : "."}`);
 
-              if (email.rrEmailSent) {
-                toast.success("Email sent to you (with transporter contact).");
-              } else {
-                toast.warn(
-                  `Tender finalized, but RR email failed${email.rrEmailError ? `: ${email.rrEmailError}` : "."
-                  }`
-                );
-              }
-            } else {
-              // fallback (if you still return old emailSent)
-              if (finalizeRes?.data?.emailSent === true) toast.success("Email sent.");
-              if (finalizeRes?.data?.emailSent === false) toast.warn("Email failed.");
+              if (email.rrEmailSent) toast.success("Email sent to you (with transporter contact).");
+              else toast.warn(`Tender finalized, but RR email failed${email.rrEmailError ? `: ${email.rrEmailError}` : "."}`);
             }
 
             toast.success("Payment successful. Tender finalized!");
@@ -293,10 +300,13 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         setIsFinalizing(false);
       });
 
+      handedToRazorpay = true;
+
       rzp.open();
     } catch (err) {
-      toast.error("Could not start payment.");
-      setIsFinalizing(false);
+      toast.error(err?.response?.data?.message || "Could not start payment.");
+    } finally {
+      if (!handedToRazorpay) setIsFinalizing(false);
     }
   };
 

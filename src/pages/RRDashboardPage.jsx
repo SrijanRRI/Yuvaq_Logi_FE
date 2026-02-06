@@ -82,7 +82,7 @@ const RRDashboardPage = () => {
       const response = await axios.get(url, { withCredentials: true });
       const data = response?.data?.data || response?.data?.results || [];
 
-      console.log("transporters detail" , data);
+      // console.log("transporters detail" , data);
 
       const meta =
         response?.data?.pagination ||
