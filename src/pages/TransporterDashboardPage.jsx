@@ -147,7 +147,7 @@ const TransporterDashboardPage = () => {
                 ? "bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md"
                 : "bg-white text-slate-700 hover:bg-slate-50"
                 }`}
-            >
+             >
               <Clock className={`w-5 h-5 ${view === "live" ? "text-white" : "text-teal-500"}`} />
               <span className="font-medium">Live Bidding</span>
             </button>

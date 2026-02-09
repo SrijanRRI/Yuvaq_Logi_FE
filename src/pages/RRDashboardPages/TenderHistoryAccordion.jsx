@@ -163,7 +163,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     advanceRupees,
     totalRupees,
     advancePercent,
-  }) => {
+   }) => {
     setIsFinalizing(true);
 
     const token = localStorage.getItem("session_token");

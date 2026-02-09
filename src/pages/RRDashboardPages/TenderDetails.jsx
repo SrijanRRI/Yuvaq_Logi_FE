@@ -26,6 +26,18 @@ const TenderDetails = ({ tender, getTransporterName }) => {
     return `${datePart}, ${timePart}`
   }
 
+  const moneyIN = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? `₹${n.toLocaleString("en-IN")}` : "-";
+  };
+
+  const unitDesc =
+    tender.maxBidUnit === "Per MT"
+      ? "Price per metric ton"
+      : tender.maxBidUnit === "Per Tender"
+        ? "Fixed price for entire tender"
+        : "";
+
   const transporters = tender.transporters || []
 
   const [showAllTransporters, setShowAllTransporters] = useState(false)
@@ -116,6 +128,61 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </div>
         </div>
 
+        {/* NEW: Bid Details (Min/Max/Unit) */}
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-amber-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex items-start justify-between gap-3">
+            <h4 className="text-xs sm:text-sm font-medium text-amber-700 mb-2 flex items-center gap-1.5">
+              <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 flex-shrink-0" />
+              <span className="truncate">Bid Details</span>
+            </h4>
+
+            <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-[11px] sm:text-xs font-semibold text-amber-700 border border-amber-200">
+              Limits
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Min */}
+            <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Minimum Bid</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {moneyIN(tender.minBidAmount)}
+              </div>
+            </div>
+
+            {/* Max */}
+            <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Maximum Bid</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {moneyIN(tender.maxBidAmount)}
+              </div>
+            </div>
+
+            {/* Unit */}
+            <div className="rounded-lg border border-amber-100 bg-white p-3">
+              <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Unit Type</div>
+
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                  {tender.maxBidUnit || "-"}
+                </div>
+
+                {tender.maxBidUnit && (
+                  <span className="shrink-0 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] sm:text-xs font-semibold border border-amber-200">
+                    Unit
+                  </span>
+                )}
+              </div>
+
+              {unitDesc && (
+                <div className="mt-1 text-[11px] sm:text-xs text-slate-500 leading-snug">
+                  {unitDesc}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
             <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
@@ -146,25 +213,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </p>
           </div>
         )}
-
-        {/* NEW: Price Difference rule card (left column) */}
-        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-300">
-          <h4 className="text-xs sm:text-sm font-medium text-emerald-700 mb-2 flex items-center gap-1.5">
-            <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
-            <span className="truncate">Price Difference Rule</span>
-          </h4>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="text-slate-800 text-xs sm:text-sm">
-              Minimum decrement required to beat the current lowest bid (L1).
-              {/* <div className="text-slate-600 mt-1">
-                Example: L1 ₹300, difference ₹20 → next valid quote must be <b>₹280 or lower</b>.
-              </div> */}
-            </div>
-            <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 font-semibold whitespace-nowrap">
-              ₹{tender.priceDifference != null ? Number(tender.priceDifference).toLocaleString() : "-"}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Right Column */}
@@ -269,6 +317,25 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               No materials added
             </p>
           )}
+        </div>
+
+        {/* NEW: Price Difference rule card (left column) */}
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <h4 className="text-xs sm:text-sm font-medium text-emerald-700 mb-2 flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
+            <span className="truncate">Price Difference Rule</span>
+          </h4>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="text-slate-800 text-xs sm:text-sm">
+              Minimum decrement required to beat the current lowest bid (L1).
+              {/* <div className="text-slate-600 mt-1">
+                Example: L1 ₹300, difference ₹20 → next valid quote must be <b>₹280 or lower</b>.
+              </div> */}
+            </div>
+            <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 font-semibold whitespace-nowrap">
+              ₹{tender.priceDifference != null ? Number(tender.priceDifference).toLocaleString() : "-"}
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
