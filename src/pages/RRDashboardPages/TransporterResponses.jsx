@@ -19,7 +19,73 @@ const TransporterResponses = ({
   contact,
   contactLoading,
   onRevealContact,
+  onRequestConfirmation,
+  onProceedToPay,
+  requestingConfirmByQ = {},
 }) => {
+
+  // ---- NEW: Decide which quotation should show the "Request Confirmation" button ----
+  const rankIndex = (r) => {
+    const m = String(r?.rank || "").match(/^L(\d+)$/i);
+    return m ? Number(m[1]) : 999;
+  };
+
+  const orderedResponses = [...(responses || [])].sort((a, b) => {
+    const ra = rankIndex(a);
+    const rb = rankIndex(b);
+    if (ra !== rb) return ra - rb;
+    return (a.price ?? Infinity) - (b.price ?? Infinity); // tie-breaker
+  });
+
+  // Build rejection map (supports backend history if you add it)
+  const rejectReasonByQuotationId = (() => {
+    const map = {};
+
+    // ✅ preferred: tender.selectionHistory = [{ quotation, status, rejectReason, at }]
+    const hist = tender?.selectionHistory || [];
+    for (const h of hist) {
+      if (h?.status === "rejected" && h?.quotation) {
+        map[String(h.quotation)] = h.rejectReason || "Rejected";
+      }
+    }
+
+    // fallback: current selection (only latest)
+    const sel = tender?.selection || {};
+    if (sel.status === "rejected" && sel.quotation) {
+      map[String(sel.quotation)] = sel.rejectReason || "Rejected";
+    }
+
+    return map;
+  })();
+
+  const rejectedSet = new Set(Object.keys(rejectReasonByQuotationId));
+
+  const actionableQuotationId = (() => {
+    const sel = tender?.selection || {};
+    const status = sel.status;
+    const selQ = sel.quotation ? String(sel.quotation) : null;
+
+    // pending/confirmed: actionable is that quotation only
+    if ((status === "pending" || status === "confirmed") && selQ) return selQ;
+
+    // rejected: choose next after rejected (skip already rejected ones)
+    if (status === "rejected" && selQ) {
+      const start = orderedResponses.findIndex((r) => String(r._id) === selQ);
+      for (let i = start + 1; i < orderedResponses.length; i++) {
+        const id = String(orderedResponses[i]._id);
+        if (!rejectedSet.has(id)) return id;
+      }
+      return null; // no next available
+    }
+
+    // no selection yet: pick first non-rejected
+    for (let i = 0; i < orderedResponses.length; i++) {
+      const id = String(orderedResponses[i]._id);
+      if (!rejectedSet.has(id)) return id;
+    }
+    return null;
+  })();
+
   return (
     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
       <h4 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-slate-800 flex items-center gap-2">
@@ -67,6 +133,12 @@ const TransporterResponses = ({
               contact={contact}
               contactLoading={contactLoading}
               onRevealContact={onRevealContact}
+              onRequestConfirmation={onRequestConfirmation}
+              onProceedToPay={onProceedToPay}
+
+              actionableQuotationId={actionableQuotationId}
+              rejectReasonByQuotationId={rejectReasonByQuotationId}
+              requestingConfirm={!!requestingConfirmByQ?.[res._id]}
             />
           ))}
         </div>

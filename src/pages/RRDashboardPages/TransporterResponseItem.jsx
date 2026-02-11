@@ -14,6 +14,12 @@ const TransporterResponseItem = ({
   contact,
   contactLoading,
   onRevealContact,
+  onRequestConfirmation,
+  onProceedToPay,
+
+  actionableQuotationId,
+  rejectReasonByQuotationId,
+  requestingConfirm = false,
 }) => {
   const tenderId = tender._id
   const isFinalizedView =
@@ -36,6 +42,20 @@ const TransporterResponseItem = ({
   const allowedRankIndex = reopenCount
   const currentRank = response.rank
   const canConfirm = rankOrder[allowedRankIndex] === currentRank
+
+  const sel = tender.selection || {};
+  const isPendingSelected = sel.status === "pending" && String(sel.quotation) === String(response._id);
+  const isConfirmedSelected = sel.status === "confirmed" && String(sel.quotation) === String(response._id);
+  const isSomeoneElsePending = sel.status === "pending" && !isPendingSelected;
+  const isRejectedSelected = sel.status === "rejected" && String(sel.quotation) === String(response._id);
+
+  const qid = String(response._id);
+  const rejectReason = rejectReasonByQuotationId?.[qid] || "";
+  const wasRejected = !!rejectReason;
+
+  const isActionable = actionableQuotationId
+    ? String(actionableQuotationId) === qid
+    : false;
 
   const formatPhoneIN = (phone) => {
     if (!phone) return "-";
@@ -305,24 +325,60 @@ const TransporterResponseItem = ({
                 </div>
               </div>
             </div>
-          ) : !isFinalizedView && confirmedIdxMap[tenderId] === undefined && canConfirm ? (
+          ) : !isFinalizedView ? (
             <div className="flex flex-col gap-3 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
-              <p className="text-slate-700 text-sm sm:text-base">Would you like to confirm this quotation?</p>
-              <div className="flex gap-2">
+
+              {/* 1) Rejected quotations: show reason only (NO button ever) */}
+              {wasRejected ? (
+                <div className="text-sm text-red-700">
+                  <div className="font-semibold">Rejected by transporter</div>
+                  <div className="text-xs mt-1 text-red-600">
+                    Reason: {rejectReason || "—"}
+                  </div>
+                </div>
+              ) : isPendingSelected ? (
+                /* 2) Pending for this quotation */
+                <div className="text-sm text-amber-700 font-medium">
+                  Waiting for transporter confirmation…
+                </div>
+              ) : isConfirmedSelected ? (
+                /* 3) Confirmed for this quotation → Proceed to Pay */
                 <button
-                  // onClick={() => onConfirmFinal(tenderId, idx, response.price)}
-                  onClick={() =>
-                    onConfirmFinal({
-                      tender,
-                      quotation: response, // has _id + price + rank etc.
-                    })
-                  }
-                  className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm sm:text-base min-w-0"
+                  onClick={() => onProceedToPay({ tender, quotation: response })}
+                  className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
-                  <Check className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">Confirm ₹{response.price.toLocaleString()}</span>
+                  Proceed to Pay
                 </button>
-              </div>
+              ) : isSomeoneElsePending ? (
+                /* 4) Someone else pending */
+                <div className="text-sm text-slate-500">
+                  Another selection is pending confirmation.
+                </div>
+              ) : isActionable ? (
+                /* 5) Only the actionable quotation gets the Request button */
+                <button
+                  onClick={() => onRequestConfirmation({ tender, quotation: response })}
+                  disabled={requestingConfirm}
+                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base
+                    ${requestingConfirm
+                      ? "bg-indigo-400 cursor-not-allowed text-white"
+                      : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    }`}
+                >
+                  {requestingConfirm && (
+                    <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  )}
+                  {requestingConfirm ? "Requesting..." : `Request Confirmation (${response.rank || "L1"})`}
+                </button>
+              ) : (
+                /* 6) Not actionable → show info */
+                <div className="text-xs sm:text-sm text-slate-500 flex items-start gap-2">
+                  <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span className="break-words">
+                    Not eligible right now. Next request will go rank-wise after current decision.
+                  </span>
+                </div>
+              )}
             </div>
           ) : confirmedIdxMap[tenderId] === undefined && !canConfirm ? (
             <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200 text-slate-500 text-xs sm:text-sm flex items-start gap-2">

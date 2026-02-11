@@ -49,6 +49,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [contactByTender, setContactByTender] = useState({});
   const [contactLoading, setContactLoading] = useState({});
 
+  const [requestingConfirmByQ, setRequestingConfirmByQ] = useState({});
+
   const fetchFinalizedContact = async (tenderId) => {
     if (!tenderId) return;
 
@@ -114,27 +116,98 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       })
   }
 
-  const handleDone = ({ tender, quotation }) => {
-    if (!quotation?._id) {
-      toast.error("Quotation not found. Please refresh and try again.");
+  const authCfg = () => {
+    const token = localStorage.getItem("session_token");
+    return {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    };
+  };
+
+  const requestTransporterConfirm = async (tenderId, quotationId) => {
+    await axios.post(
+      `${API.REQUEST_SELECTION}/${tenderId}/selection/request`,
+      { quotationId },
+      authCfg()
+    );
+  };
+
+  // const handleDone = ({ tender, quotation }) => {
+  //   if (!quotation?._id) {
+  //     toast.error("Quotation not found. Please refresh and try again.");
+  //     return;
+  //   }
+
+  //   const finalPricePerMt = Number(quotation.price); // per MT
+  //   if (!Number.isFinite(finalPricePerMt) || finalPricePerMt <= 0) {
+  //     toast.error("Invalid price per MT.");
+  //     return;
+  //   }
+
+  //   // Prefer tender.totalWeight; fallback to sum of materials
+  //   const totalWeightMt =
+  //     toNumber(tender.totalWeight) ||
+  //     (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
+
+  //   if (!Number.isFinite(totalWeightMt) || totalWeightMt <= 0) {
+  //     toast.error("Total weight (MT) is missing. Please check tender totals.");
+  //     return;
+  //   }
+
+  //   const calc = calcAdvancePayment({
+  //     pricePerMt: finalPricePerMt,
+  //     totalWeightMt,
+  //     percent: 5,
+  //   });
+
+  //   // ✅ Open terms modal with full breakdown
+  //   setTermsFinalize({
+  //     tenderId: tender._id,
+  //     quotationId: quotation._id,
+  //     finalPricePerMt,
+  //     totalWeightMt: calc.totalWeightMt,
+  //     totalRupees: calc.totalRupees,
+  //     advancePercent: calc.percent,
+  //     advanceRupees: calc.advanceRupees,
+  //     advancePaise: calc.advancePaise,
+  //   });
+  // };
+
+  const handleRequestConfirmation = async ({ tender, quotation }) => {
+
+    const tenderId = tender?._id;
+    const qid = quotation?._id;
+
+    if (!tenderId || !qid) {
+      toast.error("Tender/Quotation not found. Please refresh and try again.");
       return;
     }
 
-    const finalPricePerMt = Number(quotation.price); // per MT
-    if (!Number.isFinite(finalPricePerMt) || finalPricePerMt <= 0) {
-      toast.error("Invalid price per MT.");
-      return;
-    }
+    if (requestingConfirmByQ[qid]) return;
 
-    // Prefer tender.totalWeight; fallback to sum of materials
+    try {
+      setRequestingConfirmByQ((p) => ({ ...p, [qid]: true }));
+
+      await requestTransporterConfirm(tender._id, quotation._id);
+
+      toast.success("Request sent to transporter for confirmation.");
+      if (fetchTenderHistory) await fetchTenderHistory();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not request confirmation.");
+    } finally {
+      setRequestingConfirmByQ((p) => ({ ...p, [qid]: false }));
+    }
+  };
+
+  // only opens terms AFTER transporter confirmed
+  const handleProceedToPay = ({ tender, quotation }) => {
+    const finalPricePerMt = Number(quotation.price);
     const totalWeightMt =
       toNumber(tender.totalWeight) ||
       (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
-
-    if (!Number.isFinite(totalWeightMt) || totalWeightMt <= 0) {
-      toast.error("Total weight (MT) is missing. Please check tender totals.");
-      return;
-    }
 
     const calc = calcAdvancePayment({
       pricePerMt: finalPricePerMt,
@@ -142,7 +215,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       percent: 5,
     });
 
-    // ✅ Open terms modal with full breakdown
     setTermsFinalize({
       tenderId: tender._id,
       quotationId: quotation._id,
@@ -163,7 +235,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     advanceRupees,
     totalRupees,
     advancePercent,
-   }) => {
+  }) => {
     setIsFinalizing(true);
 
     const token = localStorage.getItem("session_token");
@@ -1220,7 +1292,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                         priceInput={priceInput}
                         setEditingId={setEditingId}
                         setPriceInput={setPriceInput}
-                        onConfirmFinal={handleDone}
+                        // onConfirmFinal={handleDone}
                         onReopen={handleReopen}
                         getTransporterName={getTransporterName}
                         setPreviewFile={setPreviewFile}
@@ -1228,6 +1300,9 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                         contact={contactByTender[tenderId]}
                         contactLoading={!!contactLoading[tenderId]}
                         onRevealContact={() => fetchFinalizedContact(tenderId)}
+                        onRequestConfirmation={handleRequestConfirmation}
+                        onProceedToPay={handleProceedToPay}
+                        requestingConfirmByQ={requestingConfirmByQ}
                       />
                     </div>
                   )}
