@@ -135,47 +135,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     );
   };
 
-  // const handleDone = ({ tender, quotation }) => {
-  //   if (!quotation?._id) {
-  //     toast.error("Quotation not found. Please refresh and try again.");
-  //     return;
-  //   }
-
-  //   const finalPricePerMt = Number(quotation.price); // per MT
-  //   if (!Number.isFinite(finalPricePerMt) || finalPricePerMt <= 0) {
-  //     toast.error("Invalid price per MT.");
-  //     return;
-  //   }
-
-  //   // Prefer tender.totalWeight; fallback to sum of materials
-  //   const totalWeightMt =
-  //     toNumber(tender.totalWeight) ||
-  //     (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
-
-  //   if (!Number.isFinite(totalWeightMt) || totalWeightMt <= 0) {
-  //     toast.error("Total weight (MT) is missing. Please check tender totals.");
-  //     return;
-  //   }
-
-  //   const calc = calcAdvancePayment({
-  //     pricePerMt: finalPricePerMt,
-  //     totalWeightMt,
-  //     percent: 5,
-  //   });
-
-  //   // ✅ Open terms modal with full breakdown
-  //   setTermsFinalize({
-  //     tenderId: tender._id,
-  //     quotationId: quotation._id,
-  //     finalPricePerMt,
-  //     totalWeightMt: calc.totalWeightMt,
-  //     totalRupees: calc.totalRupees,
-  //     advancePercent: calc.percent,
-  //     advanceRupees: calc.advanceRupees,
-  //     advancePaise: calc.advancePaise,
-  //   });
-  // };
-
   const handleRequestConfirmation = async ({ tender, quotation }) => {
 
     const tenderId = tender?._id;

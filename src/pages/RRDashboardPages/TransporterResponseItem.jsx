@@ -47,10 +47,6 @@ const TransporterResponseItem = ({
   const isSomeoneElsePending = sel.status === "pending" && !isPendingSelected;
   const isRejectedSelected = sel.status === "rejected" && String(sel.quotation) === String(response._id);
 
-  // const qid = String(response._id);
-  // const rejectReason = rejectReasonByQuotationId?.[qid] || "";
-  // const wasRejected = !!rejectReason;
-
   const ineligible = response?.eligible === false;
   const qid = String(response._id);
 

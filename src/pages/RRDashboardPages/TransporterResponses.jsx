@@ -38,27 +38,6 @@ const TransporterResponses = ({
     return (a.price ?? Infinity) - (b.price ?? Infinity); // tie-breaker
   });
 
-  // Build rejection map (supports backend history if you add it)
-  // const rejectReasonByQuotationId = (() => {
-  //   const map = {};
-
-  //   // ✅ preferred: tender.selectionHistory = [{ quotation, status, rejectReason, at }]
-  //   const hist = tender?.selectionHistory || [];
-  //   for (const h of hist) {
-  //     if (h?.status === "rejected" && h?.quotation) {
-  //       map[String(h.quotation)] = h.rejectReason || "Rejected";
-  //     }
-  //   }
-
-  //   // fallback: current selection (only latest)
-  //   const sel = tender?.selection || {};
-  //   if (sel.status === "rejected" && sel.quotation) {
-  //     map[String(sel.quotation)] = sel.rejectReason || "Rejected";
-  //   }
-
-  //   return map;
-  // })();
-
   const selectionMetaByQuotationId = useMemo(() => {
     const map = {};
     const hist = tender?.selectionHistory || [];
