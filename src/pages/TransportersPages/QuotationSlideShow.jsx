@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { FileText, Truck, DollarSign, ChevronLeft, ChevronRight, Award, ExternalLink, Clock } from "lucide-react";
+import { FileText, Truck, ChevronLeft, ChevronRight, Award, ExternalLink, Clock, IndianRupee } from "lucide-react";
 
 const QuotationSlideshow = ({ quotations }) => {
   const [index, setIndex] = useState(0);
@@ -94,7 +94,7 @@ const QuotationSlideshow = ({ quotations }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
             <div className="flex items-center gap-4 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-lg border border-emerald-200 shadow-sm hover:shadow transition-all group">
               <div className="bg-gradient-to-br from-emerald-100 to-teal-200 p-3 rounded-full shadow-inner group-hover:shadow transition-all">
-                <DollarSign className="w-6 h-6 text-emerald-600" />
+                <IndianRupee className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
                 <p className="text-xs text-emerald-600 font-medium mb-1">Price</p>

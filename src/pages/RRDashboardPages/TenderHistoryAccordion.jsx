@@ -408,7 +408,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         return updated
       })
     } catch {
-      toast.error("Failed to reopen quotation")
+      toast.error(e?.response?.data?.message || "Failed to reopen quotation");
     } finally {
       setReopenModalTenderId(null)
     }

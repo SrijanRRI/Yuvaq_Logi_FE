@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import TransporterResponseItem from "./TransporterResponseItem"
 import { Truck, AlertCircle } from "lucide-react"
 
@@ -38,27 +39,62 @@ const TransporterResponses = ({
   });
 
   // Build rejection map (supports backend history if you add it)
-  const rejectReasonByQuotationId = (() => {
-    const map = {};
+  // const rejectReasonByQuotationId = (() => {
+  //   const map = {};
 
-    // ✅ preferred: tender.selectionHistory = [{ quotation, status, rejectReason, at }]
+  //   // ✅ preferred: tender.selectionHistory = [{ quotation, status, rejectReason, at }]
+  //   const hist = tender?.selectionHistory || [];
+  //   for (const h of hist) {
+  //     if (h?.status === "rejected" && h?.quotation) {
+  //       map[String(h.quotation)] = h.rejectReason || "Rejected";
+  //     }
+  //   }
+
+  //   // fallback: current selection (only latest)
+  //   const sel = tender?.selection || {};
+  //   if (sel.status === "rejected" && sel.quotation) {
+  //     map[String(sel.quotation)] = sel.rejectReason || "Rejected";
+  //   }
+
+  //   return map;
+  // })();
+
+  const selectionMetaByQuotationId = useMemo(() => {
+    const map = {};
     const hist = tender?.selectionHistory || [];
-    for (const h of hist) {
-      if (h?.status === "rejected" && h?.quotation) {
-        map[String(h.quotation)] = h.rejectReason || "Rejected";
+
+    // Keep the latest meaningful event per quotation
+    for (const e of hist) {
+      const q = e?.quotation ? String(e.quotation) : null;
+      if (!q) continue;
+
+      if (["reject", "reopen", "remove"].includes(e.action)) {
+        map[q] = {
+          action: e.action,           // reject | reopen | remove
+          reason: e.reason || "",
+          byRole: e.byRole || "system", // rr | transporter | system
+        };
       }
     }
 
-    // fallback: current selection (only latest)
-    const sel = tender?.selection || {};
-    if (sel.status === "rejected" && sel.quotation) {
-      map[String(sel.quotation)] = sel.rejectReason || "Rejected";
+    // fallback (latest selection only)
+    const sel = tender?.selection;
+    if (sel?.status === "rejected" && sel?.quotation) {
+      map[String(sel.quotation)] = {
+        action: "reject",
+        reason: sel.rejectReason || "",
+        byRole: "transporter",
+      };
     }
 
     return map;
-  })();
+  }, [tender]);
 
-  const rejectedSet = new Set(Object.keys(rejectReasonByQuotationId));
+  const rejectedSet = new Set(Object.keys(selectionMetaByQuotationId));
+
+  for (const r of orderedResponses) {
+    if (r?.eligible === false) rejectedSet.add(String(r._id));
+  }
 
   const actionableQuotationId = (() => {
     const sel = tender?.selection || {};
@@ -113,7 +149,7 @@ const TransporterResponses = ({
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-5">
-          {responses.map((res, idx) => (
+          {orderedResponses.map((res, idx) => (
             <TransporterResponseItem
               key={res._id || idx}
               response={res}
@@ -137,7 +173,7 @@ const TransporterResponses = ({
               onProceedToPay={onProceedToPay}
 
               actionableQuotationId={actionableQuotationId}
-              rejectReasonByQuotationId={rejectReasonByQuotationId}
+              selectionMetaByQuotationId={selectionMetaByQuotationId}
               requestingConfirm={!!requestingConfirmByQ?.[res._id]}
             />
           ))}
