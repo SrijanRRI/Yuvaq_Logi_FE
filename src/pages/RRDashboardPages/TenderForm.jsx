@@ -266,95 +266,145 @@ const TenderForm = ({
               </div>
 
               {/* Maximum Bid Amount */}
-              {/* <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-xl border border-amber-200 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
-                  <Scale className="h-5 w-5 text-amber-600" />
-                  Maximum Bid Amount
-                </h2>
-                <div className="relative mb-4">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <span className="text-slate-500 text-lg">₹</span>
+              {/* Bid Amount Range (Min + Max) */}
+<div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-xl border border-amber-200 shadow-sm">
+  <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
+    <Scale className="h-5 w-5 text-amber-600" />
+    Bid Amount Range
+  </h2>
+
+  {/* Min + Max grid (responsive) */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Minimum Bid Amount */}
+    <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
+      <label className="block text-sm font-medium text-slate-700 mb-2">
+        Minimum Bid Amount
+      </label>
+
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <span className="text-slate-500 text-lg">₹</span>
+        </div>
+
+        <input
+          type="number"
+          name="minBidAmount"
+          step="1"
+          min="0"
+          value={form.minBidAmount || ""}
+          onChange={handleChange}
+          placeholder="Enter minimum bid"
+          className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-lg font-medium transition-all duration-200"
+          required
+        />
+      </div>
+    </div>
+
+    {/* Maximum Bid Amount */}
+    <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
+      <label className="block text-sm font-medium text-slate-700 mb-2">
+        Maximum Bid Amount
+      </label>
+
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <span className="text-slate-500 text-lg">₹</span>
+        </div>
+
+        <input
+          type="number"
+          name="maxBidAmount"
+          step="1"
+          min="1"
+          value={form.maxBidAmount || ""}
+          onChange={handleChange}
+          placeholder="Enter maximum bid"
+          className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-lg font-medium transition-all duration-200"
+          required
+        />
+      </div>
+    </div>
+  </div>
+
+  {/* Unit Dropdown */}
+  <div className="relative mt-5">
+    <label className="block text-sm font-medium text-slate-700 mb-2">
+      Unit Type
+    </label>
+
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
+              <Scale className="h-4 w-4 text-amber-600" />
+            </div>
+            <div>
+              {selectedOption ? (
+                <div>
+                  <div className="font-medium text-slate-800">
+                    {selectedOption.label}
                   </div>
-                  <input
-                    type="number"
-                    name="maxBidAmount"
-                    step="1"
-                    min="1"
-                    value={form.maxBidAmount || ""}
-                    onChange={handleChange}
-                    placeholder="Enter maximum allowed bid amount"
-                    className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-lg font-medium transition-all duration-200"
-                    required
-                  />
-                </div>
-
-                
-                <div className="relative">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Unit Type</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
-                            <Scale className="h-4 w-4 text-amber-600" />
-                          </div>
-                          <div>
-                            {selectedOption ? (
-                              <div>
-                                <div className="font-medium text-slate-800">{selectedOption.label}</div>
-                                <div className="text-xs text-slate-500">{selectedOption.description}</div>
-                              </div>
-                            ) : (
-                              <div className="text-slate-500">Select Unit Type</div>
-                            )}
-                          </div>
-                        </div>
-                        <ChevronDown
-                          className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
-                            isDropdownOpen ? "transform rotate-180" : ""
-                          }`}
-                        />
-                      </div>
-                    </button>
-
-                   
-                    {isDropdownOpen && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
-                        {unitOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => handleUnitSelect(option.value)}
-                            className="w-full px-4 py-3 text-left hover:bg-amber-50 transition-colors duration-150 border-b border-amber-100 last:border-b-0 focus:outline-none focus:bg-amber-50"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
-                                  <Scale className="h-4 w-4 text-amber-600" />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-slate-800">{option.label}</div>
-                                  <div className="text-xs text-slate-500">{option.description}</div>
-                                </div>
-                              </div>
-                              {form.maxBidUnit === option.value && <Check className="h-4 w-4 text-amber-600" />}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  <div className="text-xs text-slate-500">
+                    {selectedOption.description}
                   </div>
                 </div>
+              ) : (
+                <div className="text-slate-500">Select Unit Type</div>
+              )}
+            </div>
+          </div>
 
-                <div className="mt-3 flex items-start gap-2 text-amber-700">
-                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs">Enter the maximum amount transporters can quote for this tender.</p>
+          <ChevronDown
+            className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
+              isDropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </button>
+
+      {isDropdownOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
+          {unitOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleUnitSelect(option.value)}
+              className="w-full px-4 py-3 text-left hover:bg-amber-50 transition-colors duration-150 border-b border-amber-100 last:border-b-0 focus:outline-none focus:bg-amber-50"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
+                    <Scale className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-slate-800">{option.label}</div>
+                    <div className="text-xs text-slate-500">{option.description}</div>
+                  </div>
                 </div>
-              </div> */}
+                {form.maxBidUnit === option.value && (
+                  <Check className="h-4 w-4 text-amber-600" />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* Info line */}
+  <div className="mt-3 flex items-start gap-2 text-amber-700">
+    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+    <p className="text-xs">
+      Transporters must quote within the allowed range based on the selected unit.
+    </p>
+  </div>
+</div>
 
               {/* Project Details */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -501,10 +551,10 @@ const TenderForm = ({
                       <div className="mt-1.5 flex items-center gap-2 text-xs">
                         <span
                           className={`h-2 w-2 rounded-full ${pinStatus === "loading"
-                              ? "bg-slate-400"
-                              : pinStatus === "success"
-                                ? "bg-emerald-500"
-                                : "bg-amber-500"
+                            ? "bg-slate-400"
+                            : pinStatus === "success"
+                              ? "bg-emerald-500"
+                              : "bg-amber-500"
                             }`}
                         />
                         <span

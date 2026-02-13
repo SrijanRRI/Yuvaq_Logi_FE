@@ -8,12 +8,16 @@ const GetMyPosition = ({ tenderId }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const [l1, setL1] = useState(null);
+  const [minToBeatL1, setMinToBeatL1] = useState(null);
+
   const fetchPosition = useCallback(async () => {
     if (!tenderId) return
     try {
       setLoading(true)
       const res = await axios.get(`${API.GET_MY_POSITION}/${tenderId}`, { withCredentials: true })
       setPosition(res.data?.position || null)
+      setL1(res.data?.l1 || null);
       setError(null)
     } catch (err) {
       const errMessage = err?.response?.data?.message || "Something went wrong. Please try again."
@@ -53,13 +57,18 @@ const GetMyPosition = ({ tenderId }) => {
         </div>
       ) : null}
 
+      {l1?.price != null && (
+        <div className="text-sm text-slate-700 font-semibold">
+          Current L1 Price: <span className="font-bold">₹{Number(l1.price).toLocaleString("en-IN")}</span>
+        </div>
+      )}
+
       {/* Manual Reload Button */}
       <button
         onClick={fetchPosition}
         disabled={loading}
-        className={`p-2 rounded-full border border-violet-300 bg-white hover:bg-violet-100 shadow-sm transition duration-200 ${
-          loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
+        className={`p-2 rounded-full border border-violet-300 bg-white hover:bg-violet-100 shadow-sm transition duration-200 ${loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         title="Refresh Rank"
       >
         <RotateCcw className="w-4 h-4 text-violet-600" />

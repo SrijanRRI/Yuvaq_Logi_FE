@@ -41,6 +41,7 @@ const initialFormState = {
   remarks: "",
   transporter: [],
   isManualTotals: false,
+  minBidAmount: "",
   maxBidAmount: "",
   maxBidUnit: "",
   priceDifference: "",
@@ -161,7 +162,11 @@ const RRDashboardPage = () => {
       setForm((p) => ({ ...p, priceDifference: v === "" ? "" : String(v) }));
     } else if (name === "weight" || name === "quantity") {
       setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
-    } else {
+    } else if (name === "maxBidAmount" || name === "minBidAmount") {
+      const rounded = value ? parseInt(value, 10) : "";
+      setForm((p) => ({ ...p, [name]: rounded === "" ? "" : String(rounded) }));
+    }
+    else {
       setForm((p) => ({ ...p, [name]: value }));
     }
   };
@@ -249,6 +254,37 @@ const RRDashboardPage = () => {
       return;
     }
 
+    if (!form.maxBidUnit) {
+      toast.error("Please select Unit Type (Per MT / Per Tender).");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    const minAmt = form.minBidAmount === "" ? null : parseInt(form.minBidAmount, 10);
+    const maxAmt = form.maxBidAmount === "" ? null : parseInt(form.maxBidAmount, 10);
+
+    if (minAmt === null || Number.isNaN(minAmt)) {
+      toast.error("Please enter Min Bid Amount.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    if (maxAmt === null || Number.isNaN(maxAmt)) {
+      toast.error("Please enter Max Bid Amount.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    if (minAmt > maxAmt) {
+      toast.error("Min Bid Amount cannot be greater than Max Bid Amount.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
     const payload = {
       ...(sourceShipmentId && { shipmentPlanId: sourceShipmentId }),
       deliveryWindow: {
@@ -269,6 +305,7 @@ const RRDashboardPage = () => {
       totalQuantity: form.quantity ? Number.parseInt(form.quantity) : null,
       remarks: form.remarks,
       transporters: form.transporter,
+      minBidAmount: form.minBidAmount === "" ? null : parseInt(form.minBidAmount, 10),
       maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
       maxBidUnit: form.maxBidUnit || null,
       priceDifference: form.priceDifference === "" ? null : parseInt(form.priceDifference, 10),
@@ -279,6 +316,8 @@ const RRDashboardPage = () => {
         quantity: Number.parseInt(m.quantity),
       })),
     };
+
+    // console.log("response of tender form ", payload);
 
     try {
       const createRes = await axios.post(`${API.CREATE_TENDER}`, payload, {

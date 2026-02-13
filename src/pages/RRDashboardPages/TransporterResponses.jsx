@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import TransporterResponseItem from "./TransporterResponseItem"
 import { Truck, AlertCircle } from "lucide-react"
 
@@ -19,7 +20,87 @@ const TransporterResponses = ({
   contact,
   contactLoading,
   onRevealContact,
+  onRequestConfirmation,
+  onProceedToPay,
+  requestingConfirmByQ = {},
 }) => {
+
+  // ---- NEW: Decide which quotation should show the "Request Confirmation" button ----
+  const rankIndex = (r) => {
+    const m = String(r?.rank || "").match(/^L(\d+)$/i);
+    return m ? Number(m[1]) : 999;
+  };
+
+  const orderedResponses = [...(responses || [])].sort((a, b) => {
+    const ra = rankIndex(a);
+    const rb = rankIndex(b);
+    if (ra !== rb) return ra - rb;
+    return (a.price ?? Infinity) - (b.price ?? Infinity); // tie-breaker
+  });
+
+  const selectionMetaByQuotationId = useMemo(() => {
+    const map = {};
+    const hist = tender?.selectionHistory || [];
+
+    // Keep the latest meaningful event per quotation
+    for (const e of hist) {
+      const q = e?.quotation ? String(e.quotation) : null;
+      if (!q) continue;
+
+      if (["reject", "reopen", "remove"].includes(e.action)) {
+        map[q] = {
+          action: e.action,           // reject | reopen | remove
+          reason: e.reason || "",
+          byRole: e.byRole || "system", // rr | transporter | system
+        };
+      }
+    }
+
+    // fallback (latest selection only)
+    const sel = tender?.selection;
+    if (sel?.status === "rejected" && sel?.quotation) {
+      map[String(sel.quotation)] = {
+        action: "reject",
+        reason: sel.rejectReason || "",
+        byRole: "transporter",
+      };
+    }
+
+    return map;
+  }, [tender]);
+
+  const rejectedSet = new Set(Object.keys(selectionMetaByQuotationId));
+
+  for (const r of orderedResponses) {
+    if (r?.eligible === false) rejectedSet.add(String(r._id));
+  }
+
+  const actionableQuotationId = (() => {
+    const sel = tender?.selection || {};
+    const status = sel.status;
+    const selQ = sel.quotation ? String(sel.quotation) : null;
+
+    // pending/confirmed: actionable is that quotation only
+    if ((status === "pending" || status === "confirmed") && selQ) return selQ;
+
+    // rejected: choose next after rejected (skip already rejected ones)
+    if (status === "rejected" && selQ) {
+      const start = orderedResponses.findIndex((r) => String(r._id) === selQ);
+      for (let i = start + 1; i < orderedResponses.length; i++) {
+        const id = String(orderedResponses[i]._id);
+        if (!rejectedSet.has(id)) return id;
+      }
+      return null; // no next available
+    }
+
+    // no selection yet: pick first non-rejected
+    for (let i = 0; i < orderedResponses.length; i++) {
+      const id = String(orderedResponses[i]._id);
+      if (!rejectedSet.has(id)) return id;
+    }
+    return null;
+  })();
+
   return (
     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
       <h4 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-slate-800 flex items-center gap-2">
@@ -47,7 +128,7 @@ const TransporterResponses = ({
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-5">
-          {responses.map((res, idx) => (
+          {orderedResponses.map((res, idx) => (
             <TransporterResponseItem
               key={res._id || idx}
               response={res}
@@ -67,6 +148,12 @@ const TransporterResponses = ({
               contact={contact}
               contactLoading={contactLoading}
               onRevealContact={onRevealContact}
+              onRequestConfirmation={onRequestConfirmation}
+              onProceedToPay={onProceedToPay}
+
+              actionableQuotationId={actionableQuotationId}
+              selectionMetaByQuotationId={selectionMetaByQuotationId}
+              requestingConfirmByQ={requestingConfirmByQ}
             />
           ))}
         </div>

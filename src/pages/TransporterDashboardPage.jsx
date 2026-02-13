@@ -24,6 +24,7 @@ import LiveBidding from "./TransportersPages/LiveBidding"
 import HistoryView from "./TransportersPages/HistoryView"
 import Logo from "/assets/LogiYatraIcon1.png"
 import Navbar from "../components/Navbar"
+import PendingConfirmationsView from "./TransportersPages/PendingConfirmationsView"
 
 const TransporterDashboardPage = () => {
   const [view, setView] = useState("all")
@@ -38,6 +39,9 @@ const TransporterDashboardPage = () => {
   const userInfo = useSelector((state) => state.User?.userInfo)
   const userName = userInfo?.name || "Transporter"
 
+  const [pendingReqs, setPendingReqs] = useState([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+
   const fetchLiveBidingTenders = async () => {
     setLoading(true)
     setError(null)
@@ -47,7 +51,7 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
-      console.log("live bidding",res.data.data);
+      console.log("live bidding", res.data.data);
     } catch (err) {
       console.error("Error fetching live biding tenders:", err)
       setError("Failed to load tenders.")
@@ -91,8 +95,35 @@ const TransporterDashboardPage = () => {
     }
   }
 
+  const authCfg = () => {
+    const token = localStorage.getItem("session_token");
+    return {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    };
+  };
+
+  const fetchPendingConfirmations = async () => {
+    setPendingLoading(true);
+    try {
+      const res = await axios.get(API.PENDING_CONFIRMATIONS_TRANSPORTER, authCfg());
+      setPendingReqs(res?.data?.data || res?.data || []);
+
+      console.log("responses" , res.data);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not load pending confirmations.");
+      setPendingReqs([]);
+    } finally {
+      setPendingLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUpcomingTenders()
+    fetchPendingConfirmations();
   }, [])
 
   const handleLogout = async () => {
@@ -112,6 +143,7 @@ const TransporterDashboardPage = () => {
     setView(newView)
     if (newView === "live") fetchLiveBidingTenders()
     else if (newView === "history") fetchHistory()
+    else if (newView === "confirmations") fetchPendingConfirmations();
     else if (newView === "all") fetchUpcomingTenders()
   }
 
@@ -161,13 +193,35 @@ const TransporterDashboardPage = () => {
               <History className={`w-5 h-5 ${view === "history" ? "text-white" : "text-teal-500"}`} />
               <span className="font-medium">History</span>
             </button>
+            <button
+              onClick={() => handleViewChange("confirmations")}
+              className={`flex-1 px-5 py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 relative ${view === "confirmations"
+                ? "bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md"
+                : "bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              <Bell className={`w-5 h-5 ${view === "confirmations" ? "text-white" : "text-teal-500"}`} />
+              <span className="font-medium">Confirmations</span>
+
+              {pendingReqs?.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {pendingReqs.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
 
 
         {/* Content Area */}
-        {loading ? (
+        {view === "confirmations" ? (
+          <PendingConfirmationsView
+            items={pendingReqs}
+            loading={pendingLoading}
+            onRefresh={fetchPendingConfirmations}
+          />
+        ) : loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-16 h-16 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mb-4"></div>
             <p className="text-slate-600 font-medium">Loading data...</p>
@@ -212,7 +266,7 @@ const TransporterDashboardPage = () => {
         ) : view === "live" ? (
           <LiveBidding tenders={tenders} />
         ) : view === "history" ? (
-          <HistoryView tenders={tenders} />
+          <HistoryView tenders={tenders} onRefresh={fetchHistory} />
         ) : null}
       </div>
 

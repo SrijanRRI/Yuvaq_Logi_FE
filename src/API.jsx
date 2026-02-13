@@ -25,15 +25,15 @@ const API = {
   SIGNIN: `${serverUrl}/api/auth/signin`,
   FORGOTPASSWORD: `${serverUrl}/api/auth/forgotpassword`,
   RESETPASSWORD: `${serverUrl}/api/auth/resetpassword/`,
-  LOGOUT_USER : `${serverUrl}/api/auth/logout`,
-  GETALLUSER : `${serverUrl}/api/auth/user/all`,
+  LOGOUT_USER: `${serverUrl}/api/auth/logout`,
+  GETALLUSER: `${serverUrl}/api/auth/user/all`,
 
- //Admin API :
- ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
- APPROVEREQUEST: `${serverUrl}/admin/users/`,
- REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
- GETALLTENDER : `${serverUrl}/admin/all-tender`,
- GET_ALL_REPORTS : `${serverUrl}/admin/tenders/ranked-best-report`,
+  //Admin API :
+  ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
+  APPROVEREQUEST: `${serverUrl}/admin/users/`,
+  REJECTREQUEST: `${serverUrl}/admin/reject-user/`,
+  GETALLTENDER: `${serverUrl}/admin/all-tender`,
+  GET_ALL_REPORTS: `${serverUrl}/admin/tenders/ranked-best-report`,
 
   //Transport User
   FETCH_ALL_TRANSPORTER: `${serverUrl}/admin/transport-users`,
@@ -41,34 +41,39 @@ const API = {
   LIVE_BIDING_TENDERS: `${serverUrl}/tenders/assigned`,
   GET_QUOTATION_SLIDESHOW: `${serverUrl}/quotation/my-tender-quotes`,
   GET_MY_POSITION: `${serverUrl}/tenders/my-position`,
-  
+
   SUBMIT_QUOTATION: `${serverUrl}/quotation/submit`,
   SEE_QUOTATIONS: `${serverUrl}/tender/quotations`,
   HISTORY_FOR_QUOTATION_QUOTE: `${serverUrl}/tenders/quotation/history`,
-  
+
   //RR USer Tenders
   CREATE_TENDER: `${serverUrl}/tenders/create-tender`,
   FETCH_ALL_TENDER_CREATED_BY_RRUSER: `${serverUrl}/tenders/my-tenders`,
   FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER: `${serverUrl}/tenders/quotations`,
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
-  FETCH_FINALIZED_TRANSPORTER_CONTACT : `${serverUrl}/tenders/transporter-contact`,
+  FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
+
+  // Selection Confirmation 
+  REQUEST_SELECTION: `${serverUrl}/tenders`,
+  RESPOND_SELECTION: `${serverUrl}/tenders`,
+  PENDING_CONFIRMATIONS_TRANSPORTER: `${serverUrl}/tenders/transporter/pending-confirmations`,
 
   //Shipment Details and Shipment Planned and shipment post api : 
-  SHIPMENT_DETAILS : `${serverUrl}/shipment-planning`,
+  SHIPMENT_DETAILS: `${serverUrl}/shipment-planning`,
 
   //Whatsapp notification api : 
-  WHATSAPP_NOTIFICATION : `${serverUrl}/tenders`,
+  WHATSAPP_NOTIFICATION: `${serverUrl}/tenders`,
 
   //API for session checking 
 
-  CHECK_ME : `${serverUrl}/api/auth/me`,
+  CHECK_ME: `${serverUrl}/api/auth/me`,
 
-FINALIZE_TENDER_CREATE_ORDER: `${serverUrl}/tenders`, // use with /:id/finalize/payment/order
+  FINALIZE_TENDER_CREATE_ORDER: `${serverUrl}/tenders`, // use with /:id/finalize/payment/order
 
-FINALIZE_TENDER_VERIFY_PAYMENT: `${serverUrl}/tenders`, // use with /:id/finalize/payment/verify
+  FINALIZE_TENDER_VERIFY_PAYMENT: `${serverUrl}/tenders`, // use with /:id/finalize/payment/verify
 
-}; 
+};
 
 // export const switchServerUrl = (mode) => {
 //   localStorage.setItem("serverUrl", mode);

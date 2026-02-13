@@ -1,4 +1,4 @@
-import { CheckCircle, FileText, RefreshCcw, Check, Award, Truck, Info } from "lucide-react"
+import { CheckCircle, FileText, RefreshCcw, Check, Award, Truck, Info, Loader2 } from "lucide-react"
 
 const TransporterResponseItem = ({
   response,
@@ -14,6 +14,11 @@ const TransporterResponseItem = ({
   contact,
   contactLoading,
   onRevealContact,
+  onRequestConfirmation,
+  actionableQuotationId,
+  selectionMetaByQuotationId,
+  onProceedToPay,
+  requestingConfirmByQ,
 }) => {
   const tenderId = tender._id
   const isFinalizedView =
@@ -36,6 +41,46 @@ const TransporterResponseItem = ({
   const allowedRankIndex = reopenCount
   const currentRank = response.rank
   const canConfirm = rankOrder[allowedRankIndex] === currentRank
+
+  const sel = tender.selection || {};
+  const isPendingSelected = sel.status === "pending" && String(sel.quotation) === String(response._id);
+  const isConfirmedSelected = sel.status === "confirmed" && String(sel.quotation) === String(response._id);
+  const isSomeoneElsePending = sel.status === "pending" && !isPendingSelected;
+  const isRejectedSelected = sel.status === "rejected" && String(sel.quotation) === String(response._id);
+
+  const ineligible = response?.eligible === false;
+  const qid = String(response._id);
+
+  const isRequestingConfirm = !!requestingConfirmByQ?.[qid];
+
+  // meta from history
+  const meta = selectionMetaByQuotationId?.[qid];
+
+  // decide action + reason
+  const historyAction =
+    ineligible ? "remove" : meta?.action || null;
+
+  const historyByRole =
+    ineligible ? (response?.removedBy || "rr") : (meta?.byRole || "system");
+
+  const historyReason =
+    ineligible ? (response?.removedReason || "") : (meta?.reason || "");
+
+  const hasHistoryMessage =
+    !!historyAction && (historyAction === "reject" || historyAction === "reopen" || historyAction === "remove");
+
+  // label
+  const historyTitle =
+    historyAction === "reject"
+      ? "Rejected by transporter"
+      : "Removed (Tender Reopened)";
+
+  const historySubtitle =
+    historyReason ? `Reason: ${historyReason}` : "Reason: —";
+
+  const isActionable = actionableQuotationId
+    ? String(actionableQuotationId) === qid
+    : false;
 
   const formatPhoneIN = (phone) => {
     if (!phone) return "-";
@@ -273,67 +318,108 @@ const TransporterResponseItem = ({
 
         {/* Action Buttons */}
         <div className="mt-4 sm:mt-5">
-          {(isSelected || confirmedIdxMap[tenderId] === idx) && isFinalizedView ? (
-            <div className="flex flex-col gap-4 bg-emerald-50 p-3 sm:p-4 rounded-lg border border-emerald-200">
-              <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm sm:text-base">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="break-words">
-                  Final Deal Price: ₹{tender.finalPrice?.toLocaleString() || response.price.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  onClick={() => onReopen(tenderId)}
-                  disabled={!canReopenQuotation}
-                  className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${canReopenQuotation
-                    ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
-                    : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
-                    }`}
-                >
-                  <RefreshCcw className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">
-                    {canReopenQuotation
-                      ? "Reopen Quotation"
-                      : !isBeforeOrOnClosingDay()
-                        ? "Closed"
-                        : "Max Reopens Reached"}
+          {isFinalizedView ? (
+            // ✅ FINALIZED VIEW
+            isSelected ? (
+              // Selected finalized card (keep your existing block)
+              <div className="flex flex-col gap-4 bg-emerald-50 p-3 sm:p-4 rounded-lg border border-emerald-200">
+                <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm sm:text-base">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="break-words">
+                    Final Deal Price: ₹{tender.finalPrice?.toLocaleString() || response.price.toLocaleString()}
                   </span>
-                </button>
-                <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-600 bg-white px-3 py-2 rounded-lg border border-slate-200">
-                  <RefreshCcw className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Reopen Attempts: {reopenCount} / 2</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    onClick={() => onReopen(tenderId)}
+                    disabled={!canReopenQuotation}
+                    className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${canReopenQuotation
+                      ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
+                      : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
+                      }`}
+                  >
+                    <RefreshCcw className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">
+                      {canReopenQuotation
+                        ? "Reopen Quotation"
+                        : !isBeforeOrOnClosingDay()
+                          ? "Closed"
+                          : "Max Reopens Reached"}
+                    </span>
+                  </button>
+
+                  <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-600 bg-white px-3 py-2 rounded-lg border border-slate-200">
+                    <RefreshCcw className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Reopen Attempts: {reopenCount} / 2</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : !isFinalizedView && confirmedIdxMap[tenderId] === undefined && canConfirm ? (
-            <div className="flex flex-col gap-3 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
-              <p className="text-slate-700 text-sm sm:text-base">Would you like to confirm this quotation?</p>
-              <div className="flex gap-2">
-                <button
-                  // onClick={() => onConfirmFinal(tenderId, idx, response.price)}
-                  onClick={() =>
-                    onConfirmFinal({
-                      tender,
-                      quotation: response, // has _id + price + rank etc.
-                    })
-                  }
-                  className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm sm:text-base min-w-0"
-                >
-                  <Check className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">Confirm ₹{response.price.toLocaleString()}</span>
-                </button>
+            ) : hasHistoryMessage ? (
+              // ✅ Non-selected but has reopen/reject history → show reason
+              <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
+                <div className="text-sm font-semibold text-red-700">{historyTitle}</div>
+                <div className="text-xs mt-1 text-red-600">{historySubtitle}</div>
               </div>
+            ) : (
+              // ✅ Non-selected & no history
+              <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200 text-slate-500 text-xs sm:text-sm flex items-start gap-2">
+                <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span className="break-words">Not selected in finalization.</span>
+              </div>
+            )
+          ) : (
+            // ✅ NOT FINALIZED VIEW (keep your existing workflow)
+            <div className="flex flex-col gap-3 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
+              {hasHistoryMessage ? (
+                <div className="text-sm text-red-700">
+                  <div className="font-semibold">{historyTitle}</div>
+                  <div className="text-xs mt-1 text-red-600">{historySubtitle}</div>
+                </div>
+              ) : isPendingSelected ? (
+                <div className="text-sm text-amber-700 font-medium">
+                  Waiting for transporter confirmation…
+                </div>
+              ) : isConfirmedSelected ? (
+                <button
+                  onClick={() => onProceedToPay({ tender, quotation: response })}
+                  className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  Proceed to Pay
+                </button>
+              ) : isSomeoneElsePending ? (
+                <div className="text-sm text-slate-500">
+                  Another selection is pending confirmation.
+                </div>
+              ) : isActionable ? (
+                <button
+                  onClick={() => onRequestConfirmation({ tender, quotation: response })}
+                  disabled={isRequestingConfirm}
+                  className={`px-3 sm:px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base
+                    ${isRequestingConfirm
+                      ? "bg-indigo-400 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-700"
+                    }`}
+                 >
+                  {isRequestingConfirm ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Requesting...
+                    </>
+                  ) : (
+                    <>Request Confirmation ({response.rank || "L1"})</>
+                  )}
+                </button>
+              ) : (
+                <div className="text-xs sm:text-sm text-slate-500 flex items-start gap-2">
+                  <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span className="break-words">
+                    Not eligible right now. Next request will go rank-wise after current decision.
+                  </span>
+                </div>
+              )}
             </div>
-          ) : confirmedIdxMap[tenderId] === undefined && !canConfirm ? (
-            <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200 text-slate-500 text-xs sm:text-sm flex items-start gap-2">
-              <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span className="break-words">
-                {currentRank
-                  ? `This ${currentRank} quotation can be selected after reopening`
-                  : "This quotation cannot be selected at this time"}
-              </span>
-            </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

@@ -5,6 +5,38 @@ const HistoryView = ({ tenders }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [expandedQuotationsId, setExpandedQuotationsId] = useState(null);
 
+  const authCfg = () => {
+    const token = localStorage.getItem("session_token");
+    return {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    };
+  };
+
+  const respond = async (tenderId ,action) => {
+    try {
+      let reason = "";
+      if (action === "reject") {
+        reason = window.prompt("Reason to reject?") || "";
+        if (!reason.trim()) return toast.error("Reject reason required.");
+      }
+
+      await axios.post(
+        `${API.RESPOND_SELECTION}/${tenderId}/selection/respond`,
+        { action, reason },
+        authCfg()
+      );
+
+      toast.success(action === "accept" ? "You accepted the selection." : "You rejected the selection.");
+      onRefresh?.();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not submit response.");
+    }
+  };
+
   const formatDate = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleDateString("en-IN", {
@@ -47,6 +79,9 @@ const HistoryView = ({ tenders }) => {
           const quotations = item.quotations || [];
           const finalizedStatus = tender.finalizedStatus;
 
+          const sel = tender.selection || {};
+          const isPendingForMe = sel.status === "pending" && String(sel.quotation) === String(q._id);
+
           return (
             <div
               key={tender._id || idx}
@@ -55,8 +90,8 @@ const HistoryView = ({ tenders }) => {
               {/* Header */}
               <div
                 className={`bg-gradient-to-r ${finalizedStatus
-                    ? "from-emerald-600 via-emerald-700 to-teal-700"
-                    : "from-indigo-600 via-indigo-700 to-violet-700"
+                  ? "from-emerald-600 via-emerald-700 to-teal-700"
+                  : "from-indigo-600 via-indigo-700 to-violet-700"
                   } text-white p-6`}
               >
                 <div className="flex flex-wrap justify-between items-start gap-3">
@@ -126,14 +161,15 @@ const HistoryView = ({ tenders }) => {
                         <div className="grid gap-4">
                           {quotations.map((q, qidx) => {
                             const isFinalized = q._id === tender.selectedQuotation;
+                            const isPendingForMe =
+                              sel.status === "pending" && String(sel.quotation) === String(q._id);
                             return (
-                              <div 
-                                key={q._id || qidx} 
-                                className={`rounded-lg border ${
-                                  isFinalized 
-                                    ? "border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 ring-2 ring-emerald-500 ring-offset-2" 
-                                    : "border-gray-200 bg-gray-50"
-                                } p-5 transition-all duration-300 hover:shadow-md group relative`}
+                              <div
+                                key={q._id || qidx}
+                                className={`rounded-lg border ${isFinalized
+                                  ? "border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 ring-2 ring-emerald-500 ring-offset-2"
+                                  : "border-gray-200 bg-gray-50"
+                                  } p-5 transition-all duration-300 hover:shadow-md group relative`}
                               >
                                 {isFinalized && (
                                   <div className="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full p-1 shadow-lg">
@@ -141,9 +177,8 @@ const HistoryView = ({ tenders }) => {
                                   </div>
                                 )}
                                 <div className="flex justify-between items-center mb-4">
-                                  <div className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-                                    isFinalized ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
-                                  }`}>
+                                  <div className={`text-sm font-medium px-3 py-1.5 rounded-full ${isFinalized ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
+                                    }`}>
                                     Quotation #{qidx + 1} {isFinalized && "• Selected"}
                                   </div>
                                   <div className="text-xs text-gray-500">{formatDateTime(q.createdAt)}</div>
@@ -161,6 +196,24 @@ const HistoryView = ({ tenders }) => {
                                       <CheckCircle className="w-4 h-4" />
                                       This quotation has been selected and finalized
                                     </p>
+                                  </div>
+                                )}
+
+                                {/* PUT YOUR ACCEPT/REJECT BLOCK RIGHT HERE */}
+                                {isPendingForMe && (
+                                  <div className="mt-4 flex gap-2">
+                                    <button
+                                      onClick={() => respond(tender._id, "accept")}
+                                      className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                                    >
+                                      Accept Selection
+                                    </button>
+                                    <button
+                                      onClick={() => respond(tender._id, "reject")}
+                                      className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 text-sm"
+                                    >
+                                      Reject
+                                    </button>
                                   </div>
                                 )}
 

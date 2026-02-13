@@ -14,13 +14,17 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {}
 
-    if (!price || price <= 0) {
-      newErrors.price = "Please enter a valid price"
+    const n = Number(price);
+    const min = tender?.minBidAmount != null ? Number(tender.minBidAmount) : null;
+    const max = tender?.maxBidAmount != null ? Number(tender.maxBidAmount) : null;
+
+    if (!Number.isFinite(n) || n <= 0) {
+      newErrors.price = "Please enter a valid price";
+    } else if (min != null && n < min) {
+      newErrors.price = `Bid must be at least ₹${min.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""}`;
+    } else if (max != null && n > max) {
+      newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""}`;
     }
-    //  else if (tender.maxBidAmount && Number(price) > Number(tender.maxBidAmount)) {
-    //   newErrors.price = `Bid cannot exceed ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} ${tender.maxBidUnit ? ` (${tender.maxBidUnit})` : ""}`
-    //   toast.error(`आपकी बोली राशि ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} से अधिक नहीं हो सकती। कृपया ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} या उससे कम दर्ज करें।`)
-    // }
 
 
     if (!vehicleNo) {
@@ -28,6 +32,10 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     }
 
     setErrors(newErrors)
+
+    // optional: toast for range errors
+    if (newErrors.price) toast.error(newErrors.price);
+
     return Object.keys(newErrors).length === 0
   }
 
@@ -168,15 +176,19 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
             </label>
             <input
               type="number"
+              inputMode="numeric"
               value={price}
+              min={tender?.minBidAmount ?? undefined}
+              max={tender?.maxBidAmount ?? undefined}
+              step="1"
               onChange={(e) => {
                 setPrice(e.target.value)
                 if (errors.price) setErrors({ ...errors, price: null })
               }}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
                 }`}
-              // placeholder={`Enter your bid (Max ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")} ${tender.maxBidUnit ? ` (${tender.maxBidUnit})` : "( - )"} ) `}
-              placeholder={`Enter your bid amount `}
+              placeholder={`Enter your bid (Min ${tender?.minBidAmount ? `₹${Number(tender.minBidAmount).toLocaleString("en-IN")}` : "-"} • Max ${tender?.maxBidAmount ? `₹${Number(tender.maxBidAmount).toLocaleString("en-IN")}` : "-"})`}
+            // placeholder={`Enter your bid amount `}
             />
             {errors.price && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
