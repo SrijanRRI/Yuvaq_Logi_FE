@@ -153,7 +153,7 @@ const TransporterResponses = ({
 
               actionableQuotationId={actionableQuotationId}
               selectionMetaByQuotationId={selectionMetaByQuotationId}
-              requestingConfirm={!!requestingConfirmByQ?.[res._id]}
+              requestingConfirmByQ={requestingConfirmByQ}
             />
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { CheckCircle, FileText, RefreshCcw, Check, Award, Truck, Info } from "lucide-react"
+import { CheckCircle, FileText, RefreshCcw, Check, Award, Truck, Info, Loader2 } from "lucide-react"
 
 const TransporterResponseItem = ({
   response,
@@ -18,6 +18,7 @@ const TransporterResponseItem = ({
   actionableQuotationId,
   selectionMetaByQuotationId,
   onProceedToPay,
+  requestingConfirmByQ,
 }) => {
   const tenderId = tender._id
   const isFinalizedView =
@@ -49,6 +50,8 @@ const TransporterResponseItem = ({
 
   const ineligible = response?.eligible === false;
   const qid = String(response._id);
+
+  const isRequestingConfirm = !!requestingConfirmByQ?.[qid];
 
   // meta from history
   const meta = selectionMetaByQuotationId?.[qid];
@@ -332,8 +335,8 @@ const TransporterResponseItem = ({
                     onClick={() => onReopen(tenderId)}
                     disabled={!canReopenQuotation}
                     className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${canReopenQuotation
-                        ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
-                        : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
+                      ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
+                      : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
                       }`}
                   >
                     <RefreshCcw className="h-4 w-4 flex-shrink-0" />
@@ -391,9 +394,21 @@ const TransporterResponseItem = ({
               ) : isActionable ? (
                 <button
                   onClick={() => onRequestConfirmation({ tender, quotation: response })}
-                  className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 text-sm sm:text-base"
-                >
-                  Request Confirmation ({response.rank || "L1"})
+                  disabled={isRequestingConfirm}
+                  className={`px-3 sm:px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base
+                    ${isRequestingConfirm
+                      ? "bg-indigo-400 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-700"
+                    }`}
+                 >
+                  {isRequestingConfirm ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Requesting...
+                    </>
+                  ) : (
+                    <>Request Confirmation ({response.rank || "L1"})</>
+                  )}
                 </button>
               ) : (
                 <div className="text-xs sm:text-sm text-slate-500 flex items-start gap-2">

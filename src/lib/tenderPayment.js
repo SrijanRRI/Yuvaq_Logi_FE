@@ -1,14 +1,9 @@
-// src/lib/tenderPayment.ts
-export function toNumber(v: any): number {
+export function toNumber(v) {
   const n = typeof v === "string" ? parseFloat(v) : Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
-export function calcAdvancePayment(params: {
-  pricePerMt: number;      // ₹ per MT
-  totalWeightMt: number;   // MT
-  percent?: number;        // default 5%
-}) {
+export function calcAdvancePayment(params) {
   const percent = params.percent ?? 5;
 
   // Work in paise to avoid float issues

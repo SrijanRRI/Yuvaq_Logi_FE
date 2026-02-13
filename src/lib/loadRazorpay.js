@@ -1,15 +1,10 @@
-declare global {
-  interface Window {
-    Razorpay?: any; // you can tighten this later with proper types
-  }
-}
 
-export function loadRazorpayScript(): Promise<boolean> {
+export function loadRazorpayScript() {
   return new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
 
     // prevent adding duplicate script tags if called multiple times quickly
-    const existing = document.querySelector<HTMLScriptElement>(
+    const existing = document.querySelector(
       'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
     );
     if (existing) {
