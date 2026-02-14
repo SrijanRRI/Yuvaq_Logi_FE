@@ -19,6 +19,11 @@ const TransporterResponseItem = ({
   selectionMetaByQuotationId,
   onProceedToPay,
   requestingConfirmByQ,
+  phase,
+  displayRank,
+  effectiveRank,
+  aliasNo,
+  isEffectiveQuote,
 }) => {
   const tenderId = tender._id
   const isFinalizedView =
@@ -143,13 +148,45 @@ const TransporterResponseItem = ({
               <Truck className={`h-4 w-4 sm:h-5 sm:w-5 ${isSelected ? "text-emerald-600" : "text-indigo-600"}`} />
             </div>
             <div className="min-w-0 flex-1">
-              <h5 className="font-semibold text-slate-800 text-sm sm:text-base truncate">
-                {/* {getTransporterName(response.transportUser)} */}
+              {/* <h5 className="font-semibold text-slate-800 text-sm sm:text-base truncate">
+                 {getTransporterName(response.transportUser)} 
                 Transporter {idx + 1}
               </h5>
-              {/* Improved Rank Badge */}
+              
               <div className="mt-1 inline-flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full bg-gradient-to-r from-emerald-200 to-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm shadow-md">
                 Rank: {response.rank}
+              </div> */}
+
+              <h5 className="font-semibold text-slate-800 text-sm sm:text-base truncate">
+                Transporter {aliasNo ?? idx + 1}
+              </h5>
+
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                {/* Display rank */}
+                <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full bg-gradient-to-r from-emerald-200 to-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm shadow-md">
+                  Rank: {displayRank || response.rank}
+                </div>
+
+                {/* Post-bid tag */}
+                {phase === "postBid" && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full border border-indigo-200 bg-white text-indigo-700 font-semibold">
+                    POST BID
+                  </span>
+                )}
+
+                {/* Overall (effective) rank */}
+                {!!effectiveRank && effectiveRank !== (displayRank || response.rank) && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full border border-slate-200 bg-slate-50 text-slate-700">
+                    Overall: {effectiveRank}
+                  </span>
+                )}
+
+                {/* Effective indicator */}
+                {isEffectiveQuote && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
+                    Effective
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -400,7 +437,7 @@ const TransporterResponseItem = ({
                       ? "bg-indigo-400 cursor-not-allowed"
                       : "bg-indigo-600 hover:bg-indigo-700"
                     }`}
-                 >
+                >
                   {isRequestingConfirm ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />

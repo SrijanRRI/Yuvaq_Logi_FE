@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { toast } from "react-toastify"
 import axios from "axios"
-import { Clock, Search, Filter, X, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { Clock, Search, Filter, X, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react"
 import API from "../../API"
 
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
@@ -50,6 +50,16 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [contactLoading, setContactLoading] = useState({});
 
   const [requestingConfirmByQ, setRequestingConfirmByQ] = useState({});
+
+  const [startingPostBid, setStartingPostBid] = useState({});
+  const [postBidDraftByTender, setPostBidDraftByTender] = useState({});
+
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000); // refresh every sec
+    return () => clearInterval(id);
+  }, []);
 
   const fetchFinalizedContact = async (tenderId) => {
     if (!tenderId) return;
@@ -133,6 +143,48 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       { quotationId },
       authCfg()
     );
+  };
+
+  const startPostBid = async (tender, { rangeMin, rangeMax } = {}) => {
+    const tenderId = tender?._id;
+    if (!tenderId) return;
+
+    const st = String(tender?.postBid?.status || "").toLowerCase();
+    if (st === "active") {
+      toast.info("Post bid is already live for this tender.");
+      return;
+    }
+
+    const min = Number(rangeMin);
+    const max = Number(rangeMax);
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      toast.error("Please enter valid numbers for range.");
+      return;
+    }
+    if (min > max) {
+      toast.error("Range Min must be <= Range Max.");
+      return;
+    }
+
+    try {
+      setStartingPostBid((p) => ({ ...p, [tenderId]: true }));
+
+      await axios.post(
+        `${API.START_POST_BID}/${tenderId}/post-bid/start`,
+        { durationMinutes: 10, rangeMin: min, rangeMax: max },
+        authCfg()
+      );
+
+      toast.success("Post bid started (10 minutes). Transporters can now improve their quotes.");
+      setPostBidDraftByTender((p) => ({ ...p, [tenderId]: { ...p[tenderId], open: false } }));
+
+      if (fetchTenderHistory) await fetchTenderHistory();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not start post bid.");
+    } finally {
+      setStartingPostBid((p) => ({ ...p, [tenderId]: false }));
+    }
   };
 
   const handleRequestConfirmation = async ({ tender, quotation }) => {
@@ -1223,7 +1275,18 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
             {filteredTenders.map((tender, idx) => {
               const tenderId = tender._id
               const selectedQuotationId = tender.selectedQuotation?._id
-              const responses = allResponses[tenderId] || []
+              // const responses = allResponses[tenderId] || []
+              const raw = allResponses[tenderId];
+              const responses =
+                Array.isArray(raw)
+                  ? raw
+                  : Array.isArray(raw?.data)
+                    ? raw.data
+                    : Array.isArray(raw?.combinedForUI)
+                      ? raw.combinedForUI
+                      : Array.isArray(raw?.normal)
+                        ? raw.normal
+                        : [];
 
               return (
                 <div
@@ -1238,9 +1301,218 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                     onExportExcel={() => exportWithResponses(tender, 'excel')}
                   />
 
+
                   {openIdx === idx && (
                     <div className="border-t border-slate-200 p-5">
                       <TenderDetails tender={tender} getTransporterName={getTransporterName} />
+
+                      {/* ✅ POST BID BAR — paste exactly here */}
+                      {(() => {
+
+                        const POST_BID_START_WINDOW_MS = 10 * 60 * 1000;
+
+                        const postBidStatus = String(tender?.postBid?.status || "").toLowerCase();
+                        const endsAt = tender?.postBid?.endsAt ? new Date(tender.postBid.endsAt) : null;
+
+                        const biddingEndMs = tender?.biddingEnd ? new Date(tender.biddingEnd).getTime() : null;
+                        const startWindowEndMs = biddingEndMs ? biddingEndMs + POST_BID_START_WINDOW_MS : null;
+
+                        const withinStartWindow =
+                          biddingEndMs != null &&
+                          nowMs >= biddingEndMs &&
+                          nowMs <= startWindowEndMs;
+
+                        const windowExpired =
+                          biddingEndMs != null &&
+                          nowMs > startWindowEndMs;
+
+                        // You can show helpful text
+                        let startHint = "";
+                        if (!biddingEndMs) startHint = "";
+                        else if (nowMs < biddingEndMs) startHint = "Available after bidding ends";
+                        else if (withinStartWindow) {
+                          const left = startWindowEndMs - nowMs;
+                          const mm = Math.floor(left / 60000);
+                          const ss = Math.floor((left % 60000) / 1000);
+                          startHint = `Start window: ${mm}:${String(ss).padStart(2, "0")} left`;
+                        } else if (windowExpired) {
+                          startHint = "Start window expired (10 mins over)";
+                        }
+
+                        // final allow/disable
+                        const canStart =
+                          tender.status !== "finalized" &&
+                          postBidStatus !== "active" &&
+                          postBidStatus !== "ended" &&
+                          withinStartWindow;
+
+                        const ui = postBidDraftByTender[tenderId] || {
+                          open: false,
+                          mode: "fixed", // "fixed" | "range"
+                          fixed: "",
+                          rangeMin: "",
+                          rangeMax: "",
+                        };
+
+                        const setUI = (patch) =>
+                          setPostBidDraftByTender((p) => ({
+                            ...p,
+                            [tenderId]: { ...ui, ...patch },
+                          }));
+
+                        const submit = () => {
+                          if (ui.mode === "fixed") {
+                            const amt = Number(ui.fixed);
+                            if (!Number.isFinite(amt) || amt <= 0) {
+                              toast.error("Enter a valid amount.");
+                              return;
+                            }
+                            // ✅ fixed amount => rangeMin=rangeMax
+                            startPostBid(tender, { rangeMin: amt, rangeMax: amt });
+                          } else {
+                            const min = Number(ui.rangeMin);
+                            const max = Number(ui.rangeMax);
+                            startPostBid(tender, { rangeMin: min, rangeMax: max });
+                          }
+                        };
+
+                        return (
+                          <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  onClick={() => {
+                                    if (windowExpired) return;
+                                    setUI({ open: !ui.open });
+                                  }}
+                                  disabled={!canStart || !!startingPostBid[tenderId] || loading}
+                                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition inline-flex items-center gap-2
+                                    ${canStart
+                                      ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                                      : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70"
+                                    }`}
+                                  title={windowExpired ? "10-minute start window is over" : "Start post-bid"}
+                                 >
+                                  {startingPostBid[tenderId] && (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  )}
+
+                                  {startingPostBid[tenderId]
+                                    ? "Starting..."
+                                    : postBidStatus === "active"
+                                      ? "Post Bid Live"
+                                      : postBidStatus === "ended"
+                                        ? "Post Bid Ended"
+                                        : windowExpired
+                                          ? "Post Bid Window Over"
+                                          : "Start Post Bid"}
+                                </button>
+
+                                {postBidStatus && (
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full border
+                                  ${postBidStatus === "active"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-slate-100 text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    {postBidStatus.toUpperCase()}
+                                    {postBidStatus === "active" && endsAt ? ` • ends ${endsAt.toLocaleString("en-IN")}` : ""}
+                                  </span>
+                                )}
+
+                                {biddingEndMs && (
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full border
+                                  ${windowExpired
+                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        : withinStartWindow
+                                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                          : "bg-slate-100 text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    {startHint}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-xs text-slate-600">
+                                Post bid opens a <b>10-minute</b> improvement window.
+                              </div>
+                            </div>
+
+                            {/* ✅ Inputs (only when open + canStart) */}
+                            {ui.open && canStart && (
+                              <div className="bg-white border border-slate-200 rounded-lg p-3">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <button
+                                    onClick={() => setUI({ mode: "fixed" })}
+                                    className={`text-xs px-2.5 py-1 rounded-full border ${ui.mode === "fixed"
+                                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    Fixed Amount
+                                  </button>
+                                  <button
+                                    onClick={() => setUI({ mode: "range" })}
+                                    className={`text-xs px-2.5 py-1 rounded-full border ${ui.mode === "range"
+                                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    Range
+                                  </button>
+                                </div>
+
+                                {ui.mode === "fixed" ? (
+                                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <input
+                                      type="number"
+                                      value={ui.fixed}
+                                      onChange={(e) => setUI({ fixed: e.target.value })}
+                                      placeholder="Enter amount (₹)"
+                                      className="w-full sm:w-64 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <button
+                                      onClick={submit}
+                                      disabled={!!startingPostBid[tenderId] || loading}
+                                      className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2"
+                                     >
+                                      {startingPostBid[tenderId] && <Loader2 className="h-4 w-4 animate-spin" />}
+                                      {startingPostBid[tenderId] ? "Starting..." : "Start (10 min)"}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <input
+                                      type="number"
+                                      value={ui.rangeMin}
+                                      onChange={(e) => setUI({ rangeMin: e.target.value })}
+                                      placeholder="Range Min (₹)"
+                                      className="w-full sm:w-48 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <input
+                                      type="number"
+                                      value={ui.rangeMax}
+                                      onChange={(e) => setUI({ rangeMax: e.target.value })}
+                                      placeholder="Range Max (₹)"
+                                      className="w-full sm:w-48 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <button
+                                      onClick={submit}
+                                      disabled={!!startingPostBid[tenderId] || loading}
+                                      className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                      Start (10 min)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <TransporterResponses
                         responses={responses}
