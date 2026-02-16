@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import TransporterResponseItem from "./TransporterResponseItem";
 import { Truck, AlertCircle } from "lucide-react";
 
@@ -39,13 +39,11 @@ const TransporterResponses = ({
   };
 
   const isPostBidQuote = (q) => {
-    // 1) Prefer explicit backend flags if you have them
     if (q?.isPostBid != null) return !!q.isPostBid;
 
     const src = String(q?.source || q?.phase || q?.bidType || "").toLowerCase();
     if (["post_bid", "postbid", "post-bid", "improved"].includes(src)) return true;
 
-    // 2) Fallback inference: created AFTER biddingEnd (and within postBid end if available)
     const t = q?.createdAt ? new Date(q.createdAt).getTime() : null;
     if (!t || biddingEndMs == null) return false;
 
@@ -53,12 +51,6 @@ const TransporterResponses = ({
     return t >= biddingEndMs;
   };
 
-  /**
-   * Build:
-   * - normalDisplay: show as L1/L2/L3...
-   * - postBidDisplay: show as PB1/PB2...
-   * - effective quote per transporter: postBid wins over normal for actions/ranking
-   */
   const {
     normalDisplay,
     postBidDisplay,
@@ -75,7 +67,6 @@ const TransporterResponses = ({
     const normalSorted = normalAll.slice().sort(sortByPriceThenTime);
     const postSorted = postAll.slice().sort(sortByPriceThenTime);
 
-    // Display ranks (separate)
     const normalDisplayLocal = normalSorted.map((q, i) => ({
       ...q,
       __phase: "normal",
@@ -88,7 +79,6 @@ const TransporterResponses = ({
       __displayRank: `PB${i + 1}`,
     }));
 
-    // Best per transporter inside each group
     const bestByTransporter = (arr) => {
       const m = new Map();
       for (const q of arr) {
@@ -101,9 +91,9 @@ const TransporterResponses = ({
           continue;
         }
 
-        // choose lower price; tie -> later createdAt
         const p0 = prev?.price ?? Infinity;
         const p1 = q?.price ?? Infinity;
+
         if (p1 < p0) m.set(tid, q);
         else if (p1 === p0) {
           const t0 = prev?.createdAt ? new Date(prev.createdAt).getTime() : 0;
@@ -117,7 +107,6 @@ const TransporterResponses = ({
     const bestNormal = bestByTransporter(normalSorted);
     const bestPost = bestByTransporter(postSorted);
 
-    // Effective = postBid if exists else normal
     const transporterIds = new Set([...bestNormal.keys(), ...bestPost.keys()]);
     const effective = [];
     const effectiveIdByT = new Map();
@@ -132,9 +121,8 @@ const TransporterResponses = ({
 
     effective.sort(sortByPriceThenTime);
 
-    // Effective rank (overall) per transporter
     const effRankByT = new Map();
-    const aliasByT = new Map(); // stable transporter numbering based on effective order
+    const aliasByT = new Map();
 
     effective.forEach((q, i) => {
       const tid = String(asId(q?.transportUser) || q?.transportUser || "");
@@ -146,20 +134,13 @@ const TransporterResponses = ({
     return {
       normalDisplay: normalDisplayLocal,
       postBidDisplay: postBidDisplayLocal,
-      effectiveOrdered: effective, // used for actionable logic
+      effectiveOrdered: effective,
       aliasByTransporter: aliasByT,
       effectiveRankByTransporter: effRankByT,
       effectiveIdByTransporter: effectiveIdByT,
     };
   }, [responses, biddingEndMs, postBidEndMs]);
 
-  // ---- actionable logic should run on EFFECTIVE list ----
-  const rankIndex = (r) => {
-    const m = String(r?.rank || "").match(/^L(\d+)$/i);
-    return m ? Number(m[1]) : 999;
-  };
-
-  // selection meta stays same (based on tender history)
   const selectionMetaByQuotationId = useMemo(() => {
     const map = {};
     const hist = tender?.selectionHistory || [];
@@ -189,7 +170,6 @@ const TransporterResponses = ({
     return map;
   }, [tender]);
 
-  // rejected set (still based on history ids + eligible=false)
   const rejectedSet = new Set(Object.keys(selectionMetaByQuotationId));
   for (const r of effectiveOrdered) {
     if (r?.eligible === false) rejectedSet.add(String(r._id));
@@ -222,6 +202,45 @@ const TransporterResponses = ({
 
   const allCount = (normalDisplay?.length || 0) + (postBidDisplay?.length || 0);
 
+  // ===============================
+  //     ✅ ACCORDION STATE
+  // ===============================
+  const [openResponseId, setOpenResponseId] = useState(null);
+
+  const allVisibleIds = useMemo(() => {
+    const ids = new Set();
+    for (const r of postBidDisplay) if (r?._id) ids.add(String(r._id));
+    for (const r of normalDisplay) if (r?._id) ids.add(String(r._id));
+    return ids;
+  }, [postBidDisplay, normalDisplay]);
+
+  useEffect(() => {
+    const preferred =
+      (selectedQuotationId && String(selectedQuotationId)) ||
+      (actionableQuotationId && String(actionableQuotationId)) ||
+      (postBidDisplay?.[0]?._id && String(postBidDisplay[0]._id)) ||
+      (normalDisplay?.[0]?._id && String(normalDisplay[0]._id)) ||
+      null;
+
+    setOpenResponseId((prev) => {
+      if (prev && allVisibleIds.has(prev)) return prev;
+      return preferred;
+    });
+  }, [
+    tender?._id,
+    selectedQuotationId,
+    actionableQuotationId,
+    postBidDisplay?.length,
+    normalDisplay?.length,
+    postBidDisplay?.[0]?._id,
+    normalDisplay?.[0]?._id,
+    allVisibleIds,
+  ]);
+
+  const toggleOpen = (qid) => {
+    setOpenResponseId((prev) => (prev === qid ? null : qid));
+  };
+
   return (
     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
       <h4 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-slate-800 flex items-center gap-2">
@@ -243,7 +262,9 @@ const TransporterResponses = ({
             <Truck className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300" />
           </div>
           <p className="text-slate-700 font-medium mb-2 text-sm sm:text-base">No responses received yet</p>
-          <p className="text-slate-500 text-xs sm:text-sm">Transporters haven't submitted any quotations for this tender</p>
+          <p className="text-slate-500 text-xs sm:text-sm">
+            Transporters haven't submitted any quotations for this tender
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -253,22 +274,21 @@ const TransporterResponses = ({
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div>
                   <div className="text-sm font-semibold text-indigo-800">Post Bid Responses</div>
-                  <div className="text-xs text-indigo-700/80">
-                    Improved quotes submitted during post-bid window
-                  </div>
+                  <div className="text-xs text-indigo-700/80">Improved quotes submitted during post-bid window</div>
                 </div>
                 <span className="text-xs px-2 py-0.5 rounded-full border border-indigo-200 bg-white text-indigo-700">
                   {postBidDisplay.length} response(s)
                 </span>
               </div>
 
-              <div className="space-y-4 sm:space-y-5">
+              <div className="space-y-3">
                 {postBidDisplay.map((res, idx) => {
                   const tid = String(asId(res?.transportUser) || res?.transportUser || "");
                   const aliasNo = aliasByTransporter.get(tid);
                   const effectiveRank = effectiveRankByTransporter.get(tid);
                   const effId = effectiveIdByTransporter.get(tid);
                   const isEffectiveQuote = effId && String(res._id) === String(effId);
+                  const qid = String(res._id || `post-${idx}`);
 
                   return (
                     <TransporterResponseItem
@@ -295,12 +315,14 @@ const TransporterResponses = ({
                       actionableQuotationId={actionableQuotationId}
                       selectionMetaByQuotationId={selectionMetaByQuotationId}
                       requestingConfirmByQ={requestingConfirmByQ}
-                      // ✅ NEW DISPLAY PROPS
                       phase="postBid"
                       displayRank={res.__displayRank}
                       effectiveRank={effectiveRank}
                       aliasNo={aliasNo}
                       isEffectiveQuote={isEffectiveQuote}
+                      // ✅ ACCORDION PROPS
+                      isOpen={openResponseId === qid}
+                      onToggle={() => toggleOpen(qid)}
                     />
                   );
                 })}
@@ -320,13 +342,14 @@ const TransporterResponses = ({
               </span>
             </div>
 
-            <div className="space-y-4 sm:space-y-5">
+            <div className="space-y-3">
               {normalDisplay.map((res, idx) => {
                 const tid = String(asId(res?.transportUser) || res?.transportUser || "");
                 const aliasNo = aliasByTransporter.get(tid);
                 const effectiveRank = effectiveRankByTransporter.get(tid);
                 const effId = effectiveIdByTransporter.get(tid);
                 const isEffectiveQuote = effId && String(res._id) === String(effId);
+                const qid = String(res._id || `normal-${idx}`);
 
                 return (
                   <TransporterResponseItem
@@ -353,12 +376,14 @@ const TransporterResponses = ({
                     actionableQuotationId={actionableQuotationId}
                     selectionMetaByQuotationId={selectionMetaByQuotationId}
                     requestingConfirmByQ={requestingConfirmByQ}
-                    // ✅ NEW DISPLAY PROPS
                     phase="normal"
                     displayRank={res.__displayRank}
                     effectiveRank={effectiveRank}
                     aliasNo={aliasNo}
                     isEffectiveQuote={isEffectiveQuote}
+                    // ✅ ACCORDION PROPS
+                    isOpen={openResponseId === qid}
+                    onToggle={() => toggleOpen(qid)}
                   />
                 );
               })}
