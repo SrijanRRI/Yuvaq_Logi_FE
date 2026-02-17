@@ -821,11 +821,12 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                         }
 
                         // final allow/disable
-                        const canStart =
+                        const canStartBase =
                           tender.status !== "finalized" &&
                           postBidStatus !== "active" &&
                           postBidStatus !== "ended" &&
                           withinStartWindow;
+
 
                         const ui = postBidDraftByTender[tenderId] || {
                           open: false,
@@ -834,6 +835,21 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                           rangeMin: "",
                           rangeMax: "",
                         };
+
+                        const fixedVal = Number(ui.fixed);
+                        const rangeMinVal = Number(ui.rangeMin);
+                        const rangeMaxVal = Number(ui.rangeMax);
+
+                        const inputsValid =
+                          ui.mode === "fixed"
+                            ? Number.isFinite(fixedVal) && fixedVal > 0
+                            : Number.isFinite(rangeMinVal) &&
+                            Number.isFinite(rangeMaxVal) &&
+                            rangeMinVal > 0 &&
+                            rangeMaxVal > 0 &&
+                            rangeMinVal <= rangeMaxVal;
+
+                        const canStartFinal = canStartBase && inputsValid;
 
                         const setUI = (patch) =>
                           setPostBidDraftByTender((p) => ({
@@ -866,9 +882,9 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                                     if (windowExpired) return;
                                     setUI({ open: !ui.open });
                                   }}
-                                  disabled={!canStart || !!startingPostBid[tenderId] || loading}
+                                  disabled={!canStartBase || !!startingPostBid[tenderId] || loading}
                                   className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition inline-flex items-center gap-2
-                                    ${canStart
+                                    ${canStartBase
                                       ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
                                       : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70"
                                     }`}
@@ -923,7 +939,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                             </div>
 
                             {/* ✅ Inputs (only when open + canStart) */}
-                            {ui.open && canStart && (
+                            {ui.open && canStartBase && (
                               <div className="bg-white border border-slate-200 rounded-lg p-3">
                                 <div className="flex items-center gap-3 mb-2">
                                   <button
@@ -957,7 +973,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                                     />
                                     <button
                                       onClick={submit}
-                                      disabled={!!startingPostBid[tenderId] || loading}
+                                      disabled={!canStartFinal || !!startingPostBid[tenderId] || loading}
                                       className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2"
                                     >
                                       {startingPostBid[tenderId] && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -982,7 +998,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                                     />
                                     <button
                                       onClick={submit}
-                                      disabled={!!startingPostBid[tenderId] || loading}
+                                      disabled={!canStartFinal || !!startingPostBid[tenderId] || loading}
                                       className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
                                     >
                                       Start (10 min)

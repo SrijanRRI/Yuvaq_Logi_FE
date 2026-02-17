@@ -73,7 +73,7 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
-      // console.log("upcoming bidding",res.data.data);
+      console.log("upcoming bidding",res.data.data);
     } catch (err) {
       console.error("Error fetching all tenders:", err)
       setError("Failed to load tenders.")
@@ -130,6 +130,7 @@ const TransporterDashboardPage = () => {
     try {
       const res = await axios.get(API.ACTIVE_POST_BID_TENDERS, authCfg());
       setPostBidTenders(res?.data?.data || []);
+      console.log("start" , res.data);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Could not load post-bid tenders.");
       setPostBidTenders([]);
