@@ -98,6 +98,11 @@ const LiveBidding = () => {
           const now = Date.now();
           const isExpired = now >= biddingEndTime;
 
+          const line1 = tender?.dispatchLocation?.trim();
+          const line2 = tender?.address?.trim();
+          const pin = tender?.pincode?.toString()?.trim();
+          const hasAny = !!(line1 || line2 || pin);
+
           return (
             <div
               key={tender._id || idx}
@@ -144,9 +149,39 @@ const LiveBidding = () => {
                     <div className="bg-emerald-100 p-2.5 rounded-full">
                       <MapPin className="w-5 h-5 text-emerald-600" />
                     </div>
-                    <div>
+
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs text-slate-500 mb-1">Location</p>
-                      <p className="font-medium text-slate-800">{tender.dispatchLocation || "No location"} , {tender.pincode} </p>
+
+                      {!hasAny ? (
+                        <p className="text-sm text-slate-500">No location specified</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {/* Location name */}
+                          {line1 && (
+                            <p className="font-semibold text-slate-800 truncate" title={line1}>
+                              {line1}
+                            </p>
+                          )}
+
+                          {/* Address line */}
+                          {line2 && (
+                            <p className="text-sm text-slate-600 leading-snug break-words">
+                              {line2}
+                            </p>
+                          )}
+
+                          {/* Pincode pill */}
+                          {pin && (
+                            <div className="pt-1">
+                              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                PIN: {pin}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 

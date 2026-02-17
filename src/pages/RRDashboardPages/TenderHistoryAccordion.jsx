@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { toast } from "react-toastify"
 import axios from "axios"
-import { Clock, Search, Filter, X, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { Clock, Search, Filter, X, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react"
 import API from "../../API"
 
 import { ConfirmationModal } from "../../modals/ConfirmationModal"
@@ -13,6 +13,7 @@ import ReopenConfirmationModal from "../../modals/ReopenConfirmationModal"
 import { TenderTermsModal } from "../../modals/TenderTermsModal"
 import { loadRazorpayScript } from "../../lib/loadRazorpay"
 import { calcAdvancePayment, toNumber } from "../../lib/tenderPayment";
+import { exportTenderExcel, exportTenderPDF, normalizeResponses } from "../../lib/tenderExport"
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -50,6 +51,16 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [contactLoading, setContactLoading] = useState({});
 
   const [requestingConfirmByQ, setRequestingConfirmByQ] = useState({});
+
+  const [startingPostBid, setStartingPostBid] = useState({});
+  const [postBidDraftByTender, setPostBidDraftByTender] = useState({});
+
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000); // refresh every sec
+    return () => clearInterval(id);
+  }, []);
 
   const fetchFinalizedContact = async (tenderId) => {
     if (!tenderId) return;
@@ -133,6 +144,48 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       { quotationId },
       authCfg()
     );
+  };
+
+  const startPostBid = async (tender, { rangeMin, rangeMax } = {}) => {
+    const tenderId = tender?._id;
+    if (!tenderId) return;
+
+    const st = String(tender?.postBid?.status || "").toLowerCase();
+    if (st === "active") {
+      toast.info("Post bid is already live for this tender.");
+      return;
+    }
+
+    const min = Number(rangeMin);
+    const max = Number(rangeMax);
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      toast.error("Please enter valid numbers for range.");
+      return;
+    }
+    if (min > max) {
+      toast.error("Range Min must be <= Range Max.");
+      return;
+    }
+
+    try {
+      setStartingPostBid((p) => ({ ...p, [tenderId]: true }));
+
+      await axios.post(
+        `${API.START_POST_BID}/${tenderId}/post-bid/start`,
+        { durationMinutes: 10, rangeMin: min, rangeMax: max },
+        authCfg()
+      );
+
+      toast.success("Post bid started (10 minutes). Transporters can now improve their quotes.");
+      setPostBidDraftByTender((p) => ({ ...p, [tenderId]: { ...p[tenderId], open: false } }));
+
+      if (fetchTenderHistory) await fetchTenderHistory();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not start post bid.");
+    } finally {
+      setStartingPostBid((p) => ({ ...p, [tenderId]: false }));
+    }
   };
 
   const handleRequestConfirmation = async ({ tender, quotation }) => {
@@ -377,17 +430,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     setReopenModalTenderId(tenderId)
   }
 
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-  const formatDateTime = (date) =>
-    new Date(date).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-
   const clearSearch = () => setSearchQuery("")
   const clearFilters = () => {
     setStatusFilter("all")
@@ -443,538 +485,29 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     </button>
   );
 
-  // ✅ Build deterministic aliases like "Transporter 1", "Transporter 2" for a given response list
-  const buildAliasResolver = (sortedResponses = []) => {
-    const map = new Map(); // key -> number
-    let counter = 1;
-
-    for (const r of sortedResponses) {
-      const key = asId(r?.transportUser) || r?._id || String(counter);
-      if (!map.has(key)) map.set(key, counter++);
-    }
-
-    return (r) => {
-      const key = asId(r?.transportUser) || r?._id;
-      const n = map.get(key);
-      return `Transporter ${n ?? "—"}`;
-    };
-  };
-
-  // ✅ Toggle (later you can make it config-based)
-  const MASK_TRANSPORTER_NAMES_IN_EXPORT = true;
-
-
-  // ---------- EXPORT HELPERS ----------
-  const htmlEscape = (s = "") =>
-    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-
-  const formatDatePretty = (d) => (d ? formatDate(d) : "-")
-  const formatDateTimePretty = (d) => (d ? formatDateTime(d) : "-")
-
-  const asId = (x) => (x && typeof x === "object" ? x._id : x)
-
-  // Use transporterList prop to resolve a name/email from an id
-  const getNameFromList = (idOrObj, transporterList = []) => {
-    const id = asId(idOrObj)
-    const found = transporterList.find((t) => t._id === id)
-    return found?.name || found?.email || id
-  }
-
-  // ===============================
-  //     PRINTABLE HTML (A4)
-  // ===============================
-  const buildPrintableHTML = (tender, responses = [], transporterList = [], maskNames = true) => {
-    const materials = tender.materials || []
-
-    // Sort responses by rank then price (same as Excel)
-    const rankOrder = ["L1", "L2", "L3", "L4", "L5", "L6"]
-    const orderIndex = (r) => {
-      const i = rankOrder.indexOf(r || "")
-      return i === -1 ? 999 : i
-    }
-    const sortedResponses = (responses || []).slice().sort((a, b) => {
-      const ri = orderIndex(a.rank) - orderIndex(b.rank)
-      if (ri !== 0) return ri
-      return (a.price ?? Infinity) - (b.price ?? Infinity)
-    })
-
-    const getAliasName = buildAliasResolver(sortedResponses);
-
-    const isFinalized = tender.status === "finalized"
-    const selectedQuotationId = tender?.selectedQuotation?._id || null
-
-    const hasQuotes = sortedResponses.length > 0;
-
-    const rows = hasQuotes ? sortedResponses.map((r) => {
-
-      // const name = r.name || getNameFromList(r.transportUser, transporterList) || "-"
-
-      const name = (maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT)
-        ? getAliasName(r)
-        : (r.name || getNameFromList(r.transportUser, transporterList) || "-");
-
-      const isThisFinal =
-        isFinalized &&
-        (
-          r._id === selectedQuotationId ||
-          asId(r.transportUser) === asId(tender.selectedQuotation?.transportUser) ||
-          asId(r.transportUser) === tender.finalTransporter
-        )
-
-      const rawAmount =
-        isThisFinal && tender.finalPrice != null
-          ? `₹${Number(tender.finalPrice).toLocaleString()}`
-          : r.price != null
-            ? `₹${Number(r.price).toLocaleString()}`
-            : "-"
-
-      const vehicle = r.vehicleNumber || "-"
-      const quotedAt = r.createdAt
-        ? new Date(r.createdAt).toLocaleString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
-        : "-"
-
-      return {
-        name,
-        rank: r.rank || "-",
-        amount: rawAmount,
-        vehicle,
-        quotedAt,
-        status: isThisFinal ? "FINALIZED ✅" : "—",
-        isFinal: !!isThisFinal,
-      }
-    }) : [];
-
-    // Build HTML
-    return `
-    <!doctype html>
-    <html>
-    <head>
-    <meta charset="utf-8" />
-    <title>Tender Report - ${htmlEscape(tender.projectName || tender.projectCode || "Tender")}</title>
-    <style>
-      /* ==== Compact, one-page friendly styles (only CSS changed) ==== */
-      :root{
-        --fs-body: 11px;
-        --fs-small: 10px;
-        --fs-head: 12px;
-        --fs-title: 14px;
-        --pad-s: 6px;
-        --pad-m: 8px;
-        --gap: 8px;
-        --radius: 6px;
-      }
-
-      @page { size: A4; margin: 8mm; }
-
-      @media print {
-        html, body { width: 210mm; height: 297mm; }
-        body { zoom: 0.92; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        table, tr, td, th, h3, .item, .totalBox { page-break-inside: avoid !important; }
-      }
-
-      body {
-        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-        color: #0f172a;
-        font-size: var(--fs-body);
-        line-height: 1.35;
-        margin: 0;
-      }
-
-      .header {
-        display:flex; align-items:center; justify-content:space-between;
-        border-bottom:1px solid #e2e8f0; padding-bottom: var(--pad-s); margin-bottom: var(--pad-s);
-      }
-      .brand { font-weight:800; font-size: 13px; color:#059669; letter-spacing:0.3px; }
-      .title { font-size: var(--fs-title); font-weight:700; margin: 4px 0 2px; }
-      .badge {
-        font-size: var(--fs-small); border:1px solid #bae6fd; background:#e0f2fe; color:#0369a1;
-        padding:2px 6px; border-radius:999px;
-      }
-
-      h3 { margin: 10px 0 6px; font-size: var(--fs-head); color:#334155; }
-
-      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 6px var(--gap); }
-      .item {
-        background:#f8fafc; border:1px solid #e2e8f0; border-radius: var(--radius); padding: var(--pad-s);
-      }
-      .label { font-size: var(--fs-small); color:#64748b; margin-bottom:2px; }
-      .value { font-weight:600; }
-
-      table {
-        width:100%; border-collapse:collapse; margin-top:6px; font-size: 10px; table-layout: fixed;
-      }
-      th { text-align:left; background:#f1f5f9; color:#334155; }
-      th, td { border:1px solid #e2e8f0; padding: 6px; vertical-align:top; word-break: break-word; }
-
-      .totals { display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:6px; }
-      .totalBox {
-        background:#ecfeff; border:1px solid #cffafe; border-radius: var(--radius); padding: var(--pad-s);
-      }
-      .tr-final { background:#ecfdf5; } /* green tint for finalized row */
-      .small { font-size: var(--fs-small); color:#64748b; }
-
-      .footer {
-        margin-top: 10px; border-top:1px dashed #cbd5e1; padding-top: 6px;
-        font-size: var(--fs-small); color:#64748b; display:flex; justify-content:space-between;
-      }
-    </style>
-    </head>
-    <body>
-      <div class="header">
-        <div class="brand">RRI • Tender Report</div>
-        <div class="badge">${htmlEscape(tender.status || "Pending")}</div>
-      </div>
-
-      <div class="title">${htmlEscape(tender.projectName || `Tender for ${tender.dispatchLocation || "Location"}`)}</div>
-
-      <h3>Project Details</h3>
-      <div class="grid">
-        <div class="item"><div class="label">Project Name</div><div class="value">${htmlEscape(tender.projectName || "-")}</div></div>
-        <div class="item"><div class="label">Project Code</div><div class="value">${htmlEscape(tender.projectCode || "-")}</div></div>
-        <div class="item" style="grid-column: span 2;"><div class="label">Purchase Order</div><div class="value">${htmlEscape(tender.purchaseOrder || "-")}</div></div>
-      </div>
-
-      <h3>Windows & Dates</h3>
-      <div class="grid">
-        <div class="item"><div class="label">Delivery Window</div><div class="value">${tender.deliveryWindow?.from && tender.deliveryWindow?.to
-        ? `${formatDatePretty(tender.deliveryWindow.from)} → ${formatDatePretty(tender.deliveryWindow.to)}`
-        : "-"
-      }</div></div>
-        <div class="item"><div class="label">Bidding Window</div><div class="value">${tender.biddingStart && tender.biddingEnd
-        ? `${formatDateTimePretty(tender.biddingStart)} → ${formatDateTimePretty(tender.biddingEnd)}`
-        : "-"
-      }</div></div>
-        <div class="item"><div class="label">Closing Date</div><div class="value">${formatDatePretty(tender.closeDate)}</div></div>
-        <div class="item"><div class="label">Created</div><div class="value">${formatDatePretty(tender.createdAt)}</div></div>
-      </div>
-
-      <h3>Location</h3>
-      <div class="item"><div class="label">Dispatch Address</div><div class="value">${htmlEscape(
-        [tender.dispatchLocation, tender.address, tender.pincode].filter(Boolean).join(", ")
-      )}</div></div>
-
-      ${tender.projectRemark ? `<h3>Project Remark</h3><div class="item"><div class="value">${htmlEscape(tender.projectRemark)}</div></div>` : ""}
-
-      <h3>Materials</h3>
-      ${(materials || []).length
-        ? `<table>
-              <thead><tr><th>Material</th><th>Sub Item</th><th>Weight (MT)</th><th>Quantity (pcs)</th></tr></thead>
-              <tbody>
-                ${materials
-          .map(
-            (m) => `
-                      <tr>
-                        <td>${htmlEscape(m.material || "-")}</td>
-                        <td>${htmlEscape(m.subMaterial || "-")}</td>
-                        <td>${m.weight ?? "-"}</td>
-                        <td>${m.quantity ?? "-"}</td>
-                      </tr>`
-          )
-          .join("")}
-              </tbody>
-            </table>`
-        : `<div class="item"><div class="value">No materials added</div></div>`
-      }
-
-      <div class="totals">
-        <div class="totalBox"><div class="label">Total Weight</div><div class="value">${tender.totalWeight ?? "-"} MT</div></div>
-        <div class="totalBox"><div class="label">Total Quantity</div><div class="value">${tender.totalQuantity ?? "-"} pcs</div></div>
-      </div>
-
-      <!-- NEW: Bidding Rule -->
-      <div class="totals" style="margin-top:6px;">
-        <div class="totalBox" style="grid-column: span 2;">
-          <div class="label">Price Difference Rule</div>
-          <div class="value">₹${tender.priceDifference != null ? Number(tender.priceDifference).toLocaleString() : "-"} (minimum decrement to beat L1)</div>
-          <div class="small">Example: If L1 is ₹300 and price difference is ₹20, next valid quote must be ₹280 or lower.</div>
-        </div>
-      </div>
-
-      <h3>Transporter Responses</h3>
-      ${rows.length
-        ? `<table>
-              <thead>
-                <tr>
-                  <th>${(maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT) ? "Transporter" : "Name / Email"}</th>
-                  <th>Rank</th>
-                  <th>Amount (₹)</th>
-                  <th>Vehicle No</th>
-                  <th>Quoted At</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows
-          .map(
-            (r) => `
-                      <tr class="${r.isFinal ? "tr-final" : ""}">
-                        <td>${htmlEscape(r.name)}</td>
-                        <td>${htmlEscape(r.rank)}</td>
-                        <td>${htmlEscape(r.amount)}</td>
-                        <td>${htmlEscape(r.vehicle)}</td>
-                        <td>${htmlEscape(r.quotedAt)}</td>
-                        <td>${htmlEscape(r.status)}</td>
-                      </tr>`
-          )
-          .join("")}
-              </tbody>
-            </table>`
-        : `<div class="item"><div class="value"> Transporters haven't submitted any quotations for this tender </div></div>`
-      }
-
-      ${tender.remarks ? `<h3>Remarks</h3><div class="item"><div class="value">${htmlEscape(tender.remarks)}</div></div>` : ""}
-
-      <div class="footer">
-        <div>Generated: ${new Date().toLocaleString("en-GB")}</div>
-        <div>Tender ID: ${htmlEscape(tender._id || "-")}</div>
-      </div>
-    </body>
-    </html>`
-  }
-
-  // =====================================
-  //   PRINT WITHOUT POPUPS (hidden IFRAME)
-  // =====================================
-  const handleExportPDF = (tender, responses = [], transporterList = []) => {
-    const html = buildPrintableHTML(tender, responses, transporterList, true)
-
-    // Create a Blob URL for the HTML
-    const blob = new Blob([html], { type: "text/html" })
-    const url = URL.createObjectURL(blob)
-
-    // Hidden iframe technique (no popup/new tab)
-    const iframe = document.createElement("iframe")
-    iframe.style.position = "fixed"
-    iframe.style.right = "0"
-    iframe.style.bottom = "0"
-    iframe.style.width = "0"
-    iframe.style.height = "0"
-    iframe.style.border = "0"
-    iframe.src = url
-
-    iframe.onload = () => {
-      try {
-        // give the browser a moment to paint styles
-        setTimeout(() => {
-          iframe.contentWindow?.focus()
-          iframe.contentWindow?.print()
-          // cleanup
-          setTimeout(() => {
-            URL.revokeObjectURL(url)
-            iframe.remove()
-          }, 1000)
-        }, 150)
-      } catch (e) {
-        // cleanup on error
-        URL.revokeObjectURL(url)
-        iframe.remove()
-      }
-    }
-
-    document.body.appendChild(iframe)
-  }
-
-
-  // function of export Excel : 
-  const handleExportExcel = (tender, responses = []) => {
-    // Helpers
-    const rows = []
-    const push = (a, b) => rows.push([a, b])
-    const csvEscape = (v) => {
-      if (v === null || v === undefined) return ""
-      const s = String(v)
-      if (s.includes(",") || s.includes("\n") || s.includes('"')) {
-        return `"${s.replace(/"/g, '""')}"`
-      }
-      return s
-    }
-    const safeJoin = (arr) => (arr || []).filter(Boolean).join(", ")
-    const asId = (x) => (x && typeof x === "object" ? x._id : x) // ✅ define helper
-
-    // Finalized context
-    const isFinalized = tender.status === "finalized"
-    const selectedQuotationId = tender?.selectedQuotation?._id || null
-
-    // Sort responses by rank then price
-    const rankOrder = ["L1", "L2", "L3", "L4", "L5", "L6"]
-    const orderIndex = (r) => {
-      const i = rankOrder.indexOf(r || "")
-      return i === -1 ? 999 : i
-    }
-    const sortedResponses = (responses || []).slice().sort((a, b) => {
-      const ri = orderIndex(a.rank) - orderIndex(b.rank)
-      if (ri !== 0) return ri
-      return (a.price ?? Infinity) - (b.price ?? Infinity)
-    })
-
-    const getAliasName = buildAliasResolver(sortedResponses);
-
-    const asText = (v) => (v == null ? "" : `\u200C${String(v)}`)
-
-    // =========================
-    //        TENDER SUMMARY
-    // =========================
-    rows.push(["==== TENDER SUMMARY ====", ""])
-    push("Project Name", tender.projectName || "-")
-    push("Project Code", tender.projectCode || "-")
-    push("Purchase Order", tender.purchaseOrder || "-")
-    if (tender.projectRemark) push("Project Remark", tender.projectRemark)
-    push(
-      "Delivery Window",
-      tender.deliveryWindow?.from && tender.deliveryWindow?.to
-        ? `${formatDate(tender.deliveryWindow.from)} to ${formatDate(tender.deliveryWindow.to)}`
-        : "-"
-    )
-    push(
-      "Bidding Window",
-      tender.biddingStart && tender.biddingEnd
-        ? `${formatDateTime(tender.biddingStart)} to ${formatDateTime(tender.biddingEnd)}`
-        : "-"
-    )
-    push("Closing Date", tender.closeDate ? formatDate(tender.closeDate) : "-")
-    push("Status", tender.status || "Pending")
-    push("Created", tender.createdAt ? formatDate(tender.createdAt) : "-")
-    push("Dispatch Address", safeJoin([tender.dispatchLocation, tender.address, tender.pincode]))
-
-    rows.push([])
-    rows.push(["==== TOTALS ====", ""])
-    push("Total Weight (MT)", tender.totalWeight ?? "-")
-    push("Total Quantity (pcs)", tender.totalQuantity ?? "-")
-
-    // NEW: Price Difference rule line
-    rows.push([])
-    rows.push(["==== BIDDING RULE ====", ""])
-    push(
-      "Price Difference (₹) — min decrement to beat L1",
-      tender.priceDifference != null ? `₹${Number(tender.priceDifference).toLocaleString()}` : "-"
-    )
-
-    // =========================
-    //          MATERIALS
-    // =========================
-    rows.push([])
-    rows.push(["==== MATERIALS ====", ""])
-    rows.push(["Material", "Sub Item", "Weight (MT)", "Quantity (pcs)"])
-      ; (tender.materials || []).forEach((m) => {
-        rows.push([m.material || "-", m.subMaterial || "-", asText(m.weight ?? "-"), asText(m.quantity ?? "-")])
-      })
-    if (!tender.materials || tender.materials.length === 0) {
-      rows.push(["No materials added", ""])
-    }
-
-    // =========================
-    //        TRANSPORTERS
-    // =========================
-    rows.push([])
-    rows.push(["==== TRANSPORTERS ====", ""])
-    // rows.push(["Name / Email", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
-    rows.push(["Transporter", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"])
-
-    if (sortedResponses.length > 0) {
-      sortedResponses.forEach((r) => {
-        // const name = getTransporterName(r.transportUser) || "-"   // ✅ robust name resolver
-        const name = (MASK_TRANSPORTER_NAMES_IN_EXPORT ? getAliasName(r) : (getTransporterName(r.transportUser) || "-"));
-
-        const isThisFinal =
-          isFinalized &&
-          (
-            r._id === selectedQuotationId ||
-            asId(r.transportUser) === asId(tender.selectedQuotation?.transportUser) ||
-            asId(r.transportUser) === tender.finalTransporter // supports your response shape
-          )
-
-        const statusLabel = isThisFinal ? "FINALIZED ✅" : "—"
-
-        const rawAmount =
-          isThisFinal && tender.finalPrice != null
-            ? `₹${Number(tender.finalPrice).toLocaleString()}`
-            : `₹${Number(r.price ?? 0).toLocaleString()}`
-
-        const amount = asText(rawAmount)
-        const vehicle = r.vehicleNumber || "-"
-        const quotedAt = r.createdAt
-          ? new Date(r.createdAt).toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
-          : "-"
-
-        rows.push([name, r.rank || "-", amount, vehicle, quotedAt, statusLabel])
-      });
-    } else {
-      rows.push(["Transporters haven't submitted any quotations for this tender", "", "", "", "", ""])
-    }
-
-
-    // =========================
-    //          REMARKS
-    // =========================
-    if (tender.remarks) {
-      rows.push([])
-      rows.push(["==== REMARKS ====", ""])
-      rows.push([tender.remarks, ""])
-    }
-
-    // CSV with UTF-8 BOM so Excel renders ₹ correctly
-    const csv =
-      "\ufeff" +
-      rows.map((r) => (Array.isArray(r) ? r.map(csvEscape).join(",") : csvEscape(String(r)))).join("\n")
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    const fileBase = (tender.projectCode || tender.projectName || "tender").replace(/\s+/g, "_")
-    a.href = url
-    a.download = `${fileBase}_report.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-  // ---------- END EXPORT HELPERS ----------
-
-  // Helper: compute rank if missing (by price asc)
-  const ensureRanks = (arr = []) => {
-    const sorted = arr.slice().sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
-    const labels = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"];
-    const byId = new Map(sorted.map((r, i) => [r._id, labels[i] || `L${i + 1}`]));
-    return arr.map(r => ({ ...r, rank: r.rank || byId.get(r._id) || "-" }));
-  };
-
-  // Fetch on demand if needed, then export
+  // Fetch on demand if needed, then export (same behavior)
   const exportWithResponses = async (tender, kind /* 'pdf' | 'excel' */) => {
     const tenderId = tender._id;
-    let responses = allResponses[tenderId];
 
-    if (!responses || !responses.length) {
+    let responses = normalizeResponses(allResponses[tenderId]);
+
+    if (!responses.length) {
       try {
-        const res = await axios.get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
-          withCredentials: true,
-        });
-        responses = res?.data?.data || [];
+        const res = await axios.get(
+          `${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`,
+          { withCredentials: true }
+        );
+        responses = normalizeResponses(res?.data?.data || res?.data);
       } catch (e) {
         toast.error("Could not load transporter responses for export.");
         responses = [];
       }
     }
 
-    const enriched = ensureRanks(responses);
-
     if (kind === "pdf") {
-      handleExportPDF(tender, enriched, transporterList);
+      exportTenderPDF(tender, responses, transporterList, true);
     } else {
-      handleExportExcel(tender, enriched);
+      exportTenderExcel(tender, responses, transporterList, true);
     }
   };
 
@@ -1223,7 +756,18 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
             {filteredTenders.map((tender, idx) => {
               const tenderId = tender._id
               const selectedQuotationId = tender.selectedQuotation?._id
-              const responses = allResponses[tenderId] || []
+              // const responses = allResponses[tenderId] || []
+              const raw = allResponses[tenderId];
+              const responses =
+                Array.isArray(raw)
+                  ? raw
+                  : Array.isArray(raw?.data)
+                    ? raw.data
+                    : Array.isArray(raw?.combinedForUI)
+                      ? raw.combinedForUI
+                      : Array.isArray(raw?.normal)
+                        ? raw.normal
+                        : [];
 
               return (
                 <div
@@ -1238,9 +782,234 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                     onExportExcel={() => exportWithResponses(tender, 'excel')}
                   />
 
+
                   {openIdx === idx && (
                     <div className="border-t border-slate-200 p-5">
                       <TenderDetails tender={tender} getTransporterName={getTransporterName} />
+
+                      {/* ✅ POST BID BAR — paste exactly here */}
+                      {(() => {
+
+                        const POST_BID_START_WINDOW_MS = 10 * 60 * 1000;
+
+                        const postBidStatus = String(tender?.postBid?.status || "").toLowerCase();
+                        const endsAt = tender?.postBid?.endsAt ? new Date(tender.postBid.endsAt) : null;
+
+                        const biddingEndMs = tender?.biddingEnd ? new Date(tender.biddingEnd).getTime() : null;
+                        const startWindowEndMs = biddingEndMs ? biddingEndMs + POST_BID_START_WINDOW_MS : null;
+
+                        const withinStartWindow =
+                          biddingEndMs != null &&
+                          nowMs >= biddingEndMs &&
+                          nowMs <= startWindowEndMs;
+
+                        const windowExpired =
+                          biddingEndMs != null &&
+                          nowMs > startWindowEndMs;
+
+                        // You can show helpful text
+                        let startHint = "";
+                        if (!biddingEndMs) startHint = "";
+                        else if (nowMs < biddingEndMs) startHint = "Available after bidding ends";
+                        else if (withinStartWindow) {
+                          const left = startWindowEndMs - nowMs;
+                          const mm = Math.floor(left / 60000);
+                          const ss = Math.floor((left % 60000) / 1000);
+                          startHint = `Start window: ${mm}:${String(ss).padStart(2, "0")} left`;
+                        } else if (windowExpired) {
+                          startHint = "Start window expired (10 mins over)";
+                        }
+
+                        // final allow/disable
+                        const canStartBase =
+                          tender.status !== "finalized" &&
+                          postBidStatus !== "active" &&
+                          postBidStatus !== "ended" &&
+                          withinStartWindow;
+
+
+                        const ui = postBidDraftByTender[tenderId] || {
+                          open: false,
+                          mode: "fixed", // "fixed" | "range"
+                          fixed: "",
+                          rangeMin: "",
+                          rangeMax: "",
+                        };
+
+                        const fixedVal = Number(ui.fixed);
+                        const rangeMinVal = Number(ui.rangeMin);
+                        const rangeMaxVal = Number(ui.rangeMax);
+
+                        const inputsValid =
+                          ui.mode === "fixed"
+                            ? Number.isFinite(fixedVal) && fixedVal > 0
+                            : Number.isFinite(rangeMinVal) &&
+                            Number.isFinite(rangeMaxVal) &&
+                            rangeMinVal > 0 &&
+                            rangeMaxVal > 0 &&
+                            rangeMinVal <= rangeMaxVal;
+
+                        const canStartFinal = canStartBase && inputsValid;
+
+                        const setUI = (patch) =>
+                          setPostBidDraftByTender((p) => ({
+                            ...p,
+                            [tenderId]: { ...ui, ...patch },
+                          }));
+
+                        const submit = () => {
+                          if (ui.mode === "fixed") {
+                            const amt = Number(ui.fixed);
+                            if (!Number.isFinite(amt) || amt <= 0) {
+                              toast.error("Enter a valid amount.");
+                              return;
+                            }
+                            // ✅ fixed amount => rangeMin=rangeMax
+                            startPostBid(tender, { rangeMin: amt, rangeMax: amt });
+                          } else {
+                            const min = Number(ui.rangeMin);
+                            const max = Number(ui.rangeMax);
+                            startPostBid(tender, { rangeMin: min, rangeMax: max });
+                          }
+                        };
+
+                        return (
+                          <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  onClick={() => {
+                                    if (windowExpired) return;
+                                    setUI({ open: !ui.open });
+                                  }}
+                                  disabled={!canStartBase || !!startingPostBid[tenderId] || loading}
+                                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition inline-flex items-center gap-2
+                                    ${canStartBase
+                                      ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                                      : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70"
+                                    }`}
+                                  title={windowExpired ? "10-minute start window is over" : "Start post-bid"}
+                                >
+                                  {startingPostBid[tenderId] && (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  )}
+
+                                  {startingPostBid[tenderId]
+                                    ? "Starting..."
+                                    : postBidStatus === "active"
+                                      ? "Post Bid Live"
+                                      : postBidStatus === "ended"
+                                        ? "Post Bid Ended"
+                                        : windowExpired
+                                          ? "Post Bid Window Over"
+                                          : "Start Post Bid"}
+                                </button>
+
+                                {postBidStatus && (
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full border
+                                  ${postBidStatus === "active"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-slate-100 text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    {postBidStatus.toUpperCase()}
+                                    {postBidStatus === "active" && endsAt ? ` • ends ${endsAt.toLocaleString("en-IN")}` : ""}
+                                  </span>
+                                )}
+
+                                {biddingEndMs && (
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full border
+                                  ${windowExpired
+                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        : withinStartWindow
+                                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                          : "bg-slate-100 text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    {startHint}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-xs text-slate-600">
+                                Post bid opens a <b>10-minute</b> improvement window.
+                              </div>
+                            </div>
+
+                            {/* ✅ Inputs (only when open + canStart) */}
+                            {ui.open && canStartBase && (
+                              <div className="bg-white border border-slate-200 rounded-lg p-3">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <button
+                                    onClick={() => setUI({ mode: "fixed" })}
+                                    className={`text-xs px-2.5 py-1 rounded-full border ${ui.mode === "fixed"
+                                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    Fixed Amount
+                                  </button>
+                                  <button
+                                    onClick={() => setUI({ mode: "range" })}
+                                    className={`text-xs px-2.5 py-1 rounded-full border ${ui.mode === "range"
+                                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                      }`}
+                                  >
+                                    Range
+                                  </button>
+                                </div>
+
+                                {ui.mode === "fixed" ? (
+                                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <input
+                                      type="number"
+                                      value={ui.fixed}
+                                      onChange={(e) => setUI({ fixed: e.target.value })}
+                                      placeholder="Enter amount (₹)"
+                                      className="w-full sm:w-64 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <button
+                                      onClick={submit}
+                                      disabled={!canStartFinal || !!startingPostBid[tenderId] || loading}
+                                      className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2"
+                                    >
+                                      {startingPostBid[tenderId] && <Loader2 className="h-4 w-4 animate-spin" />}
+                                      {startingPostBid[tenderId] ? "Starting..." : "Start (10 min)"}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <input
+                                      type="number"
+                                      value={ui.rangeMin}
+                                      onChange={(e) => setUI({ rangeMin: e.target.value })}
+                                      placeholder="Range Min (₹)"
+                                      className="w-full sm:w-48 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <input
+                                      type="number"
+                                      value={ui.rangeMax}
+                                      onChange={(e) => setUI({ rangeMax: e.target.value })}
+                                      placeholder="Range Max (₹)"
+                                      className="w-full sm:w-48 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <button
+                                      onClick={submit}
+                                      disabled={!canStartFinal || !!startingPostBid[tenderId] || loading}
+                                      className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                      Start (10 min)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <TransporterResponses
                         responses={responses}

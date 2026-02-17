@@ -82,6 +82,12 @@ const UpcomingTenders = ({ tenders }) => {
           const status = getTenderStatus(tender);
           const statusColor = getStatusColor(status);
 
+          const line1 = tender?.dispatchLocation?.trim();
+          const line2 = tender?.address?.trim();
+          const pin = tender?.pincode?.toString()?.trim();
+
+          const hasAny = !!(line1 || line2 || pin);
+
           return (
             <div
               key={tender._id || idx}
@@ -174,11 +180,39 @@ const UpcomingTenders = ({ tenders }) => {
                     <div className="p-2.5 bg-emerald-100 rounded-full text-emerald-600 group-hover:bg-emerald-200 transition-colors">
                       <MapPin className="w-5 h-5" />
                     </div>
-                    <div>
+
+                    <div className="min-w-0 flex-1">
                       <div className="text-gray-500 text-sm mb-1">Location</div>
-                      <div className="font-medium text-gray-800">
-                        {tender.dispatchLocation || "No location specified"}, {tender.pincode}
-                      </div>
+
+                      {!hasAny ? (
+                        <div className="text-sm text-gray-500">No location specified</div>
+                      ) : (
+                        <div className="space-y-1">
+                          {/* ✅ Location name */}
+                          {line1 && (
+                            <div className="font-semibold text-gray-800 truncate" title={line1}>
+                              {line1}
+                            </div>
+                          )}
+
+                          {/* ✅ Address line */}
+                          {line2 && (
+                            <div className="text-sm text-gray-600 leading-snug break-words">
+                              {line2}
+                            </div>
+                          )}
+
+                          {/* ✅ Pincode as a pill */}
+                          {pin && (
+                            <div className="pt-1">
+                              <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                PIN: {pin}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -54,6 +54,11 @@ const API = {
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
 
+  //Post-Bid Negotiation : 
+  START_POST_BID: `${serverUrl}/tenders`,
+  ACTIVE_POST_BID_TENDERS: `${serverUrl}/tenders/transporter/post-bid-active`,
+  SUBMIT_POST_BID_QUOTATION: `${serverUrl}/quotation/post-bid/submit`,
+
   // Selection Confirmation 
   REQUEST_SELECTION: `${serverUrl}/tenders`,
   RESPOND_SELECTION: `${serverUrl}/tenders`,
