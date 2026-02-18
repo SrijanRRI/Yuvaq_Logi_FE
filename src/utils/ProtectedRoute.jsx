@@ -1,24 +1,26 @@
-// src/utils/ProtectedRoute.jsx
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-const ProtectedRoute = ({
+export default function ProtectedRoute({
   requiredRole = null,
   redirect = "/signin",
   children,
-}) => {
-  const { isAuthenticated, role, isAuthChecking } = useSelector((state) => state.User);
+}) {
+  const { isAuthenticated, role, isAuthChecking } = useSelector((s) => s.User);
+  const location = useLocation();
 
   if (isAuthChecking) {
     return <div className="text-center mt-10">Checking session...</div>;
   }
 
-  if (!isAuthenticated || (requiredRole && role !== requiredRole)) {
-    return <Navigate to={redirect} />;
+  if (!isAuthenticated) {
+    return <Navigate to={redirect} replace state={{ from: location.pathname }} />;
+  }
+
+  if (requiredRole && role !== requiredRole) {
+    return <Navigate to={redirect} replace />;
   }
 
   return children ? children : <Outlet />;
-};
-
-export default ProtectedRoute;
+}

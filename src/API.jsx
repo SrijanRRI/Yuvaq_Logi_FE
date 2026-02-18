@@ -28,6 +28,12 @@ const API = {
   LOGOUT_USER: `${serverUrl}/api/auth/logout`,
   GETALLUSER: `${serverUrl}/api/auth/user/all`,
 
+  // subscription
+  SUBSCRIPTION_ME: `${serverUrl}/subscriptions/me`,
+  SUBSCRIPTION_CREATE_ORDER: `${serverUrl}/subscriptions/order`,   // POST { plan }
+  SUBSCRIPTION_VERIFY: `${serverUrl}/subscriptions/verify`,        // POST { plan, razorpay_* }
+  SUBSCRIPTION_PLANS: `${serverUrl}/subscriptions/plans`,          // optional but better
+
   //Admin API :
   ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
   APPROVEREQUEST: `${serverUrl}/admin/users/`,

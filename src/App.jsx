@@ -13,6 +13,8 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import API from "./API";
 import { login, setAuthChecking } from "./utils/UserSlice";
+import SubscribePage from "./pages/SubscribePage";
+import SubscriptionGate from "./utils/SubscriptionGate";
 
 function App() {
   const dispatch = useDispatch();
@@ -44,6 +46,15 @@ function App() {
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       <Route
+        path="/subscribe"
+        element={
+          <ProtectedRoute>
+            <SubscribePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute requiredRole="admin">
@@ -51,22 +62,29 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/rr/dashboard"
         element={
           <ProtectedRoute requiredRole="user">
-            <RRDashboardPage />
+            <SubscriptionGate>
+              <RRDashboardPage />
+            </SubscriptionGate>
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/transporter/dashboard"
         element={
           <ProtectedRoute requiredRole="transportUser">
-            <TransporterDashboardPage />
+            <SubscriptionGate>
+              <TransporterDashboardPage />
+            </SubscriptionGate>
           </ProtectedRoute>
         }
       />
+
     </Routes>
   );
 }
