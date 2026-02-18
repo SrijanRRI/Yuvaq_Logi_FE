@@ -275,7 +275,7 @@ const TransporterResponseItem = ({
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+            {/* <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <p className="text-xs text-slate-500 mb-1">Attachments</p>
               <div className="text-xs text-slate-700 space-y-1.5 mt-1">
                 {response?.files?.length > 0 ? (
@@ -299,7 +299,7 @@ const TransporterResponseItem = ({
                   <p className="text-slate-500 italic">No attachments</p>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <p className="text-xs text-slate-500 mb-1">Quoted At</p>
@@ -332,7 +332,7 @@ const TransporterResponseItem = ({
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            {/* <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
               <p className="text-sm text-slate-500 mb-1">Attachments</p>
               <div className="text-sm text-slate-700 space-y-1.5 mt-1">
                 {response?.files?.length > 0 ? (
@@ -356,7 +356,7 @@ const TransporterResponseItem = ({
                   <p className="text-slate-500 italic">No attachments</p>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
               <p className="text-sm text-slate-500 mb-1">Quoted At</p>
