@@ -77,6 +77,20 @@ const LiveBidding = () => {
       })
       : "N/A"
 
+  const openQuotationModal = (tender) => {
+    const quotes = slideshowData?.[tender._id] || [];
+
+    const lowest = quotes.reduce((min, q) => {
+      const p = Number(q?.price);
+      return Number.isFinite(p) ? Math.min(min, p) : min;
+    }, Infinity);
+
+    setSelectedTender({
+      ...tender,
+      currentL1: lowest !== Infinity ? lowest : null, // ✅ inject L1 for modal validation
+    });
+  };
+
   return (
     <div className="grid gap-8">
       {tenders.length === 0 ? (
@@ -114,9 +128,9 @@ const LiveBidding = () => {
                   <div>
                     <h2 className="text-indigo-200 text-2xl font-bold "> Tender #{idx + 1} </h2>
                   </div>
-                  <div className="px-3 py-1.5 rounded-full bg-white bg-opacity-20 text-white text-sm font-medium border border-white border-opacity-30 backdrop-blur-sm">
-                    {tender.bidsUsed || 0}/3 Bids Used
-                  </div>
+                  {/* <div className="px-3 py-1.5 rounded-full bg-white bg-opacity-20 text-white text-sm font-medium border border-white border-opacity-30 backdrop-blur-sm">
+                    {tender.bidsUsed || 0}/3 Bids Used 
+                  </div> */}
                 </div>
               </div>
 
@@ -376,7 +390,7 @@ const LiveBidding = () => {
                 )}
 
                 {/* Action Button */}
-                <div className="flex justify-center mt-8">
+                {/* <div className="flex justify-center mt-8">
                   {isExpired ? (
                     <div className="px-6 py-3 rounded-lg bg-slate-100 text-slate-500 flex items-center gap-2 shadow-sm">
                       <X className="w-5 h-5" />
@@ -390,6 +404,23 @@ const LiveBidding = () => {
                   ) : (
                     <button
                       onClick={() => setSelectedTender(tender)}
+                      className="px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-md flex items-center gap-2 font-medium"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span>Submit Quotation</span>
+                    </button>
+                  )}
+                </div> */}
+
+                <div className="flex justify-center mt-8">
+                  {isExpired ? (
+                    <div className="px-6 py-3 rounded-lg bg-slate-100 text-slate-500 flex items-center gap-2 shadow-sm">
+                      <X className="w-5 h-5" />
+                      <span>Bidding Closed</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => openQuotationModal(tender)}
                       className="px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-md flex items-center gap-2 font-medium"
                     >
                       <Upload className="w-5 h-5" />

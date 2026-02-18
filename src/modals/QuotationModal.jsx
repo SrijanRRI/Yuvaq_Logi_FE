@@ -1,18 +1,35 @@
-import { useState } from "react"
-import { toast } from "react-toastify"
-import { FileText, X, Upload, IndianRupee, Truck, AlertCircle } from "lucide-react"
-import axios from "axios"
-import API from "../API"
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
+import {
+  FileText,
+  X,
+  Upload,
+  IndianRupee,
+  Truck,
+  AlertCircle,
+  Minus,
+  Plus,
+} from "lucide-react";
+import axios from "axios";
+import API from "../API";
 
 const QuotationModal = ({ tender, onClose, onSuccess }) => {
-  const [price, setPrice] = useState("")
-  const [vehicleNo, setVehicleNo] = useState("")
-  const [file, setFile] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState({})
+  const [price, setPrice] = useState("");
+  const [vehicleNo, setVehicleNo] = useState("");
+  const [file, setFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const [touched, setTouched] = useState({ price: false, vehicle: false });
+
+  // ✅ Step value from tender
+  const priceStep = useMemo(() => {
+    const v = Number(tender?.priceDifference);
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  }, [tender?.priceDifference]);
 
   const validateForm = () => {
-    const newErrors = {}
+    const newErrors = {};
 
     const n = Number(price);
     const min = tender?.minBidAmount != null ? Number(tender.minBidAmount) : null;
@@ -21,136 +38,139 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     if (!Number.isFinite(n) || n <= 0) {
       newErrors.price = "Please enter a valid price";
     } else if (min != null && n < min) {
-      newErrors.price = `Bid must be at least ₹${min.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""}`;
+      newErrors.price = `Bid must be at least ₹${min.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
+        }`;
     } else if (max != null && n > max) {
-      newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""}`;
+      newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
+        }`;
     }
 
+    // if (!vehicleNo) newErrors.vehicleNo = "Vehicle number is required";
 
-    if (!vehicleNo) {
-      newErrors.vehicleNo = "Vehicle number is required"
-    }
-
-    setErrors(newErrors)
-
-    // optional: toast for range errors
+    setErrors(newErrors);
     if (newErrors.price) toast.error(newErrors.price);
 
-    return Object.keys(newErrors).length === 0
-  }
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleFileChange = (e) => {
-    const selected = e.target.files[0]
+    const selected = e.target.files[0];
     if (selected && !["image/jpeg", "image/jpg"].includes(selected.type)) {
-      toast.error("Only JPG and JPEG files are allowed.")
-      return
+      toast.error("Only JPG and JPEG files are allowed.");
+      return;
     }
-    setFile(selected)
-    setErrors({ ...errors, file: null })
-  }
+    setFile(selected);
+    setErrors((p) => ({ ...p, file: null }));
+  };
+
+  // ✅ +/- handler
+  const adjustPrice = (dir) => {
+    if (!priceStep) {
+      toast.info("Price difference is not set for this tender.");
+      return;
+    }
+
+    const base = price?.trim() !== "" ? Number(price) : 0;
+    if (!Number.isFinite(base)) {
+      toast.info("Please enter a valid price first.");
+      return;
+    }
+
+    let next = Math.max(0, Math.round(base + dir * priceStep));
+
+    // keep within max if present (don’t force min while clicking)
+    const max = tender?.maxBidAmount != null ? Number(tender.maxBidAmount) : null;
+    if (max != null && Number.isFinite(max)) next = Math.min(next, max);
+
+    setPrice(String(next));
+    if (errors.price) setErrors((p) => ({ ...p, price: null }));
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMyLastQuote = async () => {
+      try {
+        const res = await axios.get(`${API.MY_TENDER_QUOTES}/${tender._id}`, {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const list = res.data?.quotations || [];
+        // your backend sorts createdAt: 1, so last item is latest
+        const last = list.length ? list[list.length - 1] : null;
+
+        if (cancelled || !last) return;
+
+        // Prefill only if user hasn't started typing
+        if (!touched.price && last.price != null) setPrice(String(last.price));
+        if (!touched.vehicle && last.vehicleNumber) setVehicleNo(String(last.vehicleNumber));
+      } catch (e) {
+        // ignore silently (keep empty fields)
+      }
+    };
+
+    if (tender?._id) loadMyLastQuote();
+
+    return () => {
+      cancelled = true;
+    };
+    // IMPORTANT: run when modal opens for another tender
+  }, [tender?._id]);
 
   const handleSubmit = async () => {
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return;
 
-    const formData = new FormData()
-    formData.append("price", price)
-    formData.append("vehicleNumber", vehicleNo)
-    if (file) formData.append("file", file)
+    const formData = new FormData();
+    formData.append("price", price);
 
-    setIsSubmitting(true)
+    const v = vehicleNo?.trim();
+    if (v) formData.append("vehicleNumber", v);
 
+    if (file) formData.append("file", file);
+
+    setIsSubmitting(true);
     try {
-      const res = await axios.post(`${API.SUBMIT_QUOTATION}/${tender._id}`, formData, {
-        withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
-      })
+      const res = await axios.post(
+        `${API.SUBMIT_QUOTATION}/${tender._id}`,
+        formData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
       if (res.data?.success) {
-        toast.success("Quotation submitted successfully")
-        onClose()
-        setPrice("")
-        setVehicleNo("")
-        setFile(null)
-
-        if (onSuccess) onSuccess()
+        toast.success("Quotation submitted successfully");
+        onClose();
+        setPrice("");
+        setVehicleNo("");
+        setFile(null);
+        if (onSuccess) onSuccess();
       } else {
-        toast.error(res.data.message || "Submission failed")
+        toast.error(res.data.message || "Submission failed");
       }
     } catch (err) {
-      console.error("Submit Error:", err);
-
-      // Safely unwrap backend fields
       const resp = err?.response?.data || {};
-      const backendMsg =
+      const msg =
         resp?.message ||
         resp?.error ||
         resp?.err ||
         "Your quotation could not be submitted.";
-
-      // Meta may contain numbers we can show to the user
-      const meta = resp?.data || {};
-      // currentL1 might be a number or an object with .price
-      const l1Raw =
-        typeof meta?.currentL1 === "number"
-          ? meta.currentL1
-          : (meta?.currentL1?.price ?? null);
-
-      // backend may send either "minimumRequiredDifference" or "difference"
-      const requiredDiff =
-        (typeof meta?.minimumRequiredDifference === "number"
-          ? meta.minimumRequiredDifference
-          : null) ??
-        (typeof meta?.difference === "number" ? meta.difference : null) ??
-        (typeof tender?.priceDifference === "number"
-          ? tender.priceDifference
-          : Number(tender?.priceDifference) || null);
-
-      const yourPrice = typeof meta?.yourPrice === "number" ? meta.yourPrice : Number(price) || null;
-
-      const hasNumbers =
-        typeof l1Raw === "number" && typeof requiredDiff === "number";
-
-      const minAllowed = hasNumbers ? Math.max(0, l1Raw - requiredDiff) : null;
-
-      // Pretty bilingual toast (EN + HI) with backend message highlighted
-      const fmt = (n) =>
-        typeof n === "number" ? `₹${n.toLocaleString("en-IN")}` : "-";
-
-      toast.error(
-        <div className="space-y-2">
-          <div className="font-bold text-red-800">Bid Rejected • बोली अस्वीकृत</div>
-
-          {/* Show the backend's message exactly as returned */}
-          <div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800">
-            {backendMsg}
-          </div>
-
-          {/* Helpful numbers if present */}
-          {hasNumbers && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-sm">
-              <div className="font-medium text-red-800 mb-1">Rule • नियम</div>
-              <div className="text-red-700">
-                Your price must be ≤ <b>{fmt(minAllowed)}</b> (L1 {fmt(l1Raw)} − required difference {fmt(requiredDiff)}).
-              </div>
-              <div className="text-red-700">
-                आपकी बोली ≤ <b>{fmt(minAllowed)}</b> होनी चाहिए (L1 {fmt(l1Raw)} − आवश्यक अंतर {fmt(requiredDiff)}).
-              </div>
-              {typeof yourPrice === "number" && (
-                <div className="mt-1 text-red-700">
-                  Your price / आपकी बोली: <b>{fmt(yourPrice)}</b>
-                </div>
-              )}
-            </div>
-          )}
-        </div>,
-        { icon: "⚠️" }
-      );
+      toast.error(msg);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const minTxt =
+    tender?.minBidAmount != null
+      ? `Min ₹${Number(tender.minBidAmount).toLocaleString("en-IN")}`
+      : null;
+  const maxTxt =
+    tender?.maxBidAmount != null
+      ? `Max ₹${Number(tender.maxBidAmount).toLocaleString("en-IN")}`
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -167,6 +187,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
         </div>
 
         <div className="space-y-5">
+          {/* PRICE */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
@@ -174,22 +195,53 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                 <span>Price (₹) / मूल्य (₹)</span>
               </div>
             </label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={price}
-              min={tender?.minBidAmount ?? undefined}
-              max={tender?.maxBidAmount ?? undefined}
-              step="1"
-              onChange={(e) => {
-                setPrice(e.target.value)
-                if (errors.price) setErrors({ ...errors, price: null })
-              }}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
-                }`}
-              placeholder={`Enter your bid (Min ${tender?.minBidAmount ? `₹${Number(tender.minBidAmount).toLocaleString("en-IN")}` : "-"} • Max ${tender?.maxBidAmount ? `₹${Number(tender.maxBidAmount).toLocaleString("en-IN")}` : "-"})`}
-            // placeholder={`Enter your bid amount `}
-            />
+
+            {/* ✅ +/- + input row */}
+            <div className="flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => adjustPrice(-1)}
+                disabled={!priceStep}
+                className="w-12 shrink-0 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                title={priceStep ? `Decrease by ₹${priceStep}` : "Price difference not set"}
+              >
+                <Minus className="w-4 h-4 text-slate-700" />
+              </button>
+
+              <input
+                type="number"
+                inputMode="numeric"
+                value={price}
+                min={tender?.minBidAmount ?? undefined}
+                max={tender?.maxBidAmount ?? undefined}
+                step="1"
+                onChange={(e) => {
+                  setTouched((p) => ({ ...p, price: true }));
+                  setPrice(e.target.value);
+                  if (errors.price) setErrors((p) => ({ ...p, price: null }));
+                }}
+                className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-300"
+                  }`}
+                placeholder={`Enter bid amount`}
+              />
+
+              <button
+                type="button"
+                onClick={() => adjustPrice(+1)}
+                disabled={!priceStep}
+                className="w-12 shrink-0 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                title={priceStep ? `Increase by ₹${priceStep}` : "Price difference not set"}
+              >
+                <Plus className="w-4 h-4 text-slate-700" />
+              </button>
+            </div>
+
+            {/* tiny hint */}
+            <p className="mt-1 text-xs text-slate-500">
+              {minTxt || maxTxt ? [minTxt, maxTxt].filter(Boolean).join(" • ") : "Enter your bid amount"}
+              {priceStep ? ` • Step ₹${priceStep.toLocaleString("en-IN")}` : ""}
+            </p>
+
             {errors.price && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -198,18 +250,20 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
             )}
           </div>
 
+          {/* VEHICLE */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-blue-600" />
-                <span> Vehicle Details / वाहन की सूचना / प्रति आइटम मूल्य विवरण सहित </span>
+                <span>Vehicle Details / वाहन की सूचना (Optional) </span>
               </div>
             </label>
             <textarea
               value={vehicleNo}
               onChange={(e) => {
+                setTouched((p) => ({ ...p, vehicle: true }));
                 setVehicleNo(e.target.value);
-                if (errors.vehicleNo) setErrors({ ...errors, vehicleNo: null });
+                if (errors.vehicleNo) setErrors((p) => ({ ...p, vehicleNo: null }));
               }}
               className={`w-full px-4 py-4 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none ${errors.vehicleNo ? "border-red-300 bg-red-50" : "border-slate-300"
                 }`}
@@ -224,13 +278,15 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
             )}
           </div>
 
-          <div>
+          {/* ATTACHMENT */}
+          {/* <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-amber-600" />
                 <span>Attachment (Optional) / अनुलग्नक (वैकल्पिक)</span>
               </div>
             </label>
+
             <div
               className={`border border-dashed rounded-lg p-4 text-center ${file ? "border-green-300 bg-green-50" : "border-slate-300 bg-slate-50"
                 }`}
@@ -248,7 +304,12 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                   <div className="text-sm text-slate-500">
                     <label className="cursor-pointer text-blue-600 hover:text-blue-800">
                       Click to upload
-                      <input type="file" accept=".jpg,.jpeg" onChange={handleFileChange} className="hidden" />
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
                     </label>
                     <p>or drag and drop</p>
                     <p className="text-xs mt-1">JPG or JPEG files only</p>
@@ -256,8 +317,14 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
+
+        {!!price && !touched.price && (
+          <p className="mt-1 text-xs text-emerald-700">
+            Prefilled from your last quotation
+          </p>
+        )}
 
         <div className="mt-8 flex justify-end gap-3">
           <button
@@ -279,8 +346,8 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
                 Submitting...
               </>
@@ -294,7 +361,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default QuotationModal
+export default QuotationModal;
