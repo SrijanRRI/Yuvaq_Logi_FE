@@ -60,6 +60,7 @@ const API = {
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
+  VEHICLE_CATALOG : `${serverUrl}/vehicle/vehicle-catalog`,
 
   //Post-Bid Negotiation : 
   START_POST_BID: `${serverUrl}/tenders`,

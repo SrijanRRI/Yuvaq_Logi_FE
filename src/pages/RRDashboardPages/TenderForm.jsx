@@ -13,10 +13,11 @@ import {
   Info,
   ChevronDown,
   Check,
-} from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-import FullScreenLoader from "../../components/FullScreenLoader"
+import FullScreenLoader from "../../components/FullScreenLoader";
+import API from "../../API";
 
 const TenderForm = ({
   form,
@@ -30,12 +31,29 @@ const TenderForm = ({
   loading,
   formDisabled,
 }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const [vehicleCatalog, setVehicleCatalog] = useState({});
+  const [vehicleCatLoading, setVehicleCatLoading] = useState(false);
+  const [vehicleCatError, setVehicleCatError] = useState("");
+
+  const [vehCategory, setVehCategory] = useState("");
+  const [vehVehicleId, setVehVehicleId] = useState("");
+  const [vehQty, setVehQty] = useState(1);
+  const [vehQtyError, setVehQtyError] = useState("");
+
+  const validateVehQty = (raw) => {
+    if (raw === "") return "Minimum 1 has to be present";
+    const n = Number(raw);
+    if (!Number.isFinite(n) || !Number.isInteger(n)) return "Enter a valid quantity";
+    if (n < 1) return "Minimum 1 has to be present";
+    return "";
+  };
 
   const openConfirmModal = (e) => {
     e?.preventDefault?.();
-    if (loading || formDisabled) return; // safety
+    if (loading || formDisabled) return;
     setShowConfirm(true);
   };
 
@@ -43,102 +61,141 @@ const TenderForm = ({
 
   const agreeAndSubmit = async () => {
     setShowConfirm(false);
-    await handleSend(); // ✅ submits only after user agrees
+    await handleSend();
   };
 
   const unitOptions = [
     { value: "Per MT", label: "Per MT", description: "Price per metric ton" },
-    { value: "Per Tender", label: "Per Tender", description: "Fixed price for entire tender" },
-  ]
+    {
+      value: "Per Tender",
+      label: "Per Tender",
+      description: "Fixed price for entire tender",
+    },
+  ];
 
   const handleUnitSelect = (value) => {
     const event = {
       target: {
         name: "maxBidUnit",
-        value: value,
+        value,
       },
+    };
+    handleChange(event);
+    setIsDropdownOpen(false);
+  };
+
+  const selectedOption = unitOptions.find(
+    (option) => option.value === form.maxBidUnit,
+  );
+
+  // ---------------- PIN Auto-fill (Pickup + Drop) ----------------
+  const [pickupPinStatus, setPickupPinStatus] = useState("idle"); // idle | loading | success | error
+  const [pickupPinStatusMsg, setPickupPinStatusMsg] = useState("");
+  const pickupLastPinRef = useRef(null);
+
+  const [dropPinStatus, setDropPinStatus] = useState("idle"); // idle | loading | success | error
+  const [dropPinStatusMsg, setDropPinStatusMsg] = useState("");
+  const dropLastPinRef = useRef(null);
+
+  const pickupManualRef = useRef({ state: false, district: false });
+  const dropManualRef = useRef({ state: false, district: false });
+
+  const normalizePin = (v) =>
+    String(v ?? "")
+      .trim()
+      .replace(/\D/g, "")
+      .slice(0, 6);
+
+  const lookupPin = async (pin, signal) => {
+    // 1) India Postal API
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`, {
+        signal,
+        mode: "cors",
+      });
+      const json = await res.json();
+      const d = Array.isArray(json) ? json[0] : null;
+
+      if (d?.Status === "Success" && d?.PostOffice?.length) {
+        const po = d.PostOffice[0];
+
+        const state = po?.State || "";
+
+        // ✅ Fill district only (best available)
+        const district =
+          po?.District ||
+          po?.Block ||
+          po?.Division ||
+          po?.Taluk ||
+          po?.Name ||
+          "";
+
+        return { state, district };
+      }
+    } catch {
+      // fall through to zippopotam
     }
-    handleChange(event)
-    setIsDropdownOpen(false)
-  }
 
-  const selectedOption = unitOptions.find((option) => option.value === form.maxBidUnit)
+    // 2) Fallback: Zippopotam
+    const res2 = await fetch(`https://api.zippopotam.us/IN/${pin}`, {
+      signal,
+      mode: "cors",
+    });
+    if (!res2.ok) throw new Error("PIN lookup failed");
 
-  const [pinStatus, setPinStatus] = useState("idle"); // idle | loading | success | error
-  const [pinStatusMsg, setPinStatusMsg] = useState("");
-  const lastPinRef = useRef(null);
+    const j2 = await res2.json();
+    const place = j2?.places?.[0];
 
+    const state = place?.state || "";
+    const district = place?.["place name"] || ""; // best available fallback
+
+    return { state, district };
+  };
+
+  // Pickup PIN autofill
   useEffect(() => {
-    const raw = String(form.pincode ?? "").trim();
-    const pin = raw.replace(/\D/g, "").slice(0, 6);
+    const pin = normalizePin(form.pickup?.pincode);
 
-    // only run when 6 digits
     if (pin.length !== 6) {
-      setPinStatus("idle");
-      setPinStatusMsg("");
-      lastPinRef.current = null; // allow fetch again once 6 digits complete
+      setPickupPinStatus("idle");
+      setPickupPinStatusMsg("");
+      pickupLastPinRef.current = null;
       return;
     }
 
-    // prevent re-fetch for same pin
-    if (lastPinRef.current === pin) return;
+    if (pickupLastPinRef.current === pin) return;
 
     const ctrl = new AbortController();
-
     const timeout = setTimeout(async () => {
-      setPinStatus("loading");
-      setPinStatusMsg("Looking up city & state…");
+      try {
+        setPickupPinStatus("loading");
+        setPickupPinStatusMsg("Looking up district & state…");
 
-      const setSuccess = (city, state) => {
+        const { state, district } = await lookupPin(pin, ctrl.signal);
+
         setForm((prev) => ({
           ...prev,
-          dispatchLocation: state || prev.dispatchLocation, // Location -> State
-          address: city || prev.address,                   // Address -> City
-          pincode: pin, // keep normalized 6 digits
+          pickup: {
+            ...(prev.pickup || {}),
+            pincode: pin,
+            state: pickupManualRef.current.state ? (prev.pickup?.state || "") : state,
+            district: pickupManualRef.current.district
+              ? (prev.pickup?.district || "")
+              : district,
+            // city remains manual
+          },
         }));
 
-        setPinStatus("success");
-        setPinStatusMsg(`${city}${city && state ? ", " : ""}${state}`);
-        lastPinRef.current = pin;
-      };
-
-      try {
-        // 1) India Postal API
-        try {
-          const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`, {
-            signal: ctrl.signal,
-            mode: "cors",
-          });
-          const json = await res.json();
-          const d = Array.isArray(json) ? json[0] : null;
-
-          if (d?.Status === "Success" && d?.PostOffice?.length) {
-            const po = d.PostOffice[0];
-            const city =
-              po?.District || po?.Block || po?.Division || po?.Name || "";
-            const state = po?.State || "";
-            setSuccess(city, state);
-            return;
-          }
-          throw new Error("Postal API returned no result");
-        } catch {
-          // 2) Fallback: Zippopotam
-          const res2 = await fetch(`https://api.zippopotam.us/IN/${pin}`, {
-            signal: ctrl.signal,
-            mode: "cors",
-          });
-          if (!res2.ok) throw new Error("Zippopotam not ok");
-          const j2 = await res2.json();
-          const place = j2?.places?.[0];
-          const city = place?.["place name"] || "";
-          const state = place?.state || "";
-          setSuccess(city, state);
-        }
+        setPickupPinStatus("success");
+        setPickupPinStatusMsg(
+          `${district}${district && state ? ", " : ""}${state}`,
+        );
+        pickupLastPinRef.current = pin;
       } catch (e) {
         if (e?.name === "AbortError") return;
-        setPinStatus("error");
-        setPinStatusMsg("Could not fetch details. Please fill manually.");
-        lastPinRef.current = null;
+        setPickupPinStatus("error");
+        setPickupPinStatusMsg("Could not fetch details. Please fill manually.");
+        pickupLastPinRef.current = null;
       }
     }, 350);
 
@@ -146,7 +203,176 @@ const TenderForm = ({
       ctrl.abort();
       clearTimeout(timeout);
     };
-  }, [form.pincode, setForm]);
+  }, [form.pickup?.pincode, setForm]);
+
+  // Drop PIN autofill
+  useEffect(() => {
+    const pin = normalizePin(form.drop?.pincode);
+
+    if (pin.length !== 6) {
+      setDropPinStatus("idle");
+      setDropPinStatusMsg("");
+      dropLastPinRef.current = null;
+      return;
+    }
+
+    if (dropLastPinRef.current === pin) return;
+
+    const ctrl = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        setDropPinStatus("loading");
+        setDropPinStatusMsg("Looking up district & state…");
+
+        const { state, district } = await lookupPin(pin, ctrl.signal);
+
+        setForm((prev) => ({
+          ...prev,
+          drop: {
+            ...(prev.drop || {}),
+            pincode: pin,
+            state: dropManualRef.current.state ? (prev.drop?.state || "") : state,
+            district: dropManualRef.current.district
+              ? (prev.drop?.district || "")
+              : district,
+            // city remains manual
+          },
+        }));
+
+        setDropPinStatus("success");
+        setDropPinStatusMsg(
+          `${district}${district && state ? ", " : ""}${state}`,
+        );
+        dropLastPinRef.current = pin;
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+        setDropPinStatus("error");
+        setDropPinStatusMsg("Could not fetch details. Please fill manually.");
+        dropLastPinRef.current = null;
+      }
+    }, 350);
+
+    return () => {
+      ctrl.abort();
+      clearTimeout(timeout);
+    };
+  }, [form.drop?.pincode, setForm]);
+
+  // ---------------- Vehicle catalog ----------------
+  useEffect(() => {
+    let ignore = false;
+
+    const load = async () => {
+      try {
+        setVehicleCatLoading(true);
+        setVehicleCatError("");
+
+        const res = await fetch(API.VEHICLE_CATALOG, { credentials: "include" });
+        const json = await res.json();
+
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.message || "Failed to fetch vehicle catalog");
+        }
+
+        if (!ignore) setVehicleCatalog(json.data || {});
+      } catch (e) {
+        if (!ignore) setVehicleCatError(e.message || "Vehicle catalog error");
+      } finally {
+        if (!ignore) setVehicleCatLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const addVehicleRequirement = () => {
+    if (!vehCategory || !vehVehicleId) return;
+
+    const list = vehicleCatalog?.[vehCategory] || [];
+    const found = list.find((x) => String(x._id) === String(vehVehicleId));
+    if (!found) return;
+
+    const qtyNum = parseInt(vehQty, 10);
+    if (!qtyNum || qtyNum < 1) {
+      setVehQtyError("Minimum 1 has to be present");
+      return;
+    }
+    const qty = qtyNum;
+
+    setForm((prev) => {
+      const existing = Array.isArray(prev.vehicleRequirements)
+        ? prev.vehicleRequirements
+        : [];
+      const idx = existing.findIndex(
+        (v) => String(v.vehicleId) === String(found._id),
+      );
+
+      if (idx >= 0) {
+        const next = [...existing];
+        next[idx] = {
+          ...next[idx],
+          quantity: Number(next[idx].quantity || 1) + qty,
+        };
+        return { ...prev, vehicleRequirements: next };
+      }
+
+      return {
+        ...prev,
+        vehicleRequirements: [
+          ...existing,
+          {
+            vehicleId: found._id,
+            category: vehCategory,
+            subCategory: found.subCategory,
+            quantity: qty,
+          },
+        ],
+      };
+    });
+
+    setVehVehicleId("");
+    setVehQty(1);
+    setVehQtyError("");
+    setVehCategory("");      // ✅ clear category
+    setVehVehicleId("");     // ✅ clear vehicle
+    setVehQty("1");          // reset qty
+    setVehQtyError("");
+  };
+
+  const removeVehicleRequirement = (vehicleId) => {
+    setForm((prev) => ({
+      ...prev,
+      vehicleRequirements: (prev.vehicleRequirements || []).filter(
+        (v) => String(v.vehicleId) !== String(vehicleId),
+      ),
+    }));
+  };
+
+  const StatusLine = ({ status, msg }) => {
+    if (!msg || status === "idle") return null;
+    const dot =
+      status === "loading"
+        ? "bg-slate-400"
+        : status === "success"
+          ? "bg-emerald-500"
+          : "bg-amber-500";
+    const text =
+      status === "loading"
+        ? "text-slate-500"
+        : status === "success"
+          ? "text-emerald-700"
+          : "text-amber-700";
+
+    return (
+      <div className="mt-1.5 flex items-center gap-2 text-xs">
+        <span className={`h-2 w-2 rounded-full ${dot}`} />
+        <span className={text}>{msg}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -156,7 +382,9 @@ const TenderForm = ({
             <Package className="h-6 w-6" />
             Create New Tender
           </h1>
-          <p className="mt-1 opacity-80">Fill in the details to create a new tender request</p>
+          <p className="mt-1 opacity-80">
+            Fill in the details to create a new tender request
+          </p>
         </div>
 
         {loading ? (
@@ -173,7 +401,9 @@ const TenderForm = ({
                   </h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">From</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        From
+                      </label>
                       <input
                         type="date"
                         name="deliveryStart"
@@ -193,7 +423,9 @@ const TenderForm = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">To</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        To
+                      </label>
                       <input
                         type="date"
                         name="deliveryEnd"
@@ -220,7 +452,9 @@ const TenderForm = ({
                     Closing Date
                   </h2>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Tender Closing Date</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Tender Closing Date
+                    </label>
                     <input
                       type="date"
                       name="closingDate"
@@ -241,7 +475,9 @@ const TenderForm = ({
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Bidding Start</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Bidding Start
+                    </label>
                     <input
                       type="datetime-local"
                       name="biddingStart"
@@ -252,7 +488,9 @@ const TenderForm = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Bidding End</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Bidding End
+                    </label>
                     <input
                       type="datetime-local"
                       name="biddingEnd"
@@ -265,7 +503,6 @@ const TenderForm = ({
                 </div>
               </div>
 
-              {/* Maximum Bid Amount */}
               {/* Bid Amount Range (Min + Max) */}
               <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-xl border border-amber-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -273,19 +510,15 @@ const TenderForm = ({
                   Bid Amount Range
                 </h2>
 
-                {/* Min + Max grid (responsive) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Minimum Bid Amount */}
                   <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Minimum Bid Amount
                     </label>
-
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
-
                       <input
                         type="number"
                         name="minBidAmount"
@@ -300,17 +533,14 @@ const TenderForm = ({
                     </div>
                   </div>
 
-                  {/* Maximum Bid Amount */}
                   <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Maximum Bid Amount
                     </label>
-
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
-
                       <input
                         type="number"
                         name="maxBidAmount"
@@ -354,7 +584,9 @@ const TenderForm = ({
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-slate-500">Select Unit Type</div>
+                              <div className="text-slate-500">
+                                Select Unit Type
+                              </div>
                             )}
                           </div>
                         </div>
@@ -381,8 +613,12 @@ const TenderForm = ({
                                   <Scale className="h-4 w-4 text-amber-600" />
                                 </div>
                                 <div>
-                                  <div className="font-medium text-slate-800">{option.label}</div>
-                                  <div className="text-xs text-slate-500">{option.description}</div>
+                                  <div className="font-medium text-slate-800">
+                                    {option.label}
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    {option.description}
+                                  </div>
                                 </div>
                               </div>
                               {form.maxBidUnit === option.value && (
@@ -396,11 +632,11 @@ const TenderForm = ({
                   </div>
                 </div>
 
-                {/* Info line */}
                 <div className="mt-3 flex items-start gap-2 text-amber-700">
                   <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p className="text-xs">
-                    Transporters must quote within the allowed range based on the selected unit.
+                    Transporters must quote within the allowed range based on the
+                    selected unit.
                   </p>
                 </div>
               </div>
@@ -413,7 +649,9 @@ const TenderForm = ({
                 </h2>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Project Name
+                    </label>
                     <input
                       type="text"
                       name="projectName"
@@ -425,7 +663,9 @@ const TenderForm = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Project Code</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Project Code
+                    </label>
                     <input
                       type="text"
                       name="projectCode"
@@ -437,7 +677,9 @@ const TenderForm = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Purchase Order</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Purchase Order
+                    </label>
                     <input
                       type="text"
                       name="purchaseOrder"
@@ -449,7 +691,9 @@ const TenderForm = ({
                     />
                   </div>
                   <div className="md:col-span-3">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Project Remark</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Project Remark
+                    </label>
                     <textarea
                       name="projectRemark"
                       value={form.projectRemark || ""}
@@ -460,7 +704,7 @@ const TenderForm = ({
                   </div>
                 </div>
 
-                {/* NEW: Price Difference Rule */}
+                {/* Price Difference Rule */}
                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-1">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -490,11 +734,15 @@ const TenderForm = ({
                           <Info className="h-4 w-4 text-emerald-700" />
                         </div>
                         <div className="text-sm text-emerald-800">
-                          <p className="font-medium">Minimum decrement to beat L1</p>
+                          <p className="font-medium">
+                            Minimum decrement to beat L1
+                          </p>
                           <p className="mt-1">
-                            Set the minimum amount (in ₹) by which a transporter must undercut the current lowest bid (L1)
-                            for their quote to be accepted. For example, if <b>L1 = ₹300</b> and
-                            <b> Price Difference = ₹20</b>, then the next valid quote must be <b>₹280 or lower</b>.
+                            Set the minimum amount (in ₹) by which a transporter
+                            must undercut the current lowest bid (L1) for their
+                            quote to be accepted. For example, if <b>L1 = ₹300</b>{" "}
+                            and <b>Price Difference = ₹20</b>, then the next valid
+                            quote must be <b>₹280 or lower</b>.
                           </p>
                         </div>
                       </div>
@@ -503,163 +751,425 @@ const TenderForm = ({
                 </div>
               </div>
 
-              {/* Location Details */}
+              {/* Pickup + Drop Location Details */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-start justify-between gap-4 mb-5">
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-emerald-600" />
-                      Dispatch Location Details
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Enter PIN Code to auto-fill <span className="font-medium">City</span> &{" "}
-                      <span className="font-medium">State</span> (optional). You can edit anytime.
-                    </p>
-                  </div>
-                </div>
+                <h2 className="text-lg font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-emerald-600" />
+                  Pickup & Drop Location Details
+                </h2>
+                <p className="text-xs text-slate-500 mb-5">
+                  Enter PIN Code to auto-fill{" "}
+                  <span className="font-medium">City</span> &{" "}
+                  <span className="font-medium">State</span>. You can
+                  edit anytime.
+                </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  {/* PIN Code (first) */}
-                  <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      PIN Code
-                    </label>
-
-                    <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        name="pincode"
-                        value={form.pincode}
-                        onChange={(e) => {
-                          const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
-                          handleChange({ target: { name: "pincode", value: pin } });
-                        }}
-                        placeholder="6-digit PIN"
-                        autoComplete="postal-code"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-                      // ✅ keep optional so user can enter manually
-                      // required
-                      />
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* ---------------- Pickup ---------------- */}
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="font-semibold text-slate-800 mb-3">
+                      Pickup
                     </div>
 
-                    {/* Status line */}
-                    {pinStatus !== "idle" ? (
-                      <div className="mt-1.5 flex items-center gap-2 text-xs">
-                        <span
-                          className={`h-2 w-2 rounded-full ${pinStatus === "loading"
-                            ? "bg-slate-400"
-                            : pinStatus === "success"
-                              ? "bg-emerald-500"
-                              : "bg-amber-500"
-                            }`}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      <div className="md:col-span-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          PIN Code
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                          value={form.pickup?.pincode || ""}
+                          onChange={(e) => {
+                            const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
+
+                            // PIN changed → allow autofill overwrite for new PIN
+                            pickupManualRef.current = { state: false, district: false };
+
+                            setForm((prev) => ({
+                              ...prev,
+                              pickup: {
+                                ...(prev.pickup || {}),
+                                pincode: pin,
+
+                                // optional but recommended: clear old auto-filled values while typing new PIN
+                                state: "",
+                                district: "",
+                              },
+                            }));
+                          }}
+                          placeholder="6-digit PIN"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          required
                         />
-                        <span
-                          className={
-                            pinStatus === "loading"
-                              ? "text-slate-500"
-                              : pinStatus === "success"
-                                ? "text-emerald-700"
-                                : "text-amber-700"
-                          }
-                        >
-                          {pinStatusMsg}
-                        </span>
+                        <StatusLine
+                          status={pickupPinStatus}
+                          msg={pickupPinStatusMsg}
+                        />
                       </div>
-                    ) : (
-                      <p className="mt-1.5 text-[11px] text-slate-500">
-                        Leave blank to fill City/State manually.
-                      </p>
-                    )}
+
+                      <div className="md:col-span-8">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.state || ""}
+                          onChange={(e) => {
+                            pickupManualRef.current.state = true; // ✅ user edited manually
+                            setForm((prev) => ({
+                              ...prev,
+                              pickup: {
+                                ...(prev.pickup || {}),
+                                state: e.target.value,
+                              },
+                            }));
+                          }}
+                          placeholder="Auto-filled or type manually"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-6">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          District
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.district || ""}
+                          onChange={(e) => {
+                            pickupManualRef.current.district = true; // ✅ user edited manually
+                            setForm((prev) => ({
+                              ...prev,
+                              pickup: {
+                                ...(prev.pickup || {}),
+                                district: e.target.value,
+                              },
+                            }));
+                          }}
+                          placeholder="Auto-filled or type manually"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-6">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          City / Town
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.city || ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              pickup: {
+                                ...(prev.pickup || {}),
+                                city: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter the city"
+                          required
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-12">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Exact Pickup Address / Location
+                        </label>
+                        <textarea
+                          value={form.pickup?.address || ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              pickup: {
+                                ...(prev.pickup || {}),
+                                address: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter full address / landmark / exact pickup location"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 min-h-[90px] resize-none"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* State (beside PIN) */}
-                  <div className="md:col-span-8">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Location / State
-                    </label>
-                    <input
-                      type="text"
-                      name="dispatchLocation"
-                      value={form.dispatchLocation}
-                      onChange={handleChange}
-                      placeholder="Auto-filled from PIN or type manually"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-                      required
-                    />
-                  </div>
+                  {/* ---------------- Drop ---------------- */}
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="font-semibold text-slate-800 mb-3">
+                      Drop
+                    </div>
 
-                  {/* City/District (below, full width) */}
-                  <div className="md:col-span-12">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Address (City / District)
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={form.address}
-                      onChange={handleChange}
-                      placeholder="Auto-filled from PIN or type manually"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-                      required
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      <div className="md:col-span-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          PIN Code
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                          value={form.drop?.pincode || ""}
+                          onChange={(e) => {
+                            const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
+
+                            dropManualRef.current = { state: false, district: false };
+
+                            setForm((prev) => ({
+                              ...prev,
+                              drop: {
+                                ...(prev.drop || {}),
+                                pincode: pin,
+                                state: "",
+                                district: "",
+                              },
+                            }));
+                          }}
+                          placeholder="6-digit PIN"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          required
+                        />
+                        <StatusLine status={dropPinStatus} msg={dropPinStatusMsg} />
+                      </div>
+
+                      <div className="md:col-span-8">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          value={form.drop?.state || ""}
+                          onChange={(e) => {
+                            dropManualRef.current.state = true;
+                            setForm((prev) => ({
+                              ...prev,
+                              drop: {
+                                ...(prev.drop || {}),
+                                state: e.target.value,
+                              },
+                            }));
+                          }}
+                          placeholder="Auto-filled or type manually"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-6">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          District
+                        </label>
+                        <input
+                          type="text"
+                          value={form.drop?.district || ""}
+                          onChange={(e) => {
+                            dropManualRef.current.district = true;
+                            setForm((prev) => ({
+                              ...prev,
+                              drop: {
+                                ...(prev.drop || {}),
+                                district: e.target.value,
+                              },
+                            }));
+                          }}
+                          placeholder="Auto-filled or type manually"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-6">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          City / Town
+                        </label>
+                        <input
+                          type="text"
+                          value={form.drop?.city || ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              drop: {
+                                ...(prev.drop || {}),
+                                city: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter the city"
+                          required
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-12">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Exact Drop Address / Location
+                        </label>
+                        <textarea
+                          value={form.drop?.address || ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              drop: {
+                                ...(prev.drop || {}),
+                                address: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter full address / landmark / exact drop location"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 min-h-[90px] resize-none"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Materials Section */}
+              {/* Vehicle Requirements Section */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-emerald-600" />
-                    Materials
+                    <Truck className="h-5 w-5 text-emerald-600" />
+                    Vehicle Requirements
                   </h2>
-                  <button
-                    type="button"
-                    onClick={() => setShowMaterialModal(true)}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 flex items-center gap-2 text-sm font-medium shadow-sm"
-                  >
-                    <Plus className="h-4 w-4" /> Add Material
-                  </button>
                 </div>
 
-                {form.materials.length > 0 ? (
-                  <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
+                {vehicleCatError ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 text-sm">
+                    {vehicleCatError}
+                  </div>
+                ) : null}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                  <div className="lg:col-span-5">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={vehCategory}
+                      onChange={(e) => {
+                        setVehCategory(e.target.value);
+                        setVehVehicleId("");
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">Select Category</option>
+                      {Object.keys(vehicleCatalog || {}).map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Vehicle
+                    </label>
+                    <select
+                      value={vehVehicleId}
+                      onChange={(e) => setVehVehicleId(e.target.value)}
+                      disabled={!vehCategory}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">
+                        {vehCategory ? "Select Vehicle" : "Select Category first"}
+                      </option>
+                      {(vehicleCatalog?.[vehCategory] || []).map((v) => (
+                        <option key={v._id} value={v._id}>
+                          {v.subCategory}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Qty
+                    </label>
+
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={vehQty}
+                      onChange={(e) => {
+                        const raw = e.target.value; // can be "" while typing
+                        setVehQty(raw);
+                        setVehQtyError(validateVehQty(raw));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${vehQtyError ? "border-red-400" : "border-slate-300"
+                        }`}
+                    />
+
+                    {vehQtyError ? (
+                      <p className="mt-1 text-xs text-red-600">{vehQtyError}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="lg:col-span-1">
+                    <button
+                      type="button"
+                      onClick={addVehicleRequirement}
+                      disabled={
+                        !vehCategory ||
+                        !vehVehicleId ||
+                        vehicleCatLoading ||
+                        vehQty === "" ||
+                        !!vehQtyError
+                      }
+                      className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {(form.vehicleRequirements || []).length > 0 ? (
+                  <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr>
                             <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold rounded-tl-lg">
-                              Material
+                              Category
                             </th>
-                            <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold">Sub Item</th>
+                            <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold">
+                              Vehicle
+                            </th>
                             <th className="px-4 py-3 text-right bg-slate-100 text-slate-700 font-semibold">
-                              Weight (MT)
+                              Qty
                             </th>
-                            <th className="px-4 py-3 text-right bg-slate-100 text-slate-700 font-semibold">Quantity</th>
                             <th className="px-4 py-3 text-center bg-slate-100 text-slate-700 font-semibold rounded-tr-lg">
                               Action
                             </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {form.materials.map((material, index) => (
+                          {form.vehicleRequirements.map((v) => (
                             <tr
-                              key={index}
-                              className="border-b border-slate-200 last:border-0 hover:bg-slate-100/50 transition-colors duration-150"
+                              key={String(v.vehicleId)}
+                              className="border-b border-slate-200 last:border-0 hover:bg-slate-100/50 transition"
                             >
-                              <td className="px-4 py-3 font-medium text-slate-800">{material.item}</td>
-                              <td className="px-4 py-3 text-slate-600">{material.subItem || "-"}</td>
-                              <td className="px-4 py-3 text-right text-slate-700">{material.weight}</td>
-                              <td className="px-4 py-3 text-right text-slate-700">{material.quantity}</td>
+                              <td className="px-4 py-3 font-medium text-slate-800">
+                                {v.category}
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {v.subCategory}
+                              </td>
+                              <td className="px-4 py-3 text-right text-slate-700">
+                                {v.quantity}
+                              </td>
                               <td className="px-4 py-3 text-center">
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveMaterial(index)}
-                                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors duration-200"
-                                  title="Remove material"
+                                  onClick={() => removeVehicleRequirement(v.vehicleId)}
+                                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition"
+                                  title="Remove"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -672,7 +1182,7 @@ const TenderForm = ({
 
                     <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100 shadow-sm">
-                        <label className=" text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
+                        <label className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
                           <Scale className="h-4 w-4 text-emerald-600" />
                           Total Weight (MT)
                         </label>
@@ -686,8 +1196,9 @@ const TenderForm = ({
                           required
                         />
                       </div>
+
                       <div className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl p-4 border border-sky-100 shadow-sm">
-                        <label className=" text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
+                        <label className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
                           <Package className="h-4 w-4 text-sky-600" />
                           Total Quantity
                         </label>
@@ -704,21 +1215,11 @@ const TenderForm = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center mb-4">
-                    <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
-                      <Package className="h-10 w-10 text-slate-300" />
-                    </div>
-                    <p className="text-slate-600 font-medium mb-2">No materials added yet</p>
-                    <p className="text-slate-500 text-sm mb-4">
-                      Add materials to your tender by clicking the button below
+                  <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-6 text-center">
+                    <p className="text-slate-600 font-medium">No vehicles added yet</p>
+                    <p className="text-slate-500 text-sm mt-1">
+                      Select a category, vehicle and quantity, then click Add.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowMaterialModal(true)}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 inline-flex items-center gap-2 shadow-sm"
-                    >
-                      <Plus className="h-4 w-4" /> Add Material
-                    </button>
                   </div>
                 )}
               </div>
@@ -742,18 +1243,6 @@ const TenderForm = ({
                 {selectedTransporters.length > 0 ? (
                   <div className="bg-slate-50 rounded-xl p-5 mb-4 border border-slate-200">
                     <div className="flex flex-wrap gap-2">
-                      {/* {selectedTransporters.map((transporter) => (
-                        <div
-                          key={transporter._id}
-                          className="bg-white px-4 py-2 rounded-lg border border-slate-200 text-sm flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 hover:border-emerald-200"
-                        >
-                          <div className="bg-emerald-100 p-1.5 rounded-full">
-                            <Users className="h-3.5 w-3.5 text-emerald-600" />
-                          </div>
-                          <span className="font-medium text-slate-700">{transporter.name || transporter.email}</span>
-                        </div>
-                      ))} */}
-
                       {selectedTransporters.map((transporter, index) => (
                         <div
                           key={transporter._id}
@@ -762,14 +1251,11 @@ const TenderForm = ({
                           <div className="bg-emerald-100 p-1.5 rounded-full">
                             <Users className="h-3.5 w-3.5 text-emerald-600" />
                           </div>
-
-                          {/* ✅ DEMO: show only demo names */}
                           <span className="font-medium text-slate-700">
                             Transporter {index + 1}
                           </span>
                         </div>
                       ))}
-
                     </div>
                   </div>
                 ) : (
@@ -777,8 +1263,12 @@ const TenderForm = ({
                     <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
                       <Truck className="h-10 w-10 text-slate-300" />
                     </div>
-                    <p className="text-slate-600 font-medium mb-2">No transporters selected</p>
-                    <p className="text-slate-500 text-sm mb-4">Select transporters who can bid on this tender</p>
+                    <p className="text-slate-600 font-medium mb-2">
+                      No transporters selected
+                    </p>
+                    <p className="text-slate-500 text-sm mb-4">
+                      Select transporters who can bid on this tender
+                    </p>
                     <button
                       type="button"
                       onClick={() => setShowTransporterModal(true)}
@@ -802,7 +1292,7 @@ const TenderForm = ({
                   onChange={handleChange}
                   placeholder="Add any additional information or special instructions"
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[120px] transition-all duration-200"
-                ></textarea>
+                />
               </div>
 
               {/* Submit Button */}
@@ -827,8 +1317,12 @@ const TenderForm = ({
                           r="10"
                           stroke="currentColor"
                           strokeWidth="4"
-                        ></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        />
                       </svg>
                       Processing...
                     </>
@@ -855,24 +1349,44 @@ const TenderForm = ({
 
               <div className="p-5 space-y-4">
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-sm text-amber-900 font-semibold mb-2">Caution</p>
+                  <p className="text-sm text-amber-900 font-semibold mb-2">
+                    Caution
+                  </p>
                   <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
-                    <li>Verify all tender details (dates, location, materials, weight/quantity, remarks) before submitting.</li>
-                    <li>Once submitted, transporters may start bidding immediately based on the details you entered.</li>
+                    <li>
+                      Verify all tender details (dates, location, materials,
+                      weight/quantity, remarks) before submitting.
+                    </li>
+                    <li>
+                      Once submitted, transporters may start bidding immediately
+                      based on the details you entered.
+                    </li>
                   </ul>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm text-slate-900 font-semibold mb-2">Terms & Disclaimer</p>
+                  <p className="text-sm text-slate-900 font-semibold mb-2">
+                    Terms & Disclaimer
+                  </p>
                   <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1">
-                    <li>YuvaQ is a technology platform that facilitates tender creation and bidding.</li>
-                    <li>YuvaQ does not verify, guarantee, or take responsibility for tender accuracy or outcomes.</li>
-                    <li>Any transporter backout, delay, dispute, or non-performance is between the tender creator and transporter.</li>
-                    <li>YuvaQ is not responsible for any loss, damage, or claims arising from bidding, backout, or fulfillment issues.</li>
+                    <li>
+                      YuvaQ is a technology platform that facilitates tender
+                      creation and bidding.
+                    </li>
+                    <li>
+                      YuvaQ does not verify, guarantee, or take responsibility
+                      for tender accuracy or outcomes.
+                    </li>
+                    <li>
+                      Any transporter backout, delay, dispute, or
+                      non-performance is between the tender creator and
+                      transporter.
+                    </li>
+                    <li>
+                      YuvaQ is not responsible for any loss, damage, or claims
+                      arising from bidding, backout, or fulfillment issues.
+                    </li>
                   </ul>
-                  {/* <p className="text-xs text-slate-500 mt-3">
-                    (Review with your legal/compliance team if you need stricter wording.)
-                  </p> */}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-1">
@@ -900,7 +1414,7 @@ const TenderForm = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TenderForm
+export default TenderForm;
