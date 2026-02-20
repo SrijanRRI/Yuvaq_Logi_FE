@@ -29,10 +29,25 @@ const authCfg = () => {
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN") : "—");
 const fmtDateTime = (d) =>
-  d ? new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—";
+  d
+    ? new Date(d).toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "—";
 
-const fmtAddr = (x) =>
-  [x?.dispatchLocation, x?.address, x?.pincode].filter(Boolean).join(", ") || "—";
+// ✅ NEW: format pickup/drop location object
+const fmtLoc = (l) =>
+  [
+    l?.location,
+    l?.city,
+    l?.district,
+    l?.state,
+    l?.pincode ? `PIN ${l.pincode}` : "",
+    l?.address,
+  ]
+    .filter(Boolean)
+    .join(", ") || "—";
 
 const initials = (name = "") =>
   name
@@ -42,19 +57,28 @@ const initials = (name = "") =>
     .map((w) => w[0]?.toUpperCase())
     .join("") || "RR";
 
-export default function PendingConfirmationsView({ items = [], loading = false, onRefresh }) {
+export default function PendingConfirmationsView({
+  items = [],
+  loading = false,
+  onRefresh,
+}) {
   // per-tender action loader: { [tenderId]: 'accept' | 'reject' | null }
   const [actionLoadingByTender, setActionLoadingByTender] = useState({});
 
   // reject modal state
-  const [rejectModal, setRejectModal] = useState({ open: false, tenderId: "", title: "" });
+  const [rejectModal, setRejectModal] = useState({
+    open: false,
+    tenderId: "",
+    title: "",
+  });
   const [rejectReason, setRejectReason] = useState("");
 
-  const isLoadingFor = (tenderId, action) => actionLoadingByTender?.[tenderId] === action;
+  const isLoadingFor = (tenderId, action) =>
+    actionLoadingByTender?.[tenderId] === action;
   const setLoadingFor = (tenderId, actionOrNull) =>
     setActionLoadingByTender((p) => ({ ...p, [tenderId]: actionOrNull }));
 
-  // NEW RESPONSE SHAPE: item already has { dispatchLocation, closeDate, materials, selection, quotation, requestedBy }
+  // NEW RESPONSE SHAPE: item already has { pickup, drop, vehicleRequirements, selection, quotation, requestedBy }
   const normalize = (x) => {
     // fallback support (if old shape ever comes)
     if (x?.dispatchLocation || x?.quotation || x?.requestedBy) return x;
@@ -80,10 +104,14 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
       await axios.post(
         `${API.RESPOND_SELECTION}/${tenderId}/selection/respond`,
         { action, reason },
-        authCfg()
+        authCfg(),
       );
 
-      toast.success(action === "accept" ? "You accepted the selection." : "You rejected the selection.");
+      toast.success(
+        action === "accept"
+          ? "You accepted the selection."
+          : "You rejected the selection.",
+      );
       await onRefresh?.();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Could not submit response.");
@@ -135,8 +163,12 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
         <CheckCircle className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-slate-800">No pending confirmations</h3>
-        <p className="text-slate-500 text-sm mt-1">If RR requests confirmation, it will appear here.</p>
+        <h3 className="text-lg font-semibold text-slate-800">
+          No pending confirmations
+        </h3>
+        <p className="text-slate-500 text-sm mt-1">
+          If RR requests confirmation, it will appear here.
+        </p>
       </div>
     );
   }
@@ -155,16 +187,25 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
           const title =
             x?.projectName ||
             x?.projectCode ||
-            (x?.dispatchLocation ? `Dispatch: ${x.dispatchLocation}` : `Tender #${idx + 1}`);
+            (x?.pickup?.city
+              ? `Pickup: ${x.pickup.city}`
+              : x?.drop?.city
+                ? `Drop: ${x.drop.city}`
+                : `Tender #${idx + 1}`);
 
           const deliveryText =
             x?.deliveryWindow?.from && x?.deliveryWindow?.to
-              ? `${fmtDate(x.deliveryWindow.from)} → ${fmtDate(x.deliveryWindow.to)}`
+              ? `${fmtDate(x.deliveryWindow.from)} → ${fmtDate(
+                  x.deliveryWindow.to,
+                )}`
               : "—";
 
-          const mat = Array.isArray(x?.materials) ? x.materials : [];
-          const shown = mat.slice(0, 3);
-          const more = mat.length - shown.length;
+          // ✅ NEW: vehicle requirements
+          const vehicles = Array.isArray(x?.vehicleRequirements)
+            ? x.vehicleRequirements
+            : [];
+          const shownVehicles = vehicles.slice(0, 3);
+          const moreVehicles = vehicles.length - shownVehicles.length;
 
           return (
             <div
@@ -176,7 +217,9 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <Truck className="w-5 h-5 text-teal-600" />
-                    <h4 className="font-semibold text-slate-900 truncate">{title}</h4>
+                    <h4 className="font-semibold text-slate-900 truncate">
+                      {title}
+                    </h4>
                   </div>
 
                   {/* Requested by */}
@@ -206,12 +249,32 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
 
               {/* Key details (minimal grid) */}
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* ✅ UPDATED: Pickup + Drop */}
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="text-xs text-slate-500 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" />
-                    Location
+                    Pickup / Drop
                   </div>
-                  <div className="text-sm text-slate-800 mt-1 break-words">{fmtAddr(x)}</div>
+
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+                        Pickup
+                      </div>
+                      <div className="text-sm text-slate-800 mt-0.5 break-words">
+                        {fmtLoc(x?.pickup)}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-200/60 pt-2">
+                      <div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+                        Drop
+                      </div>
+                      <div className="text-sm text-slate-800 mt-0.5 break-words">
+                        {fmtLoc(x?.drop)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -219,7 +282,9 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                     <Calendar className="w-3.5 h-3.5" />
                     Close Date
                   </div>
-                  <div className="text-sm text-slate-800 mt-1">{fmtDate(x?.closeDate)}</div>
+                  <div className="text-sm text-slate-800 mt-1">
+                    {fmtDate(x?.closeDate)}
+                  </div>
                 </div>
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -227,7 +292,9 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                     <Clock3 className="w-3.5 h-3.5" />
                     Delivery Window
                   </div>
-                  <div className="text-sm text-slate-800 mt-1">{deliveryText}</div>
+                  <div className="text-sm text-slate-800 mt-1">
+                    {deliveryText}
+                  </div>
                 </div>
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -237,58 +304,64 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                   </div>
                   <div className="mt-1 text-sm text-slate-800 flex flex-wrap gap-x-3 gap-y-1">
                     <span className="font-semibold">
-                      {q?.price != null ? `₹${Number(q.price).toLocaleString("en-IN")}` : "—"}
+                      {q?.price != null
+                        ? `₹${Number(q.price).toLocaleString("en-IN")}`
+                        : "—"}
                     </span>
-                    {q?.rank ? <span className="text-slate-600">Rank: {q.rank}</span> : null}
+                    {q?.rank ? (
+                      <span className="text-slate-600">Rank: {q.rank}</span>
+                    ) : null}
                     {q?.vehicleNumber ? (
-                      <span className="text-slate-600">Vehicle: {q.vehicleNumber}</span>
+                      <span className="text-slate-600">
+                        Vehicle: {q.vehicleNumber}
+                      </span>
                     ) : null}
                   </div>
                 </div>
               </div>
 
-              {/* Requested at + materials */}
+              {/* Requested at + vehicle requirements */}
               <div className="mt-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-
+                {/* ✅ UPDATED: Vehicle Requirements */}
                 <div className="w-full sm:w-auto">
                   <div className="text-xs text-slate-500 flex items-center gap-1 mb-2">
                     <Package className="w-3.5 h-3.5" />
-                    Materials
+                    Vehicle Requirements
                   </div>
 
-                  {mat.length === 0 ? (
+                  {vehicles.length === 0 ? (
                     <div className="text-sm text-slate-700">—</div>
                   ) : (
                     <div className="space-y-2">
-                      {mat.slice(0, 3).map((m, i) => (
+                      {shownVehicles.map((v, i) => (
                         <div
-                          key={i}
+                          key={`${v?.vehicleId || i}-${i}`}
                           className="rounded-lg border border-slate-200 bg-white px-3 py-2"
-                          title={`${m.material || ""} ${m.subMaterial || ""}`.trim()}
+                          title={`${v?.category || ""} ${v?.subCategory || ""}`.trim()}
                         >
-                          {/* line 1: material name */}
-                          <div className="text-sm font-medium text-slate-800">
-                            {m.material || "Material"}
-                            {m.subMaterial ? (
-                              <span className="text-slate-500 font-normal"> • {m.subMaterial}</span>
-                            ) : null}
-                          </div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-slate-800 break-words">
+                                {v?.category || "Vehicle"}
+                                {v?.subCategory ? (
+                                  <span className="text-slate-500 font-normal">
+                                    {" "}
+                                    • {v.subCategory}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
 
-                          {/* line 2: metrics */}
-                          <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                              Weight: {m.weight != null ? `${m.weight} MT` : "—"}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
-                              Qty: {m.quantity != null ? `${m.quantity} pcs` : "—"}
+                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold">
+                              Qty: {v?.quantity ?? 1}
                             </span>
                           </div>
                         </div>
                       ))}
 
-                      {mat.length > 3 && (
+                      {moreVehicles > 0 && (
                         <div className="text-xs text-slate-500">
-                          +{mat.length - 3} more material(s)
+                          +{moreVehicles} more vehicle(s)
                         </div>
                       )}
                     </div>
@@ -297,7 +370,9 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
 
                 <div className="text-xs text-slate-500">
                   Requested at:{" "}
-                  <span className="text-slate-700 font-medium">{fmtDateTime(sel?.requestedAt)}</span>
+                  <span className="text-slate-700 font-medium">
+                    {fmtDateTime(sel?.requestedAt)}
+                  </span>
                 </div>
               </div>
 
@@ -308,9 +383,10 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                   onClick={() => respond(tenderId, "accept")}
                   disabled={!!actionLoadingByTender[tenderId]}
                   className={`px-4 py-2 rounded-lg text-sm inline-flex items-center gap-2
-                    ${isLoadingFor(tenderId, "accept")
-                      ? "bg-emerald-500 text-white opacity-80 cursor-not-allowed"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    ${
+                      isLoadingFor(tenderId, "accept")
+                        ? "bg-emerald-500 text-white opacity-80 cursor-not-allowed"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
                     }`}
                 >
                   {isLoadingFor(tenderId, "accept") ? (
@@ -326,9 +402,10 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                   onClick={() => openRejectModal(tenderId, title)}
                   disabled={!!actionLoadingByTender[tenderId]}
                   className={`px-4 py-2 rounded-lg text-sm inline-flex items-center gap-2
-                    ${isLoadingFor(tenderId, "reject")
-                      ? "border border-red-300 text-red-600 bg-red-50 opacity-80 cursor-not-allowed"
-                      : "border border-red-300 text-red-600 hover:bg-red-50"
+                    ${
+                      isLoadingFor(tenderId, "reject")
+                        ? "border border-red-300 text-red-600 bg-red-50 opacity-80 cursor-not-allowed"
+                        : "border border-red-300 text-red-600 hover:bg-red-50"
                     }`}
                 >
                   {isLoadingFor(tenderId, "reject") ? (
@@ -348,7 +425,10 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
       {rejectModal.open && (
         <div className="fixed inset-0 z-50">
           {/* backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeRejectModal} />
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={closeRejectModal}
+          />
 
           {/* modal */}
           <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -358,9 +438,13 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-white/90" />
-                      <h3 className="text-lg font-semibold truncate">Reject Confirmation</h3>
+                      <h3 className="text-lg font-semibold truncate">
+                        Reject Confirmation
+                      </h3>
                     </div>
-                    <p className="text-white/90 text-sm mt-1 truncate">{rejectModal.title}</p>
+                    <p className="text-white/90 text-sm mt-1 truncate">
+                      {rejectModal.title}
+                    </p>
                   </div>
 
                   <button
@@ -381,7 +465,11 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                       key={r}
                       onClick={() => setRejectReason(r)}
                       className={`text-xs px-2.5 py-1 rounded-full border transition
-                        ${rejectReason === r ? "bg-red-50 border-red-300 text-red-700" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                        ${
+                          rejectReason === r
+                            ? "bg-red-50 border-red-300 text-red-700"
+                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                        }`}
                     >
                       {r}
                     </button>
@@ -418,7 +506,8 @@ export default function PendingConfirmationsView({ items = [], loading = false, 
                 </div>
 
                 <p className="mt-3 text-xs text-slate-500">
-                  Note: After rejection, YuvaQ will move to the next eligible quotation rank.
+                  Note: After rejection, YuvaQ will move to the next eligible
+                  quotation rank.
                 </p>
               </div>
             </div>

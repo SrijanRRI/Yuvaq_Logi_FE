@@ -91,6 +91,8 @@ const TransporterDashboardPage = () => {
         headers: { "Content-Type": "application/json" },
       })
       setTenders(res.data.data || [])
+
+      // console.log("fetch history" , res.data.data);
     } catch (err) {
       console.error("Error fetching history:", err)
       setError("Failed to load history.")

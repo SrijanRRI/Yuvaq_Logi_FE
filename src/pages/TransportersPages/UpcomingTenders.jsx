@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, MapPin, Package, Clock, AlertCircle, Timer, Scale } from 'lucide-react';
+import { Calendar, MapPin, Package, Clock, AlertCircle, Timer, Scale, Truck } from 'lucide-react';
 import CountdownTimer from '../../components/CountdownTimer';
 // import CountdownTimer from '../CountdownTimer';
 
@@ -82,11 +82,11 @@ const UpcomingTenders = ({ tenders }) => {
           const status = getTenderStatus(tender);
           const statusColor = getStatusColor(status);
 
-          const line1 = tender?.dispatchLocation?.trim();
-          const line2 = tender?.address?.trim();
-          const pin = tender?.pincode?.toString()?.trim();
+          // const line1 = tender?.dispatchLocation?.trim();
+          // const line2 = tender?.address?.trim();
+          // const pin = tender?.pincode?.toString()?.trim();
 
-          const hasAny = !!(line1 || line2 || pin);
+          // const hasAny = !!(line1 || line2 || pin);
 
           return (
             <div
@@ -176,43 +176,51 @@ const UpcomingTenders = ({ tenders }) => {
 
                 {/* Info grid */}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
+                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200 sm:col-span-2 lg:col-span-2">
                     <div className="p-2.5 bg-emerald-100 rounded-full text-emerald-600 group-hover:bg-emerald-200 transition-colors">
                       <MapPin className="w-5 h-5" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="text-gray-500 text-sm mb-1">Location</div>
+                      <div className="text-gray-500 text-sm mb-2">Pickup & Drop</div>
 
-                      {!hasAny ? (
-                        <div className="text-sm text-gray-500">No location specified</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {/* ✅ Location name */}
-                          {line1 && (
-                            <div className="font-semibold text-gray-800 truncate" title={line1}>
-                              {line1}
-                            </div>
-                          )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Pickup */}
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                          <div className="text-[11px] uppercase tracking-wide text-emerald-700 font-semibold mb-1">
+                            Pickup
+                          </div>
 
-                          {/* ✅ Address line */}
-                          {line2 && (
-                            <div className="text-sm text-gray-600 leading-snug break-words">
-                              {line2}
-                            </div>
-                          )}
+                          <div className="text-sm font-medium text-gray-800 break-words">
+                            {tender.pickup?.address || "Not specified"}
+                          </div>
 
-                          {/* ✅ Pincode as a pill */}
-                          {pin && (
-                            <div className="pt-1">
-                              <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                PIN: {pin}
-                              </span>
-                            </div>
-                          )}
+                          <div className="mt-1 text-xs text-gray-600 break-words">
+                            {[tender.pickup?.district || tender.pickup?.city, tender.pickup?.state]
+                              .filter(Boolean)
+                              .join(", ")}
+                            {tender.pickup?.pincode ? ` - ${tender.pickup.pincode}` : ""}
+                          </div>
                         </div>
-                      )}
+
+                        {/* Drop */}
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                          <div className="text-[11px] uppercase tracking-wide text-rose-700 font-semibold mb-1">
+                            Drop
+                          </div>
+
+                          <div className="text-sm font-medium text-gray-800 break-words">
+                            {tender.drop?.address || "Not specified"}
+                          </div>
+
+                          <div className="mt-1 text-xs text-gray-600 break-words">
+                            {[tender.drop?.district || tender.drop?.city, tender.drop?.state]
+                              .filter(Boolean)
+                              .join(", ")}
+                            {tender.drop?.pincode ? ` - ${tender.drop.pincode}` : ""}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -280,48 +288,103 @@ const UpcomingTenders = ({ tenders }) => {
                   </div>
                 )}
 
-                {/* Materials table */}
-                {tender.materials?.length > 0 && (
+                {/* Vehicle Requirements table/cards */}
+                {tender.vehicleRequirements?.length > 0 && (
                   <div className="pt-2">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-1 h-5 bg-indigo-500 rounded-full"></div>
-                      <h4 className="font-semibold text-gray-800">Materials</h4>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-5 bg-indigo-500 rounded-full"></div>
+                        <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-indigo-600" />
+                          Vehicle Requirements
+                        </h4>
+                      </div>
+
+                      <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
+                        Total:{" "}
+                        {tender.vehicleRequirements.reduce(
+                          (sum, v) => sum + (Number(v.quantity) || 0),
+                          0
+                        )}
+                      </span>
                     </div>
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+
+                    {/* Mobile cards */}
+                    <div className="block sm:hidden space-y-3">
+                      {tender.vehicleRequirements.map((v, i) => (
+                        <div
+                          key={v.vehicleId || i}
+                          className="bg-white rounded-lg border border-gray-200 shadow-sm p-4"
+                        >
+                          <div className="text-xs text-gray-500 mb-1">Category</div>
+                          <div className="font-semibold text-gray-800 break-words">
+                            {v.category || "-"}
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <div className="text-gray-500 mb-1">Vehicle</div>
+                              <div className="text-gray-700 font-medium break-words">
+                                {v.subCategory || "-"}
+                              </div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="text-gray-500 mb-1">Qty</div>
+                              <div className="text-gray-800 font-bold">
+                                {v.quantity ?? "-"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Material</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Sub Material</th>
-                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Weight (MT)</th>
-                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Quantity</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                              Category
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                              Vehicle
+                            </th>
+                            <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                              Qty
+                            </th>
                           </tr>
                         </thead>
+
                         <tbody>
-                          {tender.materials.map((m, i) => (
+                          {tender.vehicleRequirements.map((v, i) => (
                             <tr
-                              key={m._id || i}
-                              className={`border-t border-gray-200 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-indigo-50/50 transition-colors`}
+                              key={v.vehicleId || i}
+                              className={`border-t border-gray-200 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                } hover:bg-indigo-50/50 transition-colors`}
                             >
-                              <td className="px-4 py-3 font-medium text-gray-700">{m.material}</td>
-                              <td className="px-4 py-3 text-gray-600">{m.subMaterial || "-"}</td>
-                              <td className="px-4 py-3 text-right text-gray-700 font-medium">{m.weight}</td>
-                              <td className="px-4 py-3 text-right text-gray-700 font-medium">{m.quantity}</td>
+                              <td className="px-4 py-3 font-medium text-gray-700">
+                                {v.category || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-gray-600">
+                                {v.subCategory || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-800 font-bold">
+                                {v.quantity ?? "-"}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
-                        <tfoot className="bg-gray-50 border-t border-gray-200">
-                          <tr>
-                            <td colSpan="2" className="px-4 py-2 text-right font-medium text-gray-700">
-                              Total:
-                            </td>
-                            <td className="px-4 py-2 text-right font-bold text-gray-800">{tender.totalWeight} MT</td>
-                            <td className="px-4 py-2 text-right font-bold text-gray-800">{tender.totalQuantity} pcs</td>
-                          </tr>
-                        </tfoot>
                       </table>
                     </div>
                   </div>
+                )}
+
+                {(!tender.vehicleRequirements || tender.vehicleRequirements.length === 0) && (
+                  <p className="text-gray-500 italic bg-gray-50 p-3 rounded-lg text-center text-xs sm:text-sm">
+                    No vehicle requirements added
+                  </p>
                 )}
               </div>
             </div>

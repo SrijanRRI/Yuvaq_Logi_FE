@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles, Info } from "lucide-react"
+import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles, Info, Truck } from "lucide-react"
 
 const MAX_VISIBLE_TRANSPORTERS = 10
 
@@ -115,16 +115,53 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                 : "Not specified"}
             </p>
           </div>
+
           <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
             <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
-              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
+              <span className="truncate">Closing Date</span>
+            </h4>
+            <p className="font-medium text-slate-800 text-xs sm:text-sm">{formatDate(tender.closeDate)}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex items-start justify-between gap-3">
+            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <div className="bg-indigo-50 p-2 rounded-lg border border-indigo-100 flex-shrink-0">
+                <Clock className="h-4 w-4 text-indigo-600" />
+              </div>
               <span className="truncate">Bidding Window</span>
             </h4>
-            <p className="font-medium text-slate-800 text-xs sm:text-sm break-words">
-              {tender.biddingStart && tender.biddingEnd
-                ? `${formatDateWithTime(tender.biddingStart)} to ${formatDateWithTime(tender.biddingEnd)}`
-                : "Not specified"}
-            </p>
+
+            <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-[11px] sm:text-xs font-semibold text-indigo-700 border border-indigo-100">
+              Time
+            </span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Start */}
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Start</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {tender.biddingStart ? formatDateWithTime(tender.biddingStart) : "-"}
+              </div>
+            </div>
+
+            {/* End */}
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">End</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {tender.biddingEnd ? formatDateWithTime(tender.biddingEnd) : "-"}
+              </div>
+            </div>
+          </div>
+
+          {/* Optional compact line (keeps clarity on large screens) */}
+          <div className="mt-3 text-[11px] sm:text-xs text-slate-500">
+            {tender.biddingStart && tender.biddingEnd
+              ? `Window: ${formatDateWithTime(tender.biddingStart)} → ${formatDateWithTime(tender.biddingEnd)}`
+              : "Not specified"}
           </div>
         </div>
 
@@ -184,66 +221,83 @@ const TenderDetails = ({ tender, getTransporterName }) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-            <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
-              <span className="truncate">Closing Date</span>
-            </h4>
-            <p className="font-medium text-slate-800 text-xs sm:text-sm">{formatDate(tender.closeDate)}</p>
-          </div>
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+
+          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 sm:col-span-2">
             <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
-              <span className="truncate">Location</span>
+              <span className="truncate">Pickup & Drop</span>
             </h4>
-            <p className="text-slate-800 text-xs sm:text-sm break-words text-pretty">
-              {tender.dispatchLocation}, {tender.address}, {tender.pincode}
-            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Pickup */}
+              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">Pickup</div>
+
+                <p className="text-slate-800 text-xs sm:text-sm font-medium break-words text-pretty">
+                  {tender.pickup?.address || "Not specified"}
+                </p>
+
+                <p className="mt-1 text-[11px] sm:text-xs text-slate-600 break-words">
+                  {[tender.pickup?.district || tender.pickup?.city, tender.pickup?.state]
+                    .filter(Boolean)
+                    .join(", ")}
+                  {tender.pickup?.pincode ? ` - ${tender.pickup.pincode}` : ""}
+                </p>
+              </div>
+
+              {/* Drop */}
+              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">Drop</div>
+
+                <p className="text-slate-800 text-xs sm:text-sm font-medium break-words text-pretty">
+                  {tender.drop?.address || "Not specified"}
+                </p>
+
+                <p className="mt-1 text-[11px] sm:text-xs text-slate-600 break-words">
+                  {[tender.drop?.district || tender.drop?.city, tender.drop?.state]
+                    .filter(Boolean)
+                    .join(", ")}
+                  {tender.drop?.pincode ? ` - ${tender.drop.pincode}` : ""}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {tender.remarks && (
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-            <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
-              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
-              <span className="truncate">Remarks</span>
-            </h4>
-            <p className="text-slate-700 bg-slate-50 p-2 sm:p-3 rounded-lg text-xs sm:text-sm break-words text-pretty">
-              {tender.remarks}
-            </p>
-          </div>
-        )}
+
       </div>
 
       {/* Right Column */}
       <div className="space-y-4 sm:space-y-5">
         <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
           <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <Package className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
-            <span className="truncate text-pretty">Materials</span>
+            <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+            <span className="truncate text-pretty">Vehicle Requirements</span>
           </h4>
-          {tender.materials?.length > 0 ? (
+
+          {tender.vehicleRequirements?.length > 0 ? (
             <div>
               {/* Mobile Card Layout */}
               <div className="block sm:hidden space-y-3">
-                {tender.materials.map((mat, idx) => (
-                  <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                {tender.vehicleRequirements.map((v, idx) => (
+                  <div
+                    key={String(v.vehicleId || idx)}
+                    className="bg-slate-50 rounded-lg p-3 border border-slate-100"
+                  >
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-slate-500 block mb-1">Material</span>
-                        <p className="font-medium text-slate-800 break-words">{mat.material}</p>
+                      <div className="col-span-2">
+                        <span className="text-slate-500 block mb-1">Category</span>
+                        <p className="font-medium text-slate-800 break-words">{v.category || "-"}</p>
                       </div>
-                      <div>
-                        <span className="text-slate-500 block mb-1">Sub Item</span>
-                        <p className="text-slate-700 break-words">{mat.subMaterial || "-"}</p>
+
+                      <div className="col-span-2">
+                        <span className="text-slate-500 block mb-1">Vehicle</span>
+                        <p className="text-slate-700 break-words">{v.subCategory || "-"}</p>
                       </div>
+
                       <div>
-                        <span className="text-slate-500 block mb-1">Weight</span>
-                        <p className="font-medium text-slate-800">{mat.weight} MT</p>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-1">Quantity</span>
-                        <p className="font-medium text-slate-800">{mat.quantity} pcs</p>
+                        <span className="text-slate-500 block mb-1">Qty</span>
+                        <p className="font-medium text-slate-800">{v.quantity ?? "-"}</p>
                       </div>
                     </div>
                   </div>
@@ -256,33 +310,36 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600">
                       <th className="px-3 py-2 text-left rounded-tl-xl min-w-0">
-                        <span className="truncate block">Material</span>
+                        <span className="truncate block">Category</span>
                       </th>
                       <th className="px-3 py-2 text-left min-w-0">
-                        <span className="truncate block">Sub Item</span>
+                        <span className="truncate block">Vehicle</span>
                       </th>
-                      <th className="px-3 py-2 text-right">Weight</th>
-                      <th className="px-3 py-2 text-right rounded-tr-xl">Quantity</th>
+                      <th className="px-3 py-2 text-right rounded-tr-xl">Qty</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {tender.materials.map((mat, idx) => (
-                      <tr key={idx} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                    {tender.vehicleRequirements.map((v, idx) => (
+                      <tr
+                        key={String(v.vehicleId || idx)}
+                        className="border-t border-slate-100 hover:bg-slate-50 transition-colors"
+                      >
                         <td className="px-3 py-2.5 font-medium min-w-0">
-                          <span className="truncate block">{mat.material}</span>
+                          <span className="truncate block">{v.category || "-"}</span>
                         </td>
                         <td className="px-3 py-2.5 min-w-0">
-                          <span className="truncate block">{mat.subMaterial || "-"}</span>
+                          <span className="truncate block">{v.subCategory || "-"}</span>
                         </td>
-                        <td className="px-3 py-2.5 text-right whitespace-nowrap">{mat.weight} MT</td>
-                        <td className="px-3 py-2.5 text-right whitespace-nowrap">{mat.quantity} pcs</td>
+                        <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                          {v.quantity ?? "-"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Total Weight and Quantity Section */}
+              {/* Total Weight and Quantity Section (keep same style as earlier) */}
               <div className="mt-4 sm:mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-3 sm:p-4 shadow-sm border border-emerald-100 transition-all hover:shadow-md">
                   <div className="flex items-center justify-between gap-2">
@@ -293,10 +350,13 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                       <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">Total Weight</span>
                     </div>
                     <div className="bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-sm border border-emerald-100 flex-shrink-0">
-                      <span className="text-emerald-700 font-bold text-xs sm:text-sm">{tender.totalWeight} MT</span>
+                      <span className="text-emerald-700 font-bold text-xs sm:text-sm">
+                        {tender.totalWeight != null ? `${tender.totalWeight} MT` : "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
+
                 <div className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg p-3 sm:p-4 shadow-sm border border-sky-100 transition-all hover:shadow-md">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -306,7 +366,9 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                       <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">Total Quantity</span>
                     </div>
                     <div className="bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-sm border border-sky-100 flex-shrink-0">
-                      <span className="text-sky-700 font-bold text-xs sm:text-sm">{tender.totalQuantity} pcs</span>
+                      <span className="text-sky-700 font-bold text-xs sm:text-sm">
+                        {tender.totalQuantity != null ? `${tender.totalQuantity} pcs` : "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -314,7 +376,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </div>
           ) : (
             <p className="text-slate-500 italic bg-slate-50 p-3 rounded-lg text-center text-xs sm:text-sm">
-              No materials added
+              No vehicle requirements added
             </p>
           )}
         </div>
@@ -413,6 +475,18 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </p>
           )}
         </div>
+
+        {tender.remarks && (
+          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+            <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
+              <span className="truncate">Remarks</span>
+            </h4>
+            <p className="text-slate-700 bg-slate-50 p-2 sm:p-3 rounded-lg text-xs sm:text-sm break-words text-pretty">
+              {tender.remarks}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

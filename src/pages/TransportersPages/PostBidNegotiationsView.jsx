@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
-import { Timer, MapPin, IndianRupee, RefreshCcw, Building2, BadgeIndianRupee } from "lucide-react";
+import {
+  Timer,
+  MapPin,
+  IndianRupee,
+  RefreshCcw,
+  BadgeIndianRupee,
+  Truck,
+  Package,
+  Scale,
+} from "lucide-react";
 import PostBidQuotationModal from "../../modals/PostBidQuotationModal";
 import CountdownTimer from "../../components/CountdownTimer";
 
@@ -8,6 +17,27 @@ const fmt = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 function cx(...a) {
   return a.filter(Boolean).join(" ");
 }
+
+// ✅ helpers for pickup/drop formatting (UI-only)
+const placeLine = (loc) => {
+  if (!loc) return "";
+  const cityOrDistrict = (loc.city || loc.district || "").trim();
+  const state = (loc.state || "").trim();
+  const pin = loc.pincode ? `PIN ${String(loc.pincode).trim()}` : "";
+  const base = [cityOrDistrict, state].filter(Boolean).join(", ");
+  return [base, pin].filter(Boolean).join(" • ");
+};
+
+const addressLine = (loc) => {
+  if (!loc) return "";
+  return String(loc.address || loc.location || "").trim();
+};
+
+const vehicleLabel = (v) => {
+  const name = String(v?.subCategory || "").trim() || "Vehicle";
+  const qty = Number(v?.quantity ?? 0);
+  return qty > 0 ? `${name} ×${qty}` : name;
+};
 
 export default function PostBidNegotiationsView({ items = [], loading, onRefresh }) {
   const [selected, setSelected] = useState(null);
@@ -65,20 +95,25 @@ export default function PostBidNegotiationsView({ items = [], loading, onRefresh
         </button>
       </div>
 
-      {sorted.map((t) => {
+      {sorted.map((t, idx) => {
         const endsAt = t.endsAt;
         const expired = Date.now() >= new Date(endsAt).getTime();
         const rangeMin = t.rangeMin;
         const rangeMax = t.rangeMax;
 
-        // Clean, clear location line
-        const locParts = [
-          t.dispatchLocation || "",
-          t.address || "",
-          t.pincode ? `PIN ${t.pincode}` : "",
-        ].filter(Boolean);
+        // ✅ Pickup/Drop (new API)
+        const pickupAddr = addressLine(t.pickup);
+        const pickupPlace = placeLine(t.pickup);
+        const dropAddr = addressLine(t.drop);
+        const dropPlace = placeLine(t.drop);
 
-        const locationLine = locParts.join(" • ");
+        // ✅ Vehicles (new API)
+        const vehicles = Array.isArray(t.vehicleRequirements) ? t.vehicleRequirements : [];
+        const vehicleChips = vehicles.map((v, i) => ({
+          key: String(v?.vehicleId || i),
+          text: vehicleLabel(v),
+          cat: String(v?.category || "").trim(),
+        }));
 
         return (
           <div
@@ -96,28 +131,61 @@ export default function PostBidNegotiationsView({ items = [], loading, onRefresh
                 <div className="relative z-10 flex flex-col gap-4">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
                     <div className="min-w-0">
+                      {/* ✅ Title updated (no projectName/projectCode) */}
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-lg sm:text-xl font-bold truncate">
-                          {t.projectName || "Tender"}
+                          Post-Bidding for Previous Tender
                         </h3>
-                        {t.projectCode ? (
-                          <span className="text-xs sm:text-sm px-2 py-0.5 rounded-full bg-white/15 border border-white/25">
-                            {t.projectCode}
-                          </span>
-                        ) : null}
+                        <span className="text-xs sm:text-sm px-2 py-0.5 rounded-full bg-white/15 border border-white/25">
+                          #{idx + 1}
+                        </span>
                       </div>
 
-                      <div className="mt-2 flex items-start gap-2 text-white/90">
-                        <span className="mt-0.5">
-                          <MapPin className="w-4 h-4" />
-                        </span>
-                        <p className="text-sm leading-snug break-words">
-                          {locationLine || "Location not available"}
-                        </p>
+                      {/* ✅ Pickup + Drop (responsive) */}
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Pickup */}
+                        <div className="rounded-xl bg-white/10 border border-white/15 px-3 py-2">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5">
+                              <MapPin className="w-4 h-4" />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="text-[11px] uppercase tracking-wide text-white/80 font-semibold">
+                                Pickup
+                              </div>
+                              <div className="text-sm font-semibold text-white/95 break-words">
+                                {pickupAddr || "Pickup not available"}
+                              </div>
+                              <div className="text-xs text-white/85 break-words mt-0.5">
+                                {pickupPlace || "—"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Drop */}
+                        <div className="rounded-xl bg-white/10 border border-white/15 px-3 py-2">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5">
+                              <MapPin className="w-4 h-4" />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="text-[11px] uppercase tracking-wide text-white/80 font-semibold">
+                                Drop
+                              </div>
+                              <div className="text-sm font-semibold text-white/95 break-words">
+                                {dropAddr || "Drop not available"}
+                              </div>
+                              <div className="text-xs text-white/85 break-words mt-0.5">
+                                {dropPlace || "—"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Range pill - clearer */}
+                    {/* Range pill - keep as-is */}
                     <div className="flex flex-col sm:flex-row gap-2 lg:items-end lg:justify-end">
                       <div className="px-3 py-2 rounded-xl bg-white/15 border border-white/25">
                         <div className="flex items-center gap-2 text-xs text-white/85">
@@ -142,35 +210,47 @@ export default function PostBidNegotiationsView({ items = [], loading, onRefresh
                     </div>
                   </div>
 
-                  {/* Quick stats row (responsive) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2">
-
-                    <div className="rounded-xl bg-white/10 border border-white/15 px-3 py-2 flex items-center gap-2">
-                      <div className="p-2 rounded-full bg-white/15">
-                        <Building2 className="w-4 h-4" />
+                  {/* ✅ Vehicles + Weight/Qty (responsive quick row) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-white/10 border border-white/15 px-3 py-2">
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <Truck className="w-4 h-4" />
+                        <span className="font-semibold">Vehicle Requirements</span>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-xs text-white/80">City / Area</div>
-                        <div className="text-sm sm:text-base font-semibold truncate">
-                          {t.dispatchLocation || "—"}
-                        </div>
+
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {vehicleChips.length ? (
+                          vehicleChips.map((c) => (
+                            <span
+                              key={c.key}
+                              className="inline-flex items-center rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-xs font-semibold text-white/95"
+                              title={c.cat || ""}
+                            >
+                              {c.text}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-white/80">No vehicle requirements</span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="rounded-xl bg-white/10 border border-white/15 px-3 py-2 flex items-center gap-2 sm:col-span-2 lg:col-span-1">
-                      <div className="p-2 rounded-full bg-white/15">
-                        <IndianRupee className="w-4 h-4" />
+                    <div className="rounded-xl bg-white/10 border border-white/15 px-3 py-2">
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <Package className="w-4 h-4" />
+                        <span className="font-semibold">Load Summary</span>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-xs text-white/80">Your quote must be within</div>
-                        <div className="text-sm sm:text-base font-semibold truncate">
-                          {fmt(rangeMin)} – {fmt(rangeMax)}
-                        </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-xs font-semibold text-white/95">
+                          <Scale className="w-4 h-4" /> {t.totalWeight ?? "—"} MT
+                        </span>
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-xs font-semibold text-white/95">
+                          <Package className="w-4 h-4" /> {t.totalQuantity ?? "—"} pcs
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Helper hint */}
                   {!expired && (
                     <div className="text-xs text-white/85">
                       Submit your improved quote before the timer ends. Your quote must be inside the allowed range.
