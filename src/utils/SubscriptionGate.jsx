@@ -16,6 +16,7 @@ const authCfg = () => {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
+    timeout: 15000,
   };
 };
 
@@ -31,18 +32,25 @@ export default function SubscriptionGate({ children }) {
     isSubscriptionChecking,
   } = useSelector((s) => s.User);
 
-  const ranOnceRef = useRef(false);
-
   const shouldRequire =
     isAuthenticated && role && role !== "admin" && PAY_ROLES.includes(role);
 
-  useEffect(() => {
-    if (!shouldRequire) return;
-    if (subscriptionLoaded || isSubscriptionChecking) return;
+  // ✅ prevents React 18 StrictMode double effect + prevents loops
+  const startedRef = useRef(false);
 
-    // ✅ prevents React 18 StrictMode double-invoke + remount loops
-    if (ranOnceRef.current) return;
-    ranOnceRef.current = true;
+  useEffect(() => {
+    // if user not in pay role -> nothing to do
+    if (!shouldRequire) {
+      startedRef.current = false;
+      return;
+    }
+
+    // if already loaded -> nothing to do
+    if (subscriptionLoaded) return;
+
+    // ✅ run only once until loaded
+    if (startedRef.current) return;
+    startedRef.current = true;
 
     const controller = new AbortController();
 
@@ -62,19 +70,22 @@ export default function SubscriptionGate({ children }) {
           })
         );
       } catch (e) {
-        if (e?.code !== "ERR_CANCELED") {
-          dispatch(
-            setSubscription({
-              isActive: false,
-              subscription: { status: "none" },
-            })
-          );
-        }
+        if (e?.code === "ERR_CANCELED") return;
+
+        // mark loaded so we don't refetch forever
+        dispatch(
+          setSubscription({
+            isActive: false,
+            subscription: { status: "none" },
+          })
+        );
+      } finally {
+        dispatch(setSubscriptionChecking(false));
       }
     })();
 
     return () => controller.abort();
-  }, [shouldRequire, subscriptionLoaded, isSubscriptionChecking, dispatch]);
+  }, [shouldRequire, subscriptionLoaded, dispatch]); // ✅ IMPORTANT: removed isSubscriptionChecking dependency
 
   if (!shouldRequire) return children;
 

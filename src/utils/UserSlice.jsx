@@ -35,6 +35,8 @@ const userSlice = createSlice({
       state.subscription = { isActive: false, subscription: { status: "none" } };
       state.subscriptionLoaded = false;
       state.isSubscriptionChecking = false;
+
+      state.isAuthChecking = false;
     },
 
     setAuthChecking: (state, action) => {
