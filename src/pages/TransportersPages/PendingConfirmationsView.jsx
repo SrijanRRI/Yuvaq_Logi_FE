@@ -16,6 +16,9 @@ import {
   Package,
 } from "lucide-react";
 
+import { loadRazorpayScript } from "../../lib/loadRazorpay";
+
+
 const authCfg = () => {
   const token = localStorage.getItem("session_token");
   return {
@@ -31,9 +34,9 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN") : "—");
 const fmtDateTime = (d) =>
   d
     ? new Date(d).toLocaleString("en-IN", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
     : "—";
 
 // ✅ NEW: format pickup/drop location object
@@ -71,7 +74,34 @@ export default function PendingConfirmationsView({
     tenderId: "",
     title: "",
   });
+
   const [rejectReason, setRejectReason] = useState("");
+
+  const [acceptModal, setAcceptModal] = useState({
+    open: false,
+    tenderId: "",
+    title: "",
+    quotation: null,
+  });
+  const [acceptAgree, setAcceptAgree] = useState(false);
+  const [acceptFlowLoading, setAcceptFlowLoading] = useState(false);
+
+  // Fee controls
+  const CHARGE_PERCENT = Number(import.meta.env.VITE_CONFIRM_ACCEPT_FEE_PERCENT ?? 0);
+  const DISPLAY_PERCENT = Number(
+    import.meta.env.VITE_CONFIRM_ACCEPT_FEE_DISPLAY_PERCENT ?? CHARGE_PERCENT
+  );
+
+  const openAcceptModal = (tenderId, title, quotation) => {
+    setAcceptAgree(false);
+    setAcceptModal({ open: true, tenderId, title: title || "Tender", quotation: quotation || null });
+  };
+
+  const closeAcceptModal = () => {
+    if (acceptFlowLoading) return;
+    setAcceptModal({ open: false, tenderId: "", title: "", quotation: null });
+    setAcceptAgree(false);
+  };
 
   const isLoadingFor = (tenderId, action) =>
     actionLoadingByTender?.[tenderId] === action;
@@ -173,6 +203,80 @@ export default function PendingConfirmationsView({
     );
   }
 
+  const proceedAcceptFlow = async () => {
+    const tenderId = acceptModal.tenderId;
+    const q = acceptModal.quotation;
+
+    if (!acceptAgree) return toast.error("Please agree to the terms to continue.");
+    if (!tenderId) return toast.error("Tender ID missing.");
+    if (!q?._id) return toast.error("Quotation missing.");
+
+    try {
+      setAcceptFlowLoading(true);
+
+      // ✅ DEMO MODE: fee = 0 => directly accept
+      if (!Number.isFinite(CHARGE_PERCENT) || CHARGE_PERCENT <= 0) {
+        closeAcceptModal();
+        await respond(tenderId, "accept");
+        return;
+      }
+
+      // ✅ fee > 0 => create/reuse order from backend
+      const orderRes = await axios.post(
+        `${API.ACCEPT_FEE_ORDER}/${tenderId}/selection/accept/payment/order`,
+        {}, // backend reads tender.selection.quotation
+        authCfg()
+      );
+
+      const { alreadyPaid, keyId, orderId, amount, currency } = orderRes.data || {};
+
+      if (alreadyPaid) {
+        closeAcceptModal();
+        await respond(tenderId, "accept");
+        return;
+      }
+
+      const ok = await loadRazorpayScript();
+      if (!ok) return toast.error("Razorpay SDK failed to load.");
+
+      const rzp = new window.Razorpay({
+        key: keyId,
+        amount,
+        currency: currency || "INR",
+        name: "LogiQ",
+        description: "Confirmation Acceptance Fee",
+        order_id: orderId,
+        handler: async (rzpRes) => {
+          try {
+            await axios.post(
+              `${API.ACCEPT_FEE_VERIFY}/${tenderId}/selection/accept/payment/verify`,
+              {
+                razorpay_order_id: rzpRes.razorpay_order_id,
+                razorpay_payment_id: rzpRes.razorpay_payment_id,
+                razorpay_signature: rzpRes.razorpay_signature,
+              },
+              authCfg()
+            );
+
+            closeAcceptModal();
+            await respond(tenderId, "accept");
+          } catch (e) {
+            toast.error(e?.response?.data?.message || "Payment verification failed.");
+          }
+        },
+        modal: {
+          ondismiss: () => toast.info("Payment cancelled."),
+        },
+      });
+
+      rzp.open();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || e?.message || "Could not proceed.");
+    } finally {
+      setAcceptFlowLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="grid gap-3">
@@ -196,8 +300,8 @@ export default function PendingConfirmationsView({
           const deliveryText =
             x?.deliveryWindow?.from && x?.deliveryWindow?.to
               ? `${fmtDate(x.deliveryWindow.from)} → ${fmtDate(
-                  x.deliveryWindow.to,
-                )}`
+                x.deliveryWindow.to,
+              )}`
               : "—";
 
           // ✅ NEW: vehicle requirements
@@ -380,13 +484,13 @@ export default function PendingConfirmationsView({
               <div className="mt-4 flex gap-2 justify-end">
                 {/* ACCEPT */}
                 <button
-                  onClick={() => respond(tenderId, "accept")}
+                  // onClick={() => respond(tenderId, "accept")}
+                  onClick={() => openAcceptModal(tenderId, title, q)}
                   disabled={!!actionLoadingByTender[tenderId]}
                   className={`px-4 py-2 rounded-lg text-sm inline-flex items-center gap-2
-                    ${
-                      isLoadingFor(tenderId, "accept")
-                        ? "bg-emerald-500 text-white opacity-80 cursor-not-allowed"
-                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    ${isLoadingFor(tenderId, "accept")
+                      ? "bg-emerald-500 text-white opacity-80 cursor-not-allowed"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700"
                     }`}
                 >
                   {isLoadingFor(tenderId, "accept") ? (
@@ -402,10 +506,9 @@ export default function PendingConfirmationsView({
                   onClick={() => openRejectModal(tenderId, title)}
                   disabled={!!actionLoadingByTender[tenderId]}
                   className={`px-4 py-2 rounded-lg text-sm inline-flex items-center gap-2
-                    ${
-                      isLoadingFor(tenderId, "reject")
-                        ? "border border-red-300 text-red-600 bg-red-50 opacity-80 cursor-not-allowed"
-                        : "border border-red-300 text-red-600 hover:bg-red-50"
+                    ${isLoadingFor(tenderId, "reject")
+                      ? "border border-red-300 text-red-600 bg-red-50 opacity-80 cursor-not-allowed"
+                      : "border border-red-300 text-red-600 hover:bg-red-50"
                     }`}
                 >
                   {isLoadingFor(tenderId, "reject") ? (
@@ -420,6 +523,123 @@ export default function PendingConfirmationsView({
           );
         })}
       </div>
+
+      {/* ================= Accept Terms + Promo Modal ================= */}
+      {acceptModal.open && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={closeAcceptModal}
+          />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+              <div className="p-5 bg-gradient-to-r from-teal-600 to-emerald-600 text-white">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-semibold truncate">Accept Confirmation</h3>
+                    <p className="text-white/90 text-sm mt-1 truncate">{acceptModal.title}</p>
+                  </div>
+                  <button
+                    onClick={closeAcceptModal}
+                    className="p-2 rounded-lg hover:bg-white/10 transition"
+                    aria-label="Close"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Fee breakdown */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="text-sm font-semibold text-slate-800">Confirmation Fee</div>
+
+                  {(() => {
+                    const base = Number(acceptModal.quotation?.price || 0);
+                    const regular = DISPLAY_PERCENT > 0 ? (base * DISPLAY_PERCENT) / 100 : 0;
+                    const payable = CHARGE_PERCENT > 0 ? (base * CHARGE_PERCENT) / 100 : 0;
+
+                    return (
+                      <div className="mt-2 text-sm text-slate-700 space-y-1">
+                        <div className="flex justify-between">
+                          <span>
+                            Regular fee ({DISPLAY_PERCENT}% of ₹{base.toLocaleString("en-IN")})
+                          </span>
+                          <span className="line-through text-slate-400">
+                            ₹{Math.round(regular).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-emerald-700 font-medium">Promo (limited time)</span>
+                          <span className="text-emerald-700 font-medium">
+                            {CHARGE_PERCENT <= 0 ? "100% OFF" : "—"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between pt-2 border-t border-slate-200">
+                          <span className="font-semibold">Payable today</span>
+                          <span className="font-semibold">
+                            ₹{Math.round(payable).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-500 mt-2">
+                          Note: In future, this fee may apply for accepting confirmations.
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Terms */}
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <div className="text-sm font-semibold text-slate-800">Terms & Disclaimer</div>
+                  <ul className="mt-2 text-sm text-slate-700 list-disc pl-5 space-y-1">
+                    <li>You confirm vehicle availability and route feasibility.</li>
+                    <li>You commit to the delivery window mentioned in the tender.</li>
+                    <li>Cancellation after acceptance may affect future eligibility.</li>
+                    <li>Fee (if enabled) is charged for confirmation acceptance.</li>
+                  </ul>
+
+                  <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={acceptAgree}
+                      onChange={(e) => setAcceptAgree(e.target.checked)}
+                    />
+                    <span>I agree to the terms and understand the confirmation fee policy.</span>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={closeAcceptModal}
+                    disabled={acceptFlowLoading}
+                    className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={proceedAcceptFlow}
+                    disabled={acceptFlowLoading}
+                    className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm inline-flex items-center gap-2 disabled:opacity-70"
+                  >
+                    {acceptFlowLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4" />
+                    )}
+                    {CHARGE_PERCENT > 0 ? "Pay & Accept" : "Accept (Promo Free)"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================= Reject Reason Modal ================= */}
       {rejectModal.open && (
@@ -465,10 +685,9 @@ export default function PendingConfirmationsView({
                       key={r}
                       onClick={() => setRejectReason(r)}
                       className={`text-xs px-2.5 py-1 rounded-full border transition
-                        ${
-                          rejectReason === r
-                            ? "bg-red-50 border-red-300 text-red-700"
-                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                        ${rejectReason === r
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                         }`}
                     >
                       {r}

@@ -10,6 +10,10 @@ export const TenderTermsModal = ({
   onCancel,
   onAgree,
   isLoading = false,
+
+  // ✅ PROMO (optional override; if not passed, it reads env or defaults to 5)
+  displayPercent,
+  displayAdvanceRupees,
 }) => {
   const [agreed, setAgreed] = useState(false);
 
@@ -33,6 +37,39 @@ export const TenderTermsModal = ({
     return Number.isFinite(n) ? n.toLocaleString("en-IN") : "-";
   }, [advanceRupees]);
 
+  // ✅ PROMO: resolve "regular" percent for strike-through display
+  const displayPercentResolved = useMemo(() => {
+    const p = Number(displayPercent);
+    if (Number.isFinite(p) && p >= 0) return p;
+
+    // try env (vite), else default 5
+    const envP = Number(import.meta?.env?.VITE_FINALIZE_ADVANCE_DISPLAY_PERCENT ?? 5);
+    return Number.isFinite(envP) && envP >= 0 ? envP : 5;
+  }, [displayPercent]);
+
+  const displayAdvanceRupeesResolved = useMemo(() => {
+    const n = Number(displayAdvanceRupees);
+    if (Number.isFinite(n) && n >= 0) return n;
+
+    const tot = Number(totalRupees);
+    if (!Number.isFinite(tot) || tot < 0) return null;
+
+    const calc = (tot * displayPercentResolved) / 100;
+    return Number.isFinite(calc) ? calc : null;
+  }, [displayAdvanceRupees, totalRupees, displayPercentResolved]);
+
+  const displayAdvanceText = useMemo(() => {
+    const n = Number(displayAdvanceRupeesResolved);
+    return Number.isFinite(n) ? n.toLocaleString("en-IN") : "-";
+  }, [displayAdvanceRupeesResolved]);
+
+  const showPromo = useMemo(() => {
+    const p = Number(advancePercent);
+    const a = Number(advanceRupees);
+    // promo active when payable is effectively 0
+    return (Number.isFinite(p) && p === 0) || (Number.isFinite(a) && a === 0);
+  }, [advancePercent, advanceRupees]);
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <button
@@ -51,11 +88,29 @@ export const TenderTermsModal = ({
             </div>
             <div className="min-w-0">
               <h3 className="text-lg font-bold">Caution • Terms & Conditions</h3>
+
               <p className="text-white/90 text-sm mt-1">
                 Quotation price is{" "}
                 <span className="font-semibold">₹{pricePerMtText}</span> / MT.
-                You will pay{" "}
-                <span className="font-semibold">{advancePercent}%</span> advance now.
+                {" "}
+                {showPromo ? (
+                  <>
+                    Regular advance{" "}
+                    <span className="font-semibold">{displayPercentResolved}%</span>{" "}
+                    is{" "}
+                    <span className="font-semibold line-through opacity-80">
+                      ₹{displayAdvanceText}
+                    </span>
+                    {" "}
+                    • <span className="font-semibold">Promo Applied: ₹0</span>
+                  </>
+                ) : (
+                  <>
+                    You will pay{" "}
+                    <span className="font-semibold">{advancePercent}%</span>{" "}
+                    advance now.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -75,9 +130,19 @@ export const TenderTermsModal = ({
                 Any dispute / delay / cancellation is strictly between parties.
                 <b> YuvaQ is not liable</b>.
               </li>
+
               <li>
-                <b>Important:</b> Price is <b>per MT</b>. Total is calculated as <b>(Price/MT × Total MT)</b>.
-                You will pay <b>{advancePercent}%</b> of the total amount via Razorpay as advance.
+                <b>Important:</b> Price is <b>per MT</b>. Total is calculated as{" "}
+                <b>(Price/MT × Total MT)</b>.{" "}
+                {showPromo ? (
+                  <>
+                    Advance is <b>FREE (Promo)</b> for now. Payable today is <b>₹0</b>.
+                  </>
+                ) : (
+                  <>
+                    You will pay <b>{advancePercent}%</b> of the total amount via Razorpay as advance.
+                  </>
+                )}
               </li>
             </ul>
           </div>
@@ -96,13 +161,27 @@ export const TenderTermsModal = ({
               <b>₹{totalText}</b>
             </div>
 
-            <div className="flex justify-between mt-2 pt-2 border-t border-emerald-200">
-              <span>Payable Now ({advancePercent}% Advance)</span>
-              <b className="text-emerald-700">₹{advanceText}</b>
+            {/* ✅ PROMO: show regular struck-through line (no layout change, just an extra row) */}
+            {showPromo ? (
+              <div className="flex justify-between mt-2 pt-2 border-t border-emerald-200">
+                <span>Regular Payable ({displayPercentResolved}% Advance)</span>
+                <b className="text-slate-500 line-through">₹{displayAdvanceText}</b>
+              </div>
+            ) : null}
+
+            <div className={`${showPromo ? "mt-2" : "mt-2 pt-2 border-t border-emerald-200"} flex justify-between`}>
+              <span>
+                {showPromo ? "Payable Now (Promo Free)" : `Payable Now (${advancePercent}% Advance)`}
+              </span>
+              <b className="text-emerald-700">
+                ₹{showPromo ? "0" : advanceText}
+              </b>
             </div>
 
             <p className="text-xs text-emerald-700 mt-2">
-              Note: You are paying only {advancePercent}% of total as advance via Razorpay.
+              {showPromo
+                ? "Note: Promo applied — payable amount is ₹0 for now. Razorpay will apply when enabled."
+                : `Note: You are paying only ${advancePercent}% of total as advance via Razorpay.`}
             </p>
           </div>
 
@@ -150,7 +229,7 @@ export const TenderTermsModal = ({
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
-                  Pay Now ₹{advanceText}
+                  {showPromo ? "Finalize (Promo Free)" : `Pay Now ₹${advanceText}`}
                 </>
               )}
             </button>
