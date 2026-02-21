@@ -12,7 +12,21 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import API from "./API";
-import { login, setAuthChecking } from "./utils/UserSlice";
+import { login, setAuthChecking, setSubscription } from "./utils/UserSlice";
+import SubscribePage from "./pages/SubscribePage";
+import SubscriptionGate from "./utils/SubscriptionGate";
+
+const authCfg = () => {
+  const token = localStorage.getItem("session_token");
+  return {
+    withCredentials: true,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    timeout: 15000,
+  };
+};
 
 function App() {
   const dispatch = useDispatch();
@@ -22,14 +36,25 @@ function App() {
     const checkSession = async () => {
       dispatch(setAuthChecking(true));
       try {
-        const res = await axios.get(API.CHECK_ME, { withCredentials: true });
-        const { data, role } = res.data;
+        const res = await axios.get(API.CHECK_ME, authCfg());
+        const { data, role, subscription, subscriptionActive } = res.data;
+
         dispatch(login({ user: data, role }));
+
+        // store subscription immediately so SubscriptionGate won't call again
+        dispatch(
+          setSubscription({
+            isActive: !!subscriptionActive,
+            subscription: subscription || { status: "none" },
+          })
+        );
       } catch (err) {
-        dispatch(setAuthChecking(false));
         console.log("User not authenticated");
+      } finally {
+        dispatch(setAuthChecking(false));
       }
     };
+
     checkSession();
   }, [dispatch]);
 
@@ -44,6 +69,15 @@ function App() {
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       <Route
+        path="/subscribe"
+        element={
+          <ProtectedRoute>
+            <SubscribePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute requiredRole="admin">
@@ -51,22 +85,29 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/rr/dashboard"
         element={
           <ProtectedRoute requiredRole="user">
-            <RRDashboardPage />
+            <SubscriptionGate>
+              <RRDashboardPage />
+            </SubscriptionGate>
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/transporter/dashboard"
         element={
           <ProtectedRoute requiredRole="transportUser">
-            <TransporterDashboardPage />
+            <SubscriptionGate>
+              <TransporterDashboardPage />
+            </SubscriptionGate>
           </ProtectedRoute>
         }
       />
+
     </Routes>
   );
 }

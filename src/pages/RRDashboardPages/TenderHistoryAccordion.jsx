@@ -86,7 +86,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
         }
       );
 
-      // console.log("transporter contact ", res.data);
+      console.log("transporter contact ", res.data);
 
       const contact = res?.data?.data || res?.data;
       setContactByTender((p) => ({ ...p, [tenderId]: contact }));

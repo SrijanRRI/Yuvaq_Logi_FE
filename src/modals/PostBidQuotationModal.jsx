@@ -60,7 +60,7 @@ export default function PostBidQuotationModal({ tender, onClose, onSuccess }) {
     else if (min != null && n < min) newErrors.price = `Price must be >= ${fmt(min)}`;
     else if (max != null && n > max) newErrors.price = `Price must be <= ${fmt(max)}`;
 
-    if (!vehicleNo?.trim()) newErrors.vehicleNo = "Vehicle details are required";
+    // if (!vehicleNo?.trim()) newErrors.vehicleNo = "Vehicle details are required";
 
     setErrors(newErrors);
 
@@ -201,7 +201,7 @@ export default function PostBidQuotationModal({ tender, onClose, onSuccess }) {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-emerald-600" />
-                <span>Vehicle Details</span>
+                <span>Vehicle Details (Optional)</span>
               </div>
             </label>
             <textarea
@@ -225,7 +225,7 @@ export default function PostBidQuotationModal({ tender, onClose, onSuccess }) {
             )}
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-emerald-600" />
@@ -275,7 +275,7 @@ export default function PostBidQuotationModal({ tender, onClose, onSuccess }) {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="mt-8 flex justify-end gap-3">

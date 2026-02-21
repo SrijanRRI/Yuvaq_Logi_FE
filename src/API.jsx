@@ -28,6 +28,12 @@ const API = {
   LOGOUT_USER: `${serverUrl}/api/auth/logout`,
   GETALLUSER: `${serverUrl}/api/auth/user/all`,
 
+  // subscription
+  SUBSCRIPTION_ME: `${serverUrl}/subscriptions/me`,
+  SUBSCRIPTION_CREATE_ORDER: `${serverUrl}/subscriptions/order`,   // POST { plan }
+  SUBSCRIPTION_VERIFY: `${serverUrl}/subscriptions/verify`,        // POST { plan, razorpay_* }
+  SUBSCRIPTION_PLANS: `${serverUrl}/subscriptions/plans`,          // optional but better
+
   //Admin API :
   ALLAPPROVALREQUEST: `${serverUrl}/admin/pending-approvals`,
   APPROVEREQUEST: `${serverUrl}/admin/users/`,
@@ -41,6 +47,7 @@ const API = {
   LIVE_BIDING_TENDERS: `${serverUrl}/tenders/assigned`,
   GET_QUOTATION_SLIDESHOW: `${serverUrl}/quotation/my-tender-quotes`,
   GET_MY_POSITION: `${serverUrl}/tenders/my-position`,
+  MY_TENDER_QUOTES: `${serverUrl}/quotation/my-tender-quotes`,
 
   SUBMIT_QUOTATION: `${serverUrl}/quotation/submit`,
   SEE_QUOTATIONS: `${serverUrl}/tender/quotations`,
@@ -53,6 +60,7 @@ const API = {
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
+  VEHICLE_CATALOG : `${serverUrl}/vehicle/vehicle-catalog`,
 
   //Post-Bid Negotiation : 
   START_POST_BID: `${serverUrl}/tenders`,

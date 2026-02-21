@@ -23,19 +23,28 @@ import TransporterModal from "../modals/TransporterModal";
 import ShipmentDetailsTab from "./RRDashboardPages/ShipmentDetailsTab";
 import ShipmentPlannedTab from "./RRDashboardPages/ShipmentPlannedTab";
 
+const blankLocation = {
+  pincode: "",
+  state: "",
+  address: "", // keep same meaning as your old "Address (City/District)"
+  location: "",
+  city: "",
+  district: "",
+  country: "India",
+};
+
 const initialFormState = {
   deliveryWindow: { from: "", to: "" },
   closingDate: "",
   biddingStart: "",
   biddingEnd: "",
-  dispatchLocation: "",
-  address: "",
-  pincode: "",
+  pickup: { ...blankLocation },
+  drop: { ...blankLocation },
   projectName: "",
   projectCode: "",
   purchaseOrder: "",
   projectRemark: "",
-  materials: [],
+  vehicleRequirements: [],
   weight: "",
   quantity: "",
   remarks: "",
@@ -83,7 +92,7 @@ const RRDashboardPage = () => {
       const response = await axios.get(url, { withCredentials: true });
       const data = response?.data?.data || response?.data?.results || [];
 
-      console.log("transporters detail" , data);
+      console.log("transporters detail", data);
 
       const meta =
         response?.data?.pagination ||
@@ -215,31 +224,60 @@ const RRDashboardPage = () => {
       setFormDisabled(false);
       return;
     }
+
     if (closing < fromDate || closing > toDate) {
       toast.error("Closing Date must be within the Delivery Window.");
       setLoading(false);
       setFormDisabled(false);
       return;
     }
+
     if (bidStart < fromDate || bidStart > toDate) {
       toast.error("Bidding Start must be within the Delivery Window.");
       setLoading(false);
       setFormDisabled(false);
       return;
     }
+
     if (bidEnd < fromDate || bidEnd > toDate) {
       toast.error("Bidding End must be within the Delivery Window.");
       setLoading(false);
       setFormDisabled(false);
       return;
     }
+
     if (bidStart > bidEnd) {
       toast.error("Bidding Start cannot be after Bidding End.");
       setLoading(false);
       setFormDisabled(false);
       return;
     }
-    if (form.materials.length > 0 && (!form.weight || !form.quantity)) {
+
+    //  pickup/drop validation (required by backend)
+    if (!form.pickup?.pincode || String(form.pickup.pincode).length !== 6 || !form.pickup?.address) {
+      toast.error("Please fill Pickup PIN Code and Pickup Address.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    if (!form.drop?.pincode || String(form.drop.pincode).length !== 6 || !form.drop?.address) {
+      toast.error("Please fill Drop PIN Code and Drop Address.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    //  vehicles validation
+    if (!Array.isArray(form.vehicleRequirements) || form.vehicleRequirements.length === 0) {
+      toast.error("Please add at least one vehicle requirement.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    // totals required when vehicles exist
+    if (form.vehicleRequirements.length > 0 && (!form.weight || !form.quantity)) {
       toast.warning("Please enter total weight and quantity.");
       setLoading(false);
       setFormDisabled(false);
@@ -294,9 +332,35 @@ const RRDashboardPage = () => {
       closeDate: form.closingDate,
       biddingStart: form.biddingStart,
       biddingEnd: form.biddingEnd,
-      dispatchLocation: form.dispatchLocation,
-      address: form.address,
-      pincode: form.pincode,
+
+      // ✅ NEW
+      pickup: {
+        pincode: form.pickup.pincode,
+        address: form.pickup.address,
+        state: form.pickup.state || "",
+        location: form.pickup.location || "",
+        city: form.pickup.city || "",
+        district: form.pickup.district || "",
+        country: form.pickup.country || "India",
+      },
+      drop: {
+        pincode: form.drop.pincode,
+        address: form.drop.address,
+        state: form.drop.state || "",
+        location: form.drop.location || "",
+        city: form.drop.city || "",
+        district: form.drop.district || "",
+        country: form.drop.country || "India",
+      },
+
+      // ✅ NEW
+      vehicleRequirements: form.vehicleRequirements.map((v) => ({
+        vehicleId: v.vehicleId,
+        category: v.category,
+        subCategory: v.subCategory,
+        quantity: Number(v.quantity || 1),
+      })),
+
       projectName: form.projectName,
       projectCode: form.projectCode,
       purchaseOrder: form.purchaseOrder,
@@ -309,12 +373,7 @@ const RRDashboardPage = () => {
       maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
       maxBidUnit: form.maxBidUnit || null,
       priceDifference: form.priceDifference === "" ? null : parseInt(form.priceDifference, 10),
-      materials: form.materials.map((m) => ({
-        material: m.item,
-        subMaterial: m.subItem || null,
-        weight: Number.parseFloat(m.weight),
-        quantity: Number.parseInt(m.quantity),
-      })),
+
     };
 
     // console.log("response of tender form ", payload);
@@ -399,9 +458,16 @@ const RRDashboardPage = () => {
       projectCode: shipment.projectCode || "",
       purchaseOrder: shipment.purchaseOrder || "",
       projectRemark: shipment.projectRemark || "",
-      dispatchLocation: shipment.dispatchLocation || "",
-      address: shipment.address || "",
-      pincode: shipment.pincode || "",
+
+      pickup: {
+        ...blankLocation,
+        state: shipment.dispatchLocation || "",
+        address: shipment.address || "",
+        pincode: shipment.pincode || "",
+      },
+      drop: { ...blankLocation }, // keep empty unless shipment provides drop
+      vehicleRequirements: [],
+
       deliveryWindow: { from: "", to: "" },
       closingDate: "",
       biddingStart: "",
