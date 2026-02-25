@@ -37,7 +37,8 @@ const initialFormState = {
   deliveryWindow: { from: "", to: "" },
   closingDate: "",
   biddingStart: "",
-  biddingEnd: "",
+  biddingEnd: "",          //  Soft End (as per UI)
+  biddingHardEnd: "",     //  NEW Hard Stop (Final Stop)
   pickup: { ...blankLocation },
   drop: { ...blankLocation },
   projectName: "",
@@ -215,8 +216,14 @@ const RRDashboardPage = () => {
     const fromDate = new Date(from);
     const toDate = new Date(to);
     const closing = new Date(form.closingDate);
+    // const bidStart = new Date(form.biddingStart);
+    // const bidEnd = new Date(form.biddingEnd);
+
     const bidStart = new Date(form.biddingStart);
-    const bidEnd = new Date(form.biddingEnd);
+    const bidSoftEnd = new Date(form.biddingEnd);
+
+    // ✅ if user doesn't set hard end, treat hard = soft (no extension; same as current)
+    const bidHardEnd = form.biddingHardEnd ? new Date(form.biddingHardEnd) : bidSoftEnd;
 
     if (fromDate > toDate) {
       toast.error("Delivery 'From' date must be before 'To' date.");
@@ -239,15 +246,43 @@ const RRDashboardPage = () => {
       return;
     }
 
-    if (bidEnd < fromDate || bidEnd > toDate) {
-      toast.error("Bidding End must be within the Delivery Window.");
+    // if (bidEnd < fromDate || bidEnd > toDate) {
+    //   toast.error("Bidding End must be within the Delivery Window.");
+    //   setLoading(false);
+    //   setFormDisabled(false);
+    //   return;
+    // }
+
+    // if (bidStart > bidEnd) {
+    //   toast.error("Bidding Start cannot be after Bidding End.");
+    //   setLoading(false);
+    //   setFormDisabled(false);
+    //   return;
+    // }
+
+    if (bidSoftEnd < fromDate || bidSoftEnd > toDate) {
+      toast.error("Bidding (Soft End) must be within the Delivery Window.");
       setLoading(false);
       setFormDisabled(false);
       return;
     }
 
-    if (bidStart > bidEnd) {
-      toast.error("Bidding Start cannot be after Bidding End.");
+    if (bidHardEnd < fromDate || bidHardEnd > toDate) {
+      toast.error("Bidding (Hard Stop) must be within the Delivery Window.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    if (bidStart > bidSoftEnd) {
+      toast.error("Bidding Start cannot be after Soft End.");
+      setLoading(false);
+      setFormDisabled(false);
+      return;
+    }
+
+    if (bidSoftEnd > bidHardEnd) {
+      toast.error("Hard Stop must be >= Soft End.");
       setLoading(false);
       setFormDisabled(false);
       return;
@@ -331,7 +366,8 @@ const RRDashboardPage = () => {
       },
       closeDate: form.closingDate,
       biddingStart: form.biddingStart,
-      biddingEnd: form.biddingEnd,
+      biddingEnd: form.biddingEnd,    // soft end
+      ...(form.biddingHardEnd ? { biddingHardEnd: form.biddingHardEnd } : {}),
 
       // ✅ NEW
       pickup: {
@@ -472,6 +508,7 @@ const RRDashboardPage = () => {
       closingDate: "",
       biddingStart: "",
       biddingEnd: "",
+      biddingHardEnd: "",
       materials: [],
       weight: "",
       quantity: "",

@@ -54,6 +54,12 @@ const TenderDetails = ({ tender, getTransporterName }) => {
   // Only show the "+N more" pill when we're collapsed.
   const hiddenCountDisplay = !showAllTransporters ? totalHidden : 0
 
+  const softEnd = tender.biddingSoftEnd || tender.biddingEnd;
+  const hardEnd = tender.biddingHardEnd || softEnd;
+  const effectiveEnd = tender.biddingEnd;
+  const wasExtended =
+    softEnd && effectiveEnd && new Date(effectiveEnd).getTime() !== new Date(softEnd).getTime();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
       {/* Left Column */}
@@ -139,8 +145,8 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </span>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Start */}
+          {/* <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+           
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
               <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Start</div>
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
@@ -148,14 +154,43 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               </div>
             </div>
 
-            {/* End */}
+            
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
               <div className="text-[11px] sm:text-xs text-slate-500 mb-1">End</div>
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
                 {tender.biddingEnd ? formatDateWithTime(tender.biddingEnd) : "-"}
               </div>
             </div>
+          </div> */}
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Start</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {tender.biddingStart ? formatDateWithTime(tender.biddingStart) : "-"}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Soft End (RR set)</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {softEnd ? formatDateWithTime(softEnd) : "-"}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Hard Stop</div>
+              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
+                {hardEnd ? formatDateWithTime(hardEnd) : "-"}
+              </div>
+            </div>
           </div>
+
+          {wasExtended && (
+            <div className="mt-2 text-xs text-emerald-700">
+              Effective End (auto-extended): <b>{formatDateWithTime(effectiveEnd)}</b>
+            </div>
+          )}
 
           {/* Optional compact line (keeps clarity on large screens) */}
           <div className="mt-3 text-[11px] sm:text-xs text-slate-500">
