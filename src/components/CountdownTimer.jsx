@@ -1,19 +1,36 @@
 // components/common/CountdownTimer.jsx
 import { useEffect, useState } from "react";
 
-const CountdownTimer = ({ endTime, onComplete, labelWhenDone = "Bidding Open", className = "" }) => {
-  const [remaining, setRemaining] = useState(Math.max(0, new Date(endTime).getTime() - Date.now()));
+const CountdownTimer = ({
+  endTime,
+  onComplete,
+  labelWhenDone = "Bidding Open",
+  className = "",
+}) => {
+  const getRemaining = () => {
+    const endMs = endTime ? new Date(endTime).getTime() : 0;
+    const ms = Math.max(0, endMs - Date.now());
+    return ms;
+  };
 
+  const [remaining, setRemaining] = useState(getRemaining);
+
+  // ✅ IMPORTANT: when endTime changes (server extended), reset remaining immediately
+  useEffect(() => {
+    setRemaining(getRemaining());
+  }, [endTime]);
+
+  // ✅ IMPORTANT: compute from endTime every tick (not from prev)
   useEffect(() => {
     const interval = setInterval(() => {
-      setRemaining((prev) => {
-        const next = Math.max(0, prev - 1000);
-        if (next === 0 && onComplete) onComplete();
-        return next;
-      });
+      const next = getRemaining();
+      setRemaining(next);
+
+      if (next === 0 && onComplete) onComplete();
     }, 1000);
+
     return () => clearInterval(interval);
-  }, [endTime]);
+  }, [endTime, onComplete]);
 
   const formatMillis = (ms) => {
     if (ms <= 0) return labelWhenDone;
@@ -28,7 +45,6 @@ const CountdownTimer = ({ endTime, onComplete, labelWhenDone = "Bidding Open", c
     if (hrs > 0 || days > 0) result += `${hrs}h `;
     if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
     result += `${secs}s`;
-
     return result;
   };
 

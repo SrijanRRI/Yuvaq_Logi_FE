@@ -32,24 +32,44 @@ const LiveBidding = () => {
       const res = await axios.get(API.LIVE_BIDING_TENDERS, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
-      })
-      const fetchedTenders = res.data?.data || []
-      setTenders(fetchedTenders)
+      });
 
+      const fetchedTenders = res.data?.data || [];
+      setTenders(fetchedTenders);
+
+      // ✅ fetch slideshow only once per tenderId
       for (const tender of fetchedTenders) {
-        const quotesRes = await axios.get(`${API.GET_QUOTATION_SLIDESHOW}/${tender._id}`, {
-          withCredentials: true,
-        })
-        setSlideshowData((prev) => ({ ...prev, [tender._id]: quotesRes.data?.quotations || [] }))
+        if (slideshowData?.[tender._id]) continue;
+
+        const quotesRes = await axios.get(
+          `${API.GET_QUOTATION_SLIDESHOW}/${tender._id}`,
+          { withCredentials: true }
+        );
+
+        setSlideshowData((prev) => ({
+          ...prev,
+          [tender._id]: quotesRes.data?.quotations || [],
+        }));
       }
     } catch (err) {
-      console.error("Error fetching live tenders:", err)
+      console.error("Error fetching live tenders:", err);
     }
-  }
+  };
+
+  // useEffect(() => {
+  //   fetchLiveBidingTenders();
+  // }, [])
 
   useEffect(() => {
     fetchLiveBidingTenders();
-  }, [])
+
+    // ✅ Poll server for updated biddingEnd (when others bid)
+    const id = setInterval(() => {
+      fetchLiveBidingTenders();
+    }, 8000); // 8s (good balance)
+
+    return () => clearInterval(id);
+  }, []);
 
   const toggleMaterials = (tenderId) => {
     setExpandedMaterials((prev) => ({

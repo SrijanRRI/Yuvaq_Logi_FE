@@ -53,6 +53,10 @@ const API = {
   SEE_QUOTATIONS: `${serverUrl}/tender/quotations`,
   HISTORY_FOR_QUOTATION_QUOTE: `${serverUrl}/tenders/quotation/history`,
 
+  //Transporter Payment When Accepting 
+  ACCEPT_FEE_ORDER: `${serverUrl}/tenders`,        // use with /:id/selection/accept/payment/order
+  ACCEPT_FEE_VERIFY: `${serverUrl}/tenders`,       // use with /:id/selection/accept/payment/verify
+
   //RR USer Tenders
   CREATE_TENDER: `${serverUrl}/tenders/create-tender`,
   FETCH_ALL_TENDER_CREATED_BY_RRUSER: `${serverUrl}/tenders/my-tenders`,
@@ -60,7 +64,7 @@ const API = {
   FINALIZE_TENDER: `${serverUrl}/tenders/finalize`,
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
-  VEHICLE_CATALOG : `${serverUrl}/vehicle/vehicle-catalog`,
+  VEHICLE_CATALOG: `${serverUrl}/vehicle/vehicle-catalog`,
 
   //Post-Bid Negotiation : 
   START_POST_BID: `${serverUrl}/tenders`,

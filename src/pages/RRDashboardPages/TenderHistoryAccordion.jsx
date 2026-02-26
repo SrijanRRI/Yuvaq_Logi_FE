@@ -221,21 +221,36 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
       toNumber(tender.totalWeight) ||
       (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
 
-    const calc = calcAdvancePayment({
+    const PAY_PERCENT = Number(import.meta.env.VITE_FINALIZE_ADVANCE_PERCENT ?? 5);
+    const DISPLAY_PERCENT = Number(import.meta.env.VITE_FINALIZE_ADVANCE_DISPLAY_PERCENT ?? PAY_PERCENT);
+
+    const calcPay = calcAdvancePayment({
       pricePerMt: finalPricePerMt,
       totalWeightMt,
-      percent: 5,
+      percent: PAY_PERCENT,
+    });
+
+    const calcDisplay = calcAdvancePayment({
+      pricePerMt: finalPricePerMt,
+      totalWeightMt,
+      percent: DISPLAY_PERCENT,
     });
 
     setTermsFinalize({
       tenderId: tender._id,
       quotationId: quotation._id,
       finalPricePerMt,
-      totalWeightMt: calc.totalWeightMt,
-      totalRupees: calc.totalRupees,
-      advancePercent: calc.percent,
-      advanceRupees: calc.advanceRupees,
-      advancePaise: calc.advancePaise,
+      totalWeightMt: calcPay.totalWeightMt,
+      totalRupees: calcPay.totalRupees,
+
+      // payable
+      advancePercent: calcPay.percent,
+      advanceRupees: calcPay.advanceRupees,
+      advancePaise: calcPay.advancePaise,
+
+      // display (promo strike-through)
+      displayPercent: DISPLAY_PERCENT,
+      displayAdvanceRupees: calcDisplay.advanceRupees,
     });
   };
 

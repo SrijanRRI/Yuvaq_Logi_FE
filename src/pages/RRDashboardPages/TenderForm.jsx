@@ -473,7 +473,7 @@ const TenderForm = ({
                   <Calendar className="h-5 w-5 text-emerald-600" />
                   Bidding Time
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Bidding Start
@@ -487,9 +487,10 @@ const TenderForm = ({
                       required
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Bidding End
+                      Soft End (Shown to Transporter)
                     </label>
                     <input
                       type="datetime-local"
@@ -499,6 +500,25 @@ const TenderForm = ({
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
                       required
                     />
+                    <p className="mt-1 text-xs text-slate-500">
+                      If someone bids in the last 5 minutes, end time may extend (soft-close).
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Hard Stop (Final End)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      name="biddingHardEnd"
+                      value={form.biddingHardEnd || ""}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Optional. If empty, Hard Stop = Soft End (no extension).
+                    </p>
                   </div>
                 </div>
               </div>
