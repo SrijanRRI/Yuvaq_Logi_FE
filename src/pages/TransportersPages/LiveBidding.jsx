@@ -27,26 +27,6 @@ const LiveBidding = () => {
   const [slideshowData, setSlideshowData] = useState({})
   const [expandedMaterials, setExpandedMaterials] = useState({})
 
-  // const fetchLiveBidingTenders = async () => {
-  //   try {
-  //     const res = await axios.get(API.LIVE_BIDING_TENDERS, {
-  //       withCredentials: true,
-  //       headers: { "Content-Type": "application/json" },
-  //     })
-  //     const fetchedTenders = res.data?.data || []
-  //     setTenders(fetchedTenders)
-
-  //     for (const tender of fetchedTenders) {
-  //       const quotesRes = await axios.get(`${API.GET_QUOTATION_SLIDESHOW}/${tender._id}`, {
-  //         withCredentials: true,
-  //       })
-  //       setSlideshowData((prev) => ({ ...prev, [tender._id]: quotesRes.data?.quotations || [] }))
-  //     }
-  //   } catch (err) {
-  //     console.error("Error fetching live tenders:", err)
-  //   }
-  // }
-
   const fetchLiveBidingTenders = async () => {
     try {
       const res = await axios.get(API.LIVE_BIDING_TENDERS, {
