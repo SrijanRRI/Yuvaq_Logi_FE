@@ -26,6 +26,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   scope = "mine",
   onScopeChange = () => { },
   currentUserName = "You", }) => {
+    
   const [openIdx, setOpenIdx] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [priceInput, setPriceInput] = useState("")
@@ -553,12 +554,12 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                   desc="Only tenders created by you"
                   activeClass="bg-gradient-to-r from-emerald-500 to-emerald-600"
                 />
-                <ScopeChip
+                {/* <ScopeChip
                   value="all"
                   label="All tenders"
                   desc="All tenders in the database"
                   activeClass="bg-gradient-to-r from-sky-500 to-blue-600"
-                />
+                /> */}
               </div>
               <span
                 className={`ml-2 text-xs px-2 py-0.5 rounded-full
