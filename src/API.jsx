@@ -58,6 +58,12 @@ const API = {
   ACCEPT_FEE_VERIFY: `${serverUrl}/tenders`,       // use with /:id/selection/accept/payment/verify
 
   //RR USer Tenders
+  // Draft Tender APIs (RR)
+  DRAFT_TENDER_CREATE: `${serverUrl}/tenders/drafts`,
+  DRAFT_TENDER_ACTIVE: `${serverUrl}/tenders/drafts/active`,
+  DRAFT_TENDER_UPDATE: `${serverUrl}/tenders/drafts`, // use `${...}/${id}`
+  DRAFT_TENDER_CANCEL: `${serverUrl}/tenders/drafts`, // use `${...}/${id}/cancel`
+
   CREATE_TENDER: `${serverUrl}/tenders/create-tender`,
   FETCH_ALL_TENDER_CREATED_BY_RRUSER: `${serverUrl}/tenders/my-tenders`,
   FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER: `${serverUrl}/tenders/quotations`,
