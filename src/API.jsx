@@ -63,6 +63,7 @@ const API = {
   DRAFT_TENDER_ACTIVE: `${serverUrl}/tenders/drafts/active`,
   DRAFT_TENDER_UPDATE: `${serverUrl}/tenders/drafts`, // use `${...}/${id}`
   DRAFT_TENDER_CANCEL: `${serverUrl}/tenders/drafts`, // use `${...}/${id}/cancel`
+  DELETE_TENDER: `${serverUrl}/tenders`,
 
   CREATE_TENDER: `${serverUrl}/tenders/create-tender`,
   FETCH_ALL_TENDER_CREATED_BY_RRUSER: `${serverUrl}/tenders/my-tenders`,

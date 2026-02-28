@@ -756,6 +756,7 @@ const RRDashboardPage = () => {
         setEditingDraft(createdDraft);
 
         toast.success("Draft created. You have 3 minutes to edit.");
+        console.log("draft available" , createdDraft);
 
         // RESET FORM
         setForm(initialFormState);

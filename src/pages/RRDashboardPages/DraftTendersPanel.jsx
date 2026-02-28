@@ -507,7 +507,7 @@ export default function DraftTendersPanel({ onEditDraft, onGoCreate, onGoHistory
           </div>
 
           {/* search */}
-          <div className="mt-4 relative">
+          {/* <div className="mt-4 relative">
             <Search className="h-4 w-4 text-white/80 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={search}
@@ -525,13 +525,13 @@ export default function DraftTendersPanel({ onEditDraft, onGoCreate, onGoHistory
                 <X className="h-4 w-4 text-white/80" />
               </button>
             ) : null}
-          </div>
+          </div> */}
         </div>
 
         <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 flex items-start gap-2">
           <Info className="h-4 w-4 mt-0.5" />
           <div>
-            Save creates a <b>draft</b>. After 3 minutes it auto-publishes to <b>Open</b> by backend cron.
+            Save creates a <b>draft</b>. After 3 minutes it auto-publishes to <b>Open</b> .
             Cancel before timer ends to stop publish.
           </div>
         </div>

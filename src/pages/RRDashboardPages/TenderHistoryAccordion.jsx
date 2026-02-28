@@ -14,6 +14,7 @@ import { TenderTermsModal } from "../../modals/TenderTermsModal"
 import { loadRazorpayScript } from "../../lib/loadRazorpay"
 import { calcAdvancePayment, toNumber } from "../../lib/tenderPayment";
 import { exportTenderExcel, exportTenderPDF, normalizeResponses } from "../../lib/tenderExport"
+import DeleteTenderModal from "../../modals/DeleteTenderModal"
 
 const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fetchTenderHistory,
   page = 1,
@@ -26,7 +27,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   scope = "mine",
   onScopeChange = () => { },
   currentUserName = "You", }) => {
-    
+
   const [openIdx, setOpenIdx] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [priceInput, setPriceInput] = useState("")
@@ -57,6 +58,16 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   const [postBidDraftByTender, setPostBidDraftByTender] = useState({});
 
   const [nowMs, setNowMs] = useState(Date.now());
+
+  const [deleteTender, setDeleteTender] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const canDeleteTender = (t) => {
+    const bs = t?.biddingStart ? new Date(t.biddingStart).getTime() : null;
+    if (!bs) return false;
+    return Date.now() < bs && String(t?.status || "").toLowerCase() !== "cancelled";
+  };
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 1000); // refresh every sec
@@ -527,6 +538,44 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     }
   };
 
+  const submitDeleteTender = async (reason) => {
+    const t = deleteTender;
+    if (!t?._id) return;
+
+    const r = String(reason || "").trim();
+    if (!r) {
+      toast.error("Reason is required.");
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      setDeleteError("");
+
+      const token = localStorage.getItem("session_token");
+      await axios.delete(`${API.DELETE_TENDER}/${t._id}`, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        data: { reason: r }, // ✅ DELETE body
+        timeout: 15000,
+      });
+
+      toast.success("Tender cancelled successfully. Emails sent to transporters.");
+      setDeleteTender(null);
+
+      if (fetchTenderHistory) await fetchTenderHistory();
+    } catch (e) {
+      const msg = e?.response?.data?.message || "Failed to delete tender.";
+      setDeleteError(msg);
+      toast.error(msg);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200 hover:shadow-xl transition-all duration-300">
@@ -796,6 +845,10 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                     onToggle={() => toggleResponses(idx, tenderId)}
                     onExportPDF={() => exportWithResponses(tender, 'pdf')}
                     onExportExcel={() => exportWithResponses(tender, 'excel')}
+
+                    canDelete={canDeleteTender(tender)}
+                    onDeleteClick={(t) => setDeleteTender(t)}
+                    deleteDisabledHint="Delete allowed only before bidding starts"
                   />
 
 
@@ -1159,6 +1212,20 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           isLoading={isFinalizing}
         />
       )} */}
+
+      <DeleteTenderModal
+        isOpen={!!deleteTender}
+        tender={deleteTender}
+        isLoading={deleteLoading}
+        errorText={deleteError}
+        onClose={() => {
+          if (!deleteLoading) {
+            setDeleteError("");
+            setDeleteTender(null);
+          }
+        }}
+        onConfirm={submitDeleteTender}
+      />
     </div>
   )
 }
