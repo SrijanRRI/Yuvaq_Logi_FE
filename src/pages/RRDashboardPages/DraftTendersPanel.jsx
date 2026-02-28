@@ -472,7 +472,7 @@ export default function DraftTendersPanel({ onEditDraft, onGoCreate, onGoHistory
     <div className="space-y-5">
       {/* Header (minimal, clean) */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-600 to-sky-600 p-5 text-white">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Timer className="h-6 w-6" />
