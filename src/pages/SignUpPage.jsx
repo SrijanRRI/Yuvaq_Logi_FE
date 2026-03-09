@@ -7,7 +7,7 @@ import API from '../API';
 import { toast } from 'react-toastify';
 
 const SignUpPage = () => {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', gstn: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', gstn: '', transportId: '', password: '', confirmPassword: '' });
   const [userType, setUserType] = useState('Transporter'); // 'Transporter' | 'RR User'
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -29,6 +29,12 @@ const SignUpPage = () => {
     if (name === 'gstn') {
       const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 15);
       setForm((f) => ({ ...f, gstn: clean }));
+      return;
+    }
+
+    if (name === 'transportId') {
+      const clean = value.replace(/[^a-zA-Z0-9/-]/g, '').toUpperCase().slice(0, 30);
+      setForm((f) => ({ ...f, transportId: clean }));
       return;
     }
 
@@ -63,6 +69,10 @@ const SignUpPage = () => {
         toast.error("Please enter a valid 15-character GST Number (GSTIN).");
         return;
       }
+      if (!form.transportId.trim()) {
+        toast.error("Transport ID is required for Transport users.");
+        return;
+      }
     }
 
     const role = getRoleFromUserType(userType);
@@ -75,7 +85,7 @@ const SignUpPage = () => {
       password: form.password,
       confirmPassword: form.confirmPassword,
       role,
-      ...(isTransporter ? { gstn: form.gstn } : {}), // only include for transporters
+      ...(isTransporter ? { gstn: form.gstn, transportId: form.transportId.trim(), } : {}), // only include for transporters
     };
 
     try {
@@ -293,12 +303,13 @@ const SignUpPage = () => {
                 className="focus:ring-emerald-200 focus:border-emerald-300"
               />
 
-              {/* GST Number — ONLY for Transporters */}
+              {/* GST Number — (ONLY for Transporters) + Transport ID*/}
               {isTransporter && (
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                <div className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
                   <div className="mb-2 text-xs font-semibold text-emerald-900/80">
-                    GSTIN required for Transporters
+                    Transporter verification details
                   </div>
+
                   <InputField
                     label="GST Number"
                     name="gstn"
@@ -310,6 +321,19 @@ const SignUpPage = () => {
                     autoCapitalize="characters"
                     autoComplete="off"
                     title="Format: 2 digits (state) + 10-char PAN + 1 entity code + Z + 1 check"
+                    className="focus:ring-emerald-200 focus:border-emerald-300"
+                  />
+
+                  <InputField
+                    label="Transport ID"
+                    name="transportId"
+                    type="text"
+                    value={form.transportId}
+                    onChange={handleChange}
+                    placeholder="Enter Vahan portal Transport ID"
+                    maxLength={30}
+                    autoCapitalize="characters"
+                    autoComplete="off"
                     className="focus:ring-emerald-200 focus:border-emerald-300"
                   />
                 </div>
