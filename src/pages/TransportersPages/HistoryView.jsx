@@ -56,21 +56,21 @@ const HistoryView = ({ tenders }) => {
   const formatDate = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
 
   const formatDateTime = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
       : "N/A";
 
   const toggleExpand = (id) => {
@@ -128,11 +128,10 @@ const HistoryView = ({ tenders }) => {
             >
               {/* Header */}
               <div
-                className={`bg-gradient-to-r ${
-                  finalizedStatus
+                className={`bg-gradient-to-r ${finalizedStatus
                     ? "from-emerald-600 via-emerald-700 to-teal-700"
                     : "from-indigo-600 via-indigo-700 to-violet-700"
-                } text-white p-6`}
+                  } text-white p-6`}
               >
                 <div className="flex flex-wrap justify-between items-start gap-3">
                   <div>
@@ -288,11 +287,10 @@ const HistoryView = ({ tenders }) => {
                             return (
                               <div
                                 key={q._id || qidx}
-                                className={`rounded-lg border ${
-                                  isFinalized
+                                className={`rounded-lg border ${isFinalized
                                     ? "border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 ring-2 ring-emerald-500 ring-offset-2"
                                     : "border-gray-200 bg-gray-50"
-                                } p-5 transition-all duration-300 hover:shadow-md group relative`}
+                                  } p-5 transition-all duration-300 hover:shadow-md group relative`}
                               >
                                 {isFinalized && (
                                   <div className="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full p-1 shadow-lg">
@@ -302,11 +300,10 @@ const HistoryView = ({ tenders }) => {
 
                                 <div className="flex justify-between items-center mb-4">
                                   <div
-                                    className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-                                      isFinalized
+                                    className={`text-sm font-medium px-3 py-1.5 rounded-full ${isFinalized
                                         ? "bg-emerald-100 text-emerald-800"
                                         : "bg-gray-200 text-gray-700"
-                                    }`}
+                                      }`}
                                   >
                                     Quotation #{qidx + 1}{" "}
                                     {isFinalized && "• Selected"}
@@ -482,6 +479,106 @@ const HistoryView = ({ tenders }) => {
                       </div>
                     )}
 
+                    {/* ✅ Materials */}
+                    {tender.materials?.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="w-1.5 h-5 bg-emerald-500 rounded-full"></span>
+                          <h4 className="font-semibold text-gray-800">Materials</h4>
+                        </div>
+
+                        {/* Desktop Table */}
+                        <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                <th className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">
+                                  HSN Code
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">
+                                  Material Name
+                                </th>
+                                <th className="px-4 py-3 text-right font-semibold text-gray-700 border-b border-gray-200">
+                                  Qty
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">
+                                  Unit
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">
+                                  Remarks
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tender.materials.map((m, i) => (
+                                <tr
+                                  key={`${m.hsnDigits || m.hsnCode || i}`}
+                                  className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                    } hover:bg-emerald-50/50 transition-colors`}
+                                >
+                                  <td className="px-4 py-3 font-medium text-gray-700 border-t border-gray-200">
+                                    {m.hsnCode || m.hsnDigits || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-700 border-t border-gray-200">
+                                    {m.materialName || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-right text-gray-700 border-t border-gray-200 font-medium">
+                                    {m.quantity ?? "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-600 border-t border-gray-200">
+                                    {m.unit || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-600 border-t border-gray-200">
+                                    {m.remarks || "-"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile cards */}
+                        <div className="md:hidden space-y-3">
+                          {tender.materials.map((m, i) => (
+                            <div
+                              key={`${m.hsnDigits || m.hsnCode || i}`}
+                              className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="text-xs text-gray-500 mb-1">Material Name</div>
+                                  <div className="font-semibold text-gray-800 break-words">
+                                    {m.materialName || "-"}
+                                  </div>
+
+                                  <div className="mt-2 text-xs text-gray-500 mb-1">HSN Code</div>
+                                  <div className="text-sm text-gray-700 break-words">
+                                    {m.hsnCode || m.hsnDigits || "-"}
+                                  </div>
+
+                                  <div className="mt-2 text-xs text-gray-500 mb-1">Unit</div>
+                                  <div className="text-sm text-gray-700 break-words">
+                                    {m.unit || "-"}
+                                  </div> 
+
+                                  <div className="mt-2 text-xs text-gray-500 mb-1">Remarks</div>
+                                  <div className="text-sm text-gray-700 break-words">
+                                    {m.remarks || "-"}
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0">
+                                  <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 text-xs font-semibold">
+                                    Qty: {m.quantity ?? "-"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* ✅ Vehicle Requirements (replaces Materials) */}
                     {tender.vehicleRequirements?.length > 0 && (
                       <div>
@@ -512,9 +609,8 @@ const HistoryView = ({ tenders }) => {
                               {tender.vehicleRequirements.map((v, i) => (
                                 <tr
                                   key={String(v.vehicleId || i)}
-                                  className={`${
-                                    i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                  } hover:bg-indigo-50/50 transition-colors`}
+                                  className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                    } hover:bg-indigo-50/50 transition-colors`}
                                 >
                                   <td className="px-4 py-3 font-medium text-gray-700 border-t border-gray-200">
                                     {v.category || "-"}

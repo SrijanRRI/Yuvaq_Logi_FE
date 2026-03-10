@@ -13,6 +13,7 @@ import {
   Info,
   ChevronDown,
   Check,
+  Search,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -25,7 +26,6 @@ const TenderForm = ({
   handleChange,
   handleSend,
   handleRemoveMaterial,
-  setShowMaterialModal,
   setShowTransporterModal,
   selectedTransporters,
   loading,
@@ -43,6 +43,15 @@ const TenderForm = ({
   const [vehQty, setVehQty] = useState(1);
   const [vehQtyError, setVehQtyError] = useState("");
 
+  const [hsnInput, setHsnInput] = useState("");
+  const [hsnLookupLoading, setHsnLookupLoading] = useState(false);
+  const [hsnLookupError, setHsnLookupError] = useState("");
+  const [hsnLookupData, setHsnLookupData] = useState(null);
+  const [materialQty, setMaterialQty] = useState("");
+  const [materialUnit, setMaterialUnit] = useState("");
+  const [materialRemarks, setMaterialRemarks] = useState("");
+  const hsnReqRef = useRef(0);
+
   const validateVehQty = (raw) => {
     if (raw === "") return "Minimum 1 has to be present";
     const n = Number(raw);
@@ -50,6 +59,9 @@ const TenderForm = ({
     if (n < 1) return "Minimum 1 has to be present";
     return "";
   };
+
+  const normalizeHsn = (value = "") =>
+    String(value).replace(/\D/g, "").trim();
 
   const openConfirmModal = (e) => {
     e?.preventDefault?.();
@@ -88,12 +100,106 @@ const TenderForm = ({
     (option) => option.value === form.maxBidUnit,
   );
 
+  const lookupHsn = async (rawCode) => {
+    const code = normalizeHsn(rawCode);
+    if (code.length < 4) {
+      setHsnLookupData(null);
+      setHsnLookupError("");
+      return;
+    }
+
+    const reqId = ++hsnReqRef.current;
+
+    try {
+      setHsnLookupLoading(true);
+      setHsnLookupError("");
+
+      const token = localStorage.getItem("session_token");
+      const res = await fetch(`${API.HSN_LOOKUP}/${encodeURIComponent(code)}`, {
+        credentials: "include",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      const json = await res.json();
+
+      if (reqId !== hsnReqRef.current) return;
+
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || "HSN code not found");
+      }
+
+      setHsnLookupData(json.data || null);
+    } catch (e) {
+      if (reqId !== hsnReqRef.current) return;
+      setHsnLookupData(null);
+      setHsnLookupError(e?.message || "HSN code not found");
+    } finally {
+      if (reqId === hsnReqRef.current) setHsnLookupLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const code = normalizeHsn(hsnInput);
+
+    if (code.length < 4) {
+      setHsnLookupData(null);
+      setHsnLookupError("");
+      setHsnLookupLoading(false);
+      return;
+    }
+
+    const t = setTimeout(() => {
+      lookupHsn(code);
+    }, 400);
+
+    return () => clearTimeout(t);
+  }, [hsnInput]);
+
+  const addMaterialFromLookup = () => {
+    if (!hsnLookupData) {
+      setHsnLookupError("Enter a valid HSN code first");
+      return;
+    }
+
+    let qty = null;
+    if (materialQty !== "") {
+      qty = Number(materialQty);
+      if (!Number.isFinite(qty) || qty < 0) {
+        setHsnLookupError("Material quantity must be a valid number");
+        return;
+      }
+    }
+
+    const nextMaterial = {
+      hsnCode: hsnLookupData.codeDisplay || hsnLookupData.codeDigits,
+      hsnDigits: hsnLookupData.codeDigits,
+      materialName: hsnLookupData.description,
+      quantity: qty,
+      unit: materialUnit.trim(),
+      remarks: materialRemarks.trim(),
+    };
+
+    setForm((prev) => ({
+      ...prev,
+      materials: [...(prev.materials || []), nextMaterial],
+    }));
+
+    setHsnInput("");
+    setHsnLookupData(null);
+    setHsnLookupError("");
+    setMaterialQty("");
+    setMaterialUnit("");
+    setMaterialRemarks("");
+  };
+
   // ---------------- PIN Auto-fill (Pickup + Drop) ----------------
-  const [pickupPinStatus, setPickupPinStatus] = useState("idle"); // idle | loading | success | error
+  const [pickupPinStatus, setPickupPinStatus] = useState("idle");
   const [pickupPinStatusMsg, setPickupPinStatusMsg] = useState("");
   const pickupLastPinRef = useRef(null);
 
-  const [dropPinStatus, setDropPinStatus] = useState("idle"); // idle | loading | success | error
+  const [dropPinStatus, setDropPinStatus] = useState("idle");
   const [dropPinStatusMsg, setDropPinStatusMsg] = useState("");
   const dropLastPinRef = useRef(null);
 
@@ -107,7 +213,6 @@ const TenderForm = ({
       .slice(0, 6);
 
   const lookupPin = async (pin, signal) => {
-    // 1) India Postal API
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`, {
         signal,
@@ -118,10 +223,7 @@ const TenderForm = ({
 
       if (d?.Status === "Success" && d?.PostOffice?.length) {
         const po = d.PostOffice[0];
-
         const state = po?.State || "";
-
-        // ✅ Fill district only (best available)
         const district =
           po?.District ||
           po?.Block ||
@@ -132,11 +234,8 @@ const TenderForm = ({
 
         return { state, district };
       }
-    } catch {
-      // fall through to zippopotam
-    }
+    } catch {}
 
-    // 2) Fallback: Zippopotam
     const res2 = await fetch(`https://api.zippopotam.us/IN/${pin}`, {
       signal,
       mode: "cors",
@@ -147,12 +246,11 @@ const TenderForm = ({
     const place = j2?.places?.[0];
 
     const state = place?.state || "";
-    const district = place?.["place name"] || ""; // best available fallback
+    const district = place?.["place name"] || "";
 
     return { state, district };
   };
 
-  // Pickup PIN autofill
   useEffect(() => {
     const pin = normalizePin(form.pickup?.pincode);
 
@@ -182,7 +280,6 @@ const TenderForm = ({
             district: pickupManualRef.current.district
               ? (prev.pickup?.district || "")
               : district,
-            // city remains manual
           },
         }));
 
@@ -205,7 +302,6 @@ const TenderForm = ({
     };
   }, [form.pickup?.pincode, setForm]);
 
-  // Drop PIN autofill
   useEffect(() => {
     const pin = normalizePin(form.drop?.pincode);
 
@@ -235,7 +331,6 @@ const TenderForm = ({
             district: dropManualRef.current.district
               ? (prev.drop?.district || "")
               : district,
-            // city remains manual
           },
         }));
 
@@ -333,12 +428,9 @@ const TenderForm = ({
       };
     });
 
+    setVehCategory("");
     setVehVehicleId("");
-    setVehQty(1);
-    setVehQtyError("");
-    setVehCategory("");      // ✅ clear category
-    setVehVehicleId("");     // ✅ clear vehicle
-    setVehQty("1");          // reset qty
+    setVehQty("1");
     setVehQtyError("");
   };
 
@@ -392,7 +484,6 @@ const TenderForm = ({
         ) : (
           <form onSubmit={openConfirmModal} className="p-6">
             <fieldset disabled={formDisabled} className="space-y-8">
-              {/* Delivery Window & Closing Date */}
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm">
                   <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -418,7 +509,7 @@ const TenderForm = ({
                             },
                           }))
                         }
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         required
                       />
                     </div>
@@ -439,7 +530,7 @@ const TenderForm = ({
                             },
                           }))
                         }
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         required
                       />
                     </div>
@@ -460,14 +551,13 @@ const TenderForm = ({
                       name="closingDate"
                       value={form.closingDate}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       required
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Bidding Time */}
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
                   <Calendar className="h-5 w-5 text-emerald-600" />
@@ -483,7 +573,7 @@ const TenderForm = ({
                       name="biddingStart"
                       value={form.biddingStart || ""}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       required
                     />
                   </div>
@@ -497,11 +587,11 @@ const TenderForm = ({
                       name="biddingEnd"
                       value={form.biddingEnd || ""}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       required
                     />
                     <p className="mt-1 text-xs text-slate-500">
-                      If someone bids in the last 5 minutes, end time may extend (soft-close).
+                      If someone bids in the last 5 minutes, end time may extend.
                     </p>
                   </div>
 
@@ -514,16 +604,15 @@ const TenderForm = ({
                       name="biddingHardEnd"
                       value={form.biddingHardEnd || ""}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                     <p className="mt-1 text-xs text-slate-500">
-                      Optional. If empty, Hard Stop = Soft End (no extension).
+                      Optional. If empty, Hard Stop = Soft End.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Bid Amount Range (Min + Max) */}
               <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-xl border border-amber-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
                   <Scale className="h-5 w-5 text-amber-600" />
@@ -547,7 +636,7 @@ const TenderForm = ({
                         value={form.minBidAmount || ""}
                         onChange={handleChange}
                         placeholder="Enter minimum bid"
-                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-lg font-medium transition-all duration-200"
+                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
                         required
                       />
                     </div>
@@ -569,14 +658,13 @@ const TenderForm = ({
                         value={form.maxBidAmount || ""}
                         onChange={handleChange}
                         placeholder="Enter maximum bid"
-                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-lg font-medium transition-all duration-200"
+                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
                         required
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Unit Dropdown */}
                 <div className="relative mt-5">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Unit Type
@@ -586,7 +674,7 @@ const TenderForm = ({
                     <button
                       type="button"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -604,9 +692,7 @@ const TenderForm = ({
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-slate-500">
-                                Select Unit Type
-                              </div>
+                              <div className="text-slate-500">Select Unit Type</div>
                             )}
                           </div>
                         </div>
@@ -625,7 +711,7 @@ const TenderForm = ({
                             key={option.value}
                             type="button"
                             onClick={() => handleUnitSelect(option.value)}
-                            className="w-full px-4 py-3 text-left hover:bg-amber-50 transition-colors duration-150 border-b border-amber-100 last:border-b-0 focus:outline-none focus:bg-amber-50"
+                            className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b border-amber-100 last:border-b-0"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -655,13 +741,11 @@ const TenderForm = ({
                 <div className="mt-3 flex items-start gap-2 text-amber-700">
                   <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p className="text-xs">
-                    Transporters must quote within the allowed range based on the
-                    selected unit.
+                    Transporters must quote within the allowed range based on the selected unit.
                   </p>
                 </div>
               </div>
 
-              {/* Project Details */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-emerald-600" />
@@ -678,7 +762,7 @@ const TenderForm = ({
                       value={form.projectName || ""}
                       onChange={handleChange}
                       placeholder="Enter project name"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       required
                     />
                   </div>
@@ -692,7 +776,7 @@ const TenderForm = ({
                       value={form.projectCode || ""}
                       onChange={handleChange}
                       placeholder="Enter project code"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       required
                     />
                   </div>
@@ -706,7 +790,7 @@ const TenderForm = ({
                       value={form.purchaseOrder || ""}
                       onChange={handleChange}
                       placeholder="Enter purchase order"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       required
                     />
                   </div>
@@ -719,12 +803,11 @@ const TenderForm = ({
                       value={form.projectRemark || ""}
                       onChange={handleChange}
                       placeholder="Enter project remarks or additional information"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 h-[60px] resize-none"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 h-[60px] resize-none"
                     />
                   </div>
                 </div>
 
-                {/* Price Difference Rule */}
                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-1">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -742,7 +825,7 @@ const TenderForm = ({
                         value={form.priceDifference}
                         onChange={handleChange}
                         placeholder="e.g., 20"
-                        className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-emerald-50/40"
+                        className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/40"
                       />
                     </div>
                   </div>
@@ -754,15 +837,9 @@ const TenderForm = ({
                           <Info className="h-4 w-4 text-emerald-700" />
                         </div>
                         <div className="text-sm text-emerald-800">
-                          <p className="font-medium">
-                            Minimum decrement to beat L1
-                          </p>
+                          <p className="font-medium">Minimum decrement to beat L1</p>
                           <p className="mt-1">
-                            Set the minimum amount (in ₹) by which a transporter
-                            must undercut the current lowest bid (L1) for their
-                            quote to be accepted. For example, if <b>L1 = ₹300</b>{" "}
-                            and <b>Price Difference = ₹20</b>, then the next valid
-                            quote must be <b>₹280 or lower</b>.
+                            Set the minimum amount by which a transporter must undercut the current lowest bid.
                           </p>
                         </div>
                       </div>
@@ -771,25 +848,235 @@ const TenderForm = ({
                 </div>
               </div>
 
-              {/* Pickup + Drop Location Details */}
+              {/* Materials with HSN */}
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-emerald-600" />
+                    Materials
+                  </h2>
+                  <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    HSN based
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                    <div className="lg:col-span-3">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        HSN Code
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <Search className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          type="text"
+                          value={hsnInput}
+                          onChange={(e) => setHsnInput(e.target.value)}
+                          placeholder="Enter HSN code"
+                          className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      {hsnLookupLoading && (
+                        <p className="mt-1 text-xs text-slate-500">Fetching material details…</p>
+                      )}
+                      {!hsnLookupLoading && hsnLookupError && (
+                        <p className="mt-1 text-xs text-red-600">{hsnLookupError}</p>
+                      )}
+                    </div>
+
+                    <div className="lg:col-span-5">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Material Description
+                      </label>
+                      <div className="min-h-[42px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700">
+                        {hsnLookupData ? (
+                          <div>
+                            <div className="font-medium text-slate-800">
+                              {hsnLookupData.description}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              HSN: {hsnLookupData.codeDisplay || hsnLookupData.codeDigits}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">Lookup result will appear here</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Qty
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={materialQty}
+                        onChange={(e) => setMaterialQty(e.target.value)}
+                        placeholder="Optional"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Unit
+                      </label>
+                      <input
+                        type="text"
+                        value={materialUnit}
+                        onChange={(e) => setMaterialUnit(e.target.value)}
+                        placeholder="MT / Bags / Nos"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-10">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Material Remarks
+                      </label>
+                      <input
+                        type="text"
+                        value={materialRemarks}
+                        onChange={(e) => setMaterialRemarks(e.target.value)}
+                        placeholder="Optional remarks for this material"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <button
+                        type="button"
+                        onClick={addMaterialFromLookup}
+                        disabled={!hsnLookupData}
+                        className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                      >
+                        Add Material
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {(form.materials || []).length > 0 ? (
+                  <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div className="overflow-x-auto hidden sm:block">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold rounded-tl-lg">
+                              HSN
+                            </th>
+                            <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold">
+                              Material
+                            </th>
+                            <th className="px-4 py-3 text-right bg-slate-100 text-slate-700 font-semibold">
+                              Qty
+                            </th>
+                            <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold">
+                              Unit
+                            </th>
+                            <th className="px-4 py-3 text-left bg-slate-100 text-slate-700 font-semibold">
+                              Remarks
+                            </th>
+                            <th className="px-4 py-3 text-center bg-slate-100 text-slate-700 font-semibold rounded-tr-lg">
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {form.materials.map((m, idx) => (
+                            <tr
+                              key={`${m.hsnDigits}-${idx}`}
+                              className="border-b border-slate-200 last:border-0 hover:bg-slate-100/50 transition"
+                            >
+                              <td className="px-4 py-3 font-medium text-slate-800">
+                                {m.hsnCode || m.hsnDigits}
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {m.materialName}
+                              </td>
+                              <td className="px-4 py-3 text-right text-slate-700">
+                                {m.quantity ?? "-"}
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {m.unit || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {m.remarks || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMaterial(idx)}
+                                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition"
+                                  title="Remove"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="sm:hidden space-y-3">
+                      {form.materials.map((m, idx) => (
+                        <div
+                          key={`${m.hsnDigits}-${idx}`}
+                          className="rounded-lg border border-slate-200 bg-white p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-xs text-slate-500">HSN</div>
+                              <div className="font-semibold text-slate-800">
+                                {m.hsnCode || m.hsnDigits}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMaterial(idx)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className="mt-2 text-sm text-slate-700">{m.materialName}</div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            Qty: {m.quantity ?? "-"} {m.unit || ""}
+                          </div>
+                          {m.remarks && (
+                            <div className="mt-1 text-xs text-slate-500">Remarks: {m.remarks}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-6 text-center">
+                    <p className="text-slate-600 font-medium">No materials added yet</p>
+                    <p className="text-slate-500 text-sm mt-1">
+                      Enter HSN code to auto-fetch material details, then add it to the tender.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-800 mb-2 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-emerald-600" />
                   Pickup & Drop Location Details
                 </h2>
                 <p className="text-xs text-slate-500 mb-5">
-                  Enter PIN Code to auto-fill{" "}
-                  <span className="font-medium">City</span> &{" "}
-                  <span className="font-medium">State</span>. You can
-                  edit anytime.
+                  Enter PIN Code to auto-fill district & state. You can edit anytime.
                 </p>
 
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* ---------------- Pickup ---------------- */}
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-800 mb-3">
-                      Pickup
-                    </div>
+                    <div className="font-semibold text-slate-800 mb-3">Pickup</div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
@@ -805,7 +1092,6 @@ const TenderForm = ({
                           onChange={(e) => {
                             const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
 
-                            // PIN changed → allow autofill overwrite for new PIN
                             pickupManualRef.current = { state: false, district: false };
 
                             setForm((prev) => ({
@@ -813,21 +1099,16 @@ const TenderForm = ({
                               pickup: {
                                 ...(prev.pickup || {}),
                                 pincode: pin,
-
-                                // optional but recommended: clear old auto-filled values while typing new PIN
                                 state: "",
                                 district: "",
                               },
                             }));
                           }}
                           placeholder="6-digit PIN"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           required
                         />
-                        <StatusLine
-                          status={pickupPinStatus}
-                          msg={pickupPinStatusMsg}
-                        />
+                        <StatusLine status={pickupPinStatus} msg={pickupPinStatusMsg} />
                       </div>
 
                       <div className="md:col-span-8">
@@ -838,7 +1119,7 @@ const TenderForm = ({
                           type="text"
                           value={form.pickup?.state || ""}
                           onChange={(e) => {
-                            pickupManualRef.current.state = true; // ✅ user edited manually
+                            pickupManualRef.current.state = true;
                             setForm((prev) => ({
                               ...prev,
                               pickup: {
@@ -848,7 +1129,7 @@ const TenderForm = ({
                             }));
                           }}
                           placeholder="Auto-filled or type manually"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -860,7 +1141,7 @@ const TenderForm = ({
                           type="text"
                           value={form.pickup?.district || ""}
                           onChange={(e) => {
-                            pickupManualRef.current.district = true; // ✅ user edited manually
+                            pickupManualRef.current.district = true;
                             setForm((prev) => ({
                               ...prev,
                               pickup: {
@@ -870,7 +1151,7 @@ const TenderForm = ({
                             }));
                           }}
                           placeholder="Auto-filled or type manually"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -892,7 +1173,7 @@ const TenderForm = ({
                           }
                           placeholder="Enter the city"
                           required
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -912,18 +1193,15 @@ const TenderForm = ({
                             }))
                           }
                           placeholder="Enter full address / landmark / exact pickup location"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 min-h-[90px] resize-none"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[90px] resize-none"
                           required
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* ---------------- Drop ---------------- */}
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-800 mb-3">
-                      Drop
-                    </div>
+                    <div className="font-semibold text-slate-800 mb-3">Drop</div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
@@ -952,7 +1230,7 @@ const TenderForm = ({
                             }));
                           }}
                           placeholder="6-digit PIN"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           required
                         />
                         <StatusLine status={dropPinStatus} msg={dropPinStatusMsg} />
@@ -976,7 +1254,7 @@ const TenderForm = ({
                             }));
                           }}
                           placeholder="Auto-filled or type manually"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -998,7 +1276,7 @@ const TenderForm = ({
                             }));
                           }}
                           placeholder="Auto-filled or type manually"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -1020,7 +1298,7 @@ const TenderForm = ({
                           }
                           placeholder="Enter the city"
                           required
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -1040,7 +1318,7 @@ const TenderForm = ({
                             }))
                           }
                           placeholder="Enter full address / landmark / exact drop location"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 min-h-[90px] resize-none"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[90px] resize-none"
                           required
                         />
                       </div>
@@ -1049,7 +1327,7 @@ const TenderForm = ({
                 </div>
               </div>
 
-              {/* Vehicle Requirements Section */}
+              {/* Vehicle Requirements */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -1118,7 +1396,7 @@ const TenderForm = ({
                       step={1}
                       value={vehQty}
                       onChange={(e) => {
-                        const raw = e.target.value; // can be "" while typing
+                        const raw = e.target.value;
                         setVehQty(raw);
                         setVehQtyError(validateVehQty(raw));
                       }}
@@ -1212,7 +1490,7 @@ const TenderForm = ({
                           value={form.weight}
                           onChange={handleChange}
                           placeholder="Total weight"
-                          className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 text-emerald-800 font-medium transition-all duration-200"
+                          className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/80 text-emerald-800 font-medium"
                           required
                         />
                       </div>
@@ -1228,7 +1506,7 @@ const TenderForm = ({
                           value={form.quantity}
                           onChange={handleChange}
                           placeholder="Total quantity"
-                          className="w-full px-3 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent bg-white/80 text-sky-800 font-medium transition-all duration-200"
+                          className="w-full px-3 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white/80 text-sky-800 font-medium"
                           required
                         />
                       </div>
@@ -1244,7 +1522,6 @@ const TenderForm = ({
                 )}
               </div>
 
-              {/* Transporters Section */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -1300,7 +1577,6 @@ const TenderForm = ({
                 )}
               </div>
 
-              {/* Remarks */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <label className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
                   <FileText className="h-5 w-5 text-emerald-600" />
@@ -1311,11 +1587,10 @@ const TenderForm = ({
                   value={form.remarks}
                   onChange={handleChange}
                   placeholder="Add any additional information or special instructions"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[120px] transition-all duration-200"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[120px]"
                 />
               </div>
 
-              {/* Submit Button */}
               <div className="flex justify-end">
                 <button
                   type="submit"
@@ -1374,12 +1649,10 @@ const TenderForm = ({
                   </p>
                   <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
                     <li>
-                      Verify all tender details (dates, location, materials,
-                      weight/quantity, remarks) before submitting.
+                      Verify all tender details including HSN materials, vehicle requirements, dates and locations.
                     </li>
                     <li>
-                      Once submitted, transporters may start bidding immediately
-                      based on the details you entered.
+                      Once submitted, transporters may start bidding immediately.
                     </li>
                   </ul>
                 </div>
@@ -1390,21 +1663,16 @@ const TenderForm = ({
                   </p>
                   <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1">
                     <li>
-                      YuvaQ is a technology platform that facilitates tender
-                      creation and bidding.
+                      YuvaQ is a technology platform that facilitates tender creation and bidding.
                     </li>
                     <li>
-                      YuvaQ does not verify, guarantee, or take responsibility
-                      for tender accuracy or outcomes.
+                      YuvaQ does not verify, guarantee, or take responsibility for tender accuracy or outcomes.
                     </li>
                     <li>
-                      Any transporter backout, delay, dispute, or
-                      non-performance is between the tender creator and
-                      transporter.
+                      Any transporter backout, delay, dispute, or non-performance is between the tender creator and transporter.
                     </li>
                     <li>
-                      YuvaQ is not responsible for any loss, damage, or claims
-                      arising from bidding, backout, or fulfillment issues.
+                      YuvaQ is not responsible for any loss, damage, or claims arising from bidding, backout, or fulfillment issues.
                     </li>
                   </ul>
                 </div>

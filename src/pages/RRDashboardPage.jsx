@@ -18,7 +18,7 @@ import { logout } from "../utils/UserSlice";
 
 import TenderForm from "./RRDashboardPages/TenderForm";
 import TenderHistoryAccordion from "./RRDashboardPages/TenderHistoryAccordion";
-import { MaterialModal } from "../modals/MaterialModal";
+// import { MaterialModal } from "../modals/MaterialModal";
 import TransporterModal from "../modals/TransporterModal";
 import ShipmentDetailsTab from "./RRDashboardPages/ShipmentDetailsTab";
 import ShipmentPlannedTab from "./RRDashboardPages/ShipmentPlannedTab";
@@ -46,6 +46,7 @@ const initialFormState = {
   projectCode: "",
   purchaseOrder: "",
   projectRemark: "",
+  materials: [],
   vehicleRequirements: [],
   weight: "",
   quantity: "",
@@ -125,6 +126,17 @@ const RRDashboardPage = () => {
     projectCode: t?.projectCode || "",
     purchaseOrder: t?.purchaseOrder || "",
     projectRemark: t?.projectRemark || "",
+
+    materials: Array.isArray(t?.materials)
+      ? t.materials.map((m) => ({
+        hsnCode: m?.hsnCode || "",
+        hsnDigits: m?.hsnDigits || "",
+        materialName: m?.materialName || "",
+        quantity: m?.quantity ?? null,
+        unit: m?.unit || "",
+        remarks: m?.remarks || "",
+      }))
+      : [],
 
     vehicleRequirements: Array.isArray(t?.vehicleRequirements) ? t.vehicleRequirements : [],
     weight: t?.totalWeight != null ? String(t.totalWeight) : "",
@@ -207,7 +219,7 @@ const RRDashboardPage = () => {
   // --- Create Tender form state ---
   const [form, setForm] = useState(initialFormState);
   const [selectedTransporters, setSelectedTransporters] = useState([]);
-  const [showMaterialModal, setShowMaterialModal] = useState(false);
+  // const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [showTransporterModal, setShowTransporterModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formDisabled, setFormDisabled] = useState(false);
@@ -243,24 +255,31 @@ const RRDashboardPage = () => {
     }
   };
 
+  // const handleRemoveMaterial = (indexToRemove) => {
+  //   setForm((prev) => {
+  //     const updatedMaterials = prev.materials.filter(
+  //       (_, i) => i !== indexToRemove
+  //     );
+  //     let weight = prev.weight;
+  //     let quantity = prev.quantity;
+  //     if (!prev.isManualTotals) {
+  //       weight = updatedMaterials
+  //         .reduce((a, m) => a + Number(m.weight || 0), 0)
+  //         .toFixed(2);
+  //       quantity = updatedMaterials.reduce(
+  //         (a, m) => a + Number(m.quantity || 0),
+  //         0
+  //       );
+  //     }
+  //     return { ...prev, materials: updatedMaterials, weight, quantity };
+  //   });
+  // };
+
   const handleRemoveMaterial = (indexToRemove) => {
-    setForm((prev) => {
-      const updatedMaterials = prev.materials.filter(
-        (_, i) => i !== indexToRemove
-      );
-      let weight = prev.weight;
-      let quantity = prev.quantity;
-      if (!prev.isManualTotals) {
-        weight = updatedMaterials
-          .reduce((a, m) => a + Number(m.weight || 0), 0)
-          .toFixed(2);
-        quantity = updatedMaterials.reduce(
-          (a, m) => a + Number(m.quantity || 0),
-          0
-        );
-      }
-      return { ...prev, materials: updatedMaterials, weight, quantity };
-    });
+    setForm((prev) => ({
+      ...prev,
+      materials: (prev.materials || []).filter((_, i) => i !== indexToRemove),
+    }));
   };
 
   const handleTransporterSave = (selectedIds) => {
@@ -692,6 +711,18 @@ const RRDashboardPage = () => {
           country: form.drop.country || "India",
         },
 
+        materials: (form.materials || []).map((m) => ({
+          hsnCode: m.hsnCode,
+          hsnDigits: m.hsnDigits,
+          materialName: m.materialName,
+          quantity:
+            m.quantity === "" || m.quantity === null || m.quantity === undefined
+              ? null
+              : Number(m.quantity),
+          unit: m.unit || "",
+          remarks: m.remarks || "",
+        })),
+
         vehicleRequirements: form.vehicleRequirements.map((v) => ({
           vehicleId: v.vehicleId,
           category: v.category,
@@ -756,7 +787,7 @@ const RRDashboardPage = () => {
         setEditingDraft(createdDraft);
 
         toast.success("Draft created. You have 3 minutes to edit.");
-        console.log("draft available" , createdDraft);
+        console.log("draft available", createdDraft);
 
         // RESET FORM
         setForm(initialFormState);
@@ -1192,7 +1223,7 @@ const RRDashboardPage = () => {
               setForm={setForm}
               handleChange={handleChange}
               handleSend={handleSend}
-              setShowMaterialModal={setShowMaterialModal}
+              // setShowMaterialModal={setShowMaterialModal}
               setShowTransporterModal={setShowTransporterModal}
               handleRemoveMaterial={handleRemoveMaterial}
               selectedTransporters={selectedTransporters}
@@ -1204,7 +1235,7 @@ const RRDashboardPage = () => {
       </div>
 
       {/* ✅ keep your modals exactly same */}
-      {showMaterialModal && (
+      {/* {showMaterialModal && (
         <MaterialModal
           close={() => setShowMaterialModal(false)}
           onAdd={(newMaterial) => {
@@ -1225,7 +1256,7 @@ const RRDashboardPage = () => {
             });
           }}
         />
-      )}
+      )} */}
 
       {showTransporterModal && (
         <TransporterModal

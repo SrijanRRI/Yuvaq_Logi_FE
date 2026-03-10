@@ -1,29 +1,38 @@
-import React from 'react';
-import { Calendar, MapPin, Package, Clock, AlertCircle, Timer, Scale, Truck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, MapPin, Package, Clock, AlertCircle, Timer, Scale, Truck, ChevronDown, ChevronUp } from 'lucide-react';
 import CountdownTimer from '../../components/CountdownTimer';
 // import CountdownTimer from '../CountdownTimer';
 
 const UpcomingTenders = ({ tenders }) => {
+  const [expandedMaterials, setExpandedMaterials] = useState({});
+
+  const toggleMaterials = (tenderId) => {
+    setExpandedMaterials((prev) => ({
+      ...prev,
+      [tenderId]: !prev[tenderId],
+    }));
+  };
+
   // Format date to readable format
   const formatDate = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
       : "N/A";
 
   // Format date with time
   const formatDateTime = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : "N/A";
 
   // Get tender status based on dates
@@ -81,12 +90,7 @@ const UpcomingTenders = ({ tenders }) => {
         tenders.map((tender, idx) => {
           const status = getTenderStatus(tender);
           const statusColor = getStatusColor(status);
-
-          // const line1 = tender?.dispatchLocation?.trim();
-          // const line2 = tender?.address?.trim();
-          // const pin = tender?.pincode?.toString()?.trim();
-
-          // const hasAny = !!(line1 || line2 || pin);
+          const isMaterialsExpanded = expandedMaterials[tender._id] || false;
 
           return (
             <div
@@ -246,19 +250,6 @@ const UpcomingTenders = ({ tenders }) => {
                     </div>
                   </div>
 
-                  {/* <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200">
-                    <div className="p-2.5 bg-indigo-100 rounded-full text-indigo-600 group-hover:bg-indigo-200 transition-colors">
-                      <Scale className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-gray-500 text-sm mb-1">Max Bid Amount</div>
-                      <div className="font-medium text-gray-800">
-                        ₹ {tender.maxBidAmount?.toLocaleString('en-IN') || "N/A"}
-                        {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : "( - )"}
-                      </div>
-                    </div>
-                  </div> */}
-
                   <div className="flex items-start gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow transition-all group-hover:border-indigo-200 sm:col-span-2 lg:col-span-2">
                     <div className="p-2.5 bg-purple-100 rounded-full text-purple-600 group-hover:bg-purple-200 transition-colors">
                       <Package className="w-5 h-5" />
@@ -283,6 +274,142 @@ const UpcomingTenders = ({ tenders }) => {
                       <div>
                         <div className="font-medium text-amber-800 mb-1">Remarks</div>
                         <div className="text-amber-700">{tender.remarks}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Materials Accordion */}
+                {tender.materials?.length > 0 && (
+                  <div className="pt-2">
+                    <button
+                      onClick={() => toggleMaterials(tender._id)}
+                      className="w-full flex items-center justify-between gap-2 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors shadow-sm mb-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="bg-emerald-100 p-2 rounded-full">
+                          <Package className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-slate-800">Materials</h4>
+                          <p className="text-xs text-slate-500">
+                            {tender.materials.length} {tender.materials.length === 1 ? "material" : "materials"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500 hidden sm:inline">
+                          {isMaterialsExpanded ? "Hide details" : "Show details"}
+                        </span>
+                        {isMaterialsExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-slate-500" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-slate-500" />
+                        )}
+                      </div>
+                    </button>
+
+                    <div
+                      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isMaterialsExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      {/* Mobile cards */}
+                      <div className="block sm:hidden space-y-3 mt-2">
+                        {tender.materials.map((m, i) => (
+                          <div
+                            key={`${m.hsnDigits || m.hsnCode || i}`}
+                            className="bg-white rounded-lg border border-gray-200 shadow-sm p-4"
+                          >
+                            <div className="text-xs text-gray-500 mb-1">Material</div>
+                            <div className="font-semibold text-gray-800 break-words">
+                              {m.materialName || "-"}
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <div className="text-gray-500 mb-1">HSN Code</div>
+                                <div className="text-gray-700 font-medium break-words">
+                                  {m.hsnCode || m.hsnDigits || "-"}
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <div className="text-gray-500 mb-1">Qty</div>
+                                <div className="text-gray-800 font-bold">
+                                  {m.quantity ?? "-"}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-gray-500 mb-1">Unit</div>
+                                <div className="text-gray-700 font-medium">
+                                  {m.unit || "-"}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-gray-500 mb-1">Remarks</div>
+                                <div className="text-gray-700 font-medium break-words">
+                                  {m.remarks || "-"}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Desktop table */}
+                      <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+                              <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                                HSN Code
+                              </th>
+                              <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                                Material Name
+                              </th>
+                              <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                                Qty
+                              </th>
+                              <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                                Unit
+                              </th>
+                              <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                                Remarks
+                              </th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {tender.materials.map((m, i) => (
+                              <tr
+                                key={`${m.hsnDigits || m.hsnCode || i}`}
+                                className={`border-t border-gray-200 ${
+                                  i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                } hover:bg-emerald-50/50 transition-colors`}
+                              >
+                                <td className="px-4 py-3 font-medium text-gray-700">
+                                  {m.hsnCode || m.hsnDigits || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-gray-700">
+                                  {m.materialName || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-800 font-bold">
+                                  {m.quantity ?? "-"}
+                                </td>
+                                <td className="px-4 py-3 text-gray-600">
+                                  {m.unit || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-gray-600">
+                                  {m.remarks || "-"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
@@ -361,8 +488,9 @@ const UpcomingTenders = ({ tenders }) => {
                           {tender.vehicleRequirements.map((v, i) => (
                             <tr
                               key={v.vehicleId || i}
-                              className={`border-t border-gray-200 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                } hover:bg-indigo-50/50 transition-colors`}
+                              className={`border-t border-gray-200 ${
+                                i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                              } hover:bg-indigo-50/50 transition-colors`}
                             >
                               <td className="px-4 py-3 font-medium text-gray-700">
                                 {v.category || "-"}

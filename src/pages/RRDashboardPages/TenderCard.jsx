@@ -7,8 +7,6 @@ const TenderCard = ({
   onToggle,
   onExportPDF,
   onExportExcel,
-
-  // ✅ delete props from parent
   onDeleteClick,
   canDelete = false,
   deleteDisabledHint = "Delete allowed only before bidding starts",
@@ -26,6 +24,13 @@ const TenderCard = ({
 
   const formatDate = (date) =>
     new Date(date).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" });
+
+  const pickupShort = [
+    tender?.pickup?.city || tender?.pickup?.district,
+    tender?.pickup?.state,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <div
@@ -53,12 +58,10 @@ const TenderCard = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-slate-800 text-base sm:text-lg break-words">
-                {tender.projectName || `Tender for ${tender.dispatchLocation || "Unknown Location"}`}
+                {tender.projectName || "Tender"}
               </h3>
 
-              {/* right actions */}
               <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                {/* Export dropdown */}
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setMenuOpen((s) => !s)}
@@ -93,7 +96,6 @@ const TenderCard = ({
                   )}
                 </div>
 
-                {/* ✅ Delete button */}
                 <button
                   type="button"
                   onClick={() => onDeleteClick && onDeleteClick(tender)}
@@ -128,10 +130,10 @@ const TenderCard = ({
                 </div>
               )}
 
-              {tender.dispatchLocation && (
+              {pickupShort && (
                 <div className="flex items-center gap-1 min-w-0">
                   <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 flex-shrink-0" />
-                  <span className="truncate">{tender.dispatchLocation}</span>
+                  <span className="truncate">{pickupShort}</span>
                 </div>
               )}
             </div>

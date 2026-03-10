@@ -73,6 +73,9 @@ const API = {
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
   VEHICLE_CATALOG: `${serverUrl}/vehicle/vehicle-catalog`,
 
+  // search the material in the tender form 
+  HSN_LOOKUP: `${serverUrl}/hsn/lookup`,
+
   //Post-Bid Negotiation : 
   START_POST_BID: `${serverUrl}/tenders`,
   ACTIVE_POST_BID_TENDERS: `${serverUrl}/tenders/transporter/post-bid-active`,

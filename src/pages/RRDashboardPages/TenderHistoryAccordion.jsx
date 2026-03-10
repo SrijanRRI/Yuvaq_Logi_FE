@@ -229,9 +229,16 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   // only opens terms AFTER transporter confirmed
   const handleProceedToPay = ({ tender, quotation }) => {
     const finalPricePerMt = Number(quotation.price);
-    const totalWeightMt =
-      toNumber(tender.totalWeight) ||
-      (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
+    // const totalWeightMt =
+    //   toNumber(tender.totalWeight) ||
+    //   (tender.materials || []).reduce((sum, m) => sum + toNumber(m.weight), 0);
+
+    const totalWeightMt = toNumber(tender.totalWeight);
+
+    if (!totalWeightMt) {
+      toast.error("Total weight is missing for this tender.");
+      return;
+    }
 
     const PAY_PERCENT = Number(import.meta.env.VITE_FINALIZE_ADVANCE_PERCENT ?? 5);
     const DISPLAY_PERCENT = Number(import.meta.env.VITE_FINALIZE_ADVANCE_DISPLAY_PERCENT ?? PAY_PERCENT);
@@ -466,9 +473,19 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
   // 🔎 Apply search + filters to CURRENT PAGE results
   const filteredTenders = useMemo(() => {
     return tenderHistories.filter((t) => {
-      const matchSearch = [t.projectName, t.dispatchLocation, t.projectCode].some((val) =>
-        (val || "").toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      // const matchSearch = [t.projectName, t.dispatchLocation, t.projectCode].some((val) =>
+      //   (val || "").toLowerCase().includes(searchQuery.toLowerCase())
+      // );
+
+      const matchSearch = [
+        t.projectName,
+        t.projectCode,
+        t.pickup?.address,
+        t.pickup?.city,
+        t.pickup?.district,
+        t.pickup?.state,
+        ...(Array.isArray(t.materials) ? t.materials.flatMap((m) => [m?.hsnCode, m?.materialName]) : []),
+      ].some((val) => (val || "").toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchStatus = statusFilter === "all" || (t.status || "").toLowerCase() === statusFilter.toLowerCase();
 

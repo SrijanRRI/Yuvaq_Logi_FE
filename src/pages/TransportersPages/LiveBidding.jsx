@@ -26,6 +26,7 @@ const LiveBidding = () => {
   const [selectedTender, setSelectedTender] = useState(null)
   const [slideshowData, setSlideshowData] = useState({})
   const [expandedMaterials, setExpandedMaterials] = useState({})
+  const [expandedVehicleRequirements, setExpandedVehicleRequirements] = useState({})
 
   const fetchLiveBidingTenders = async () => {
     try {
@@ -37,7 +38,6 @@ const LiveBidding = () => {
       const fetchedTenders = res.data?.data || [];
       setTenders(fetchedTenders);
 
-      // ✅ fetch slideshow only once per tenderId
       for (const tender of fetchedTenders) {
         if (slideshowData?.[tender._id]) continue;
 
@@ -56,17 +56,12 @@ const LiveBidding = () => {
     }
   };
 
-  // useEffect(() => {
-  //   fetchLiveBidingTenders();
-  // }, [])
-
   useEffect(() => {
     fetchLiveBidingTenders();
 
-    // ✅ Poll server for updated biddingEnd (when others bid)
     const id = setInterval(() => {
       fetchLiveBidingTenders();
-    }, 8000); // 8s (good balance)
+    }, 8000);
 
     return () => clearInterval(id);
   }, []);
@@ -78,24 +73,31 @@ const LiveBidding = () => {
     }))
   }
 
+  const toggleVehicleRequirements = (tenderId) => {
+    setExpandedVehicleRequirements((prev) => ({
+      ...prev,
+      [tenderId]: !prev[tenderId],
+    }))
+  }
+
   const formatDate = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
       : "N/A"
 
   const formatDateTime = (dateStr) =>
     dateStr
       ? new Date(dateStr).toLocaleString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : "N/A"
 
   const openQuotationModal = (tender) => {
@@ -108,7 +110,7 @@ const LiveBidding = () => {
 
     setSelectedTender({
       ...tender,
-      currentL1: lowest !== Infinity ? lowest : null, // ✅ inject L1 for modal validation
+      currentL1: lowest !== Infinity ? lowest : null,
     });
   };
 
@@ -128,6 +130,7 @@ const LiveBidding = () => {
         tenders.map((tender, idx) => {
           const hasQuotations = slideshowData[tender._id]?.length > 0
           const isMaterialsExpanded = expandedMaterials[tender._id] || false
+          const isVehicleRequirementsExpanded = expandedVehicleRequirements[tender._id] || false
 
           const biddingEndTime = new Date(tender.biddingEnd).getTime();
           const now = Date.now();
@@ -144,16 +147,15 @@ const LiveBidding = () => {
                   <div>
                     <h2 className="text-indigo-200 text-2xl font-bold "> Tender #{idx + 1} </h2>
                   </div>
-                  {/* <div className="px-3 py-1.5 rounded-full bg-white bg-opacity-20 text-white text-sm font-medium border border-white border-opacity-30 backdrop-blur-sm">
-                    {tender.bidsUsed || 0}/3 Bids Used 
-                  </div> */}
                 </div>
               </div>
 
               {/* Countdown and Position */}
               <div className="p-4 flex flex-col sm:flex-row items-stretch gap-4">
                 <div
-                  className={`flex-1 flex items-center gap-3 p-4 rounded-lg ${isExpired ? "bg-red-50 border border-red-100" : "bg-blue-50 border border-blue-100"}`}
+                  className={`flex-1 flex items-center gap-3 p-4 rounded-lg ${
+                    isExpired ? "bg-red-50 border border-red-100" : "bg-blue-50 border border-blue-100"
+                  }`}
                 >
                   <div className={`p-3 rounded-full ${isExpired ? "bg-red-100" : "bg-blue-100"}`}>
                     <Timer className={`w-6 h-6 ${isExpired ? "text-red-500" : "text-blue-500"}`} />
@@ -268,19 +270,6 @@ const LiveBidding = () => {
                       </p>
                     </div>
                   </div>
-
-                  {/* <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
-                    <div className="bg-rose-100 p-2.5 rounded-full">
-                      <Scale className="w-5 h-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Max Bid Amount</p>
-                      <p className="font-medium text-slate-800">
-                        {tender.maxBidAmount?.toLocaleString('en-IN') || " - "}
-                         {tender.maxBidUnit ? ` (${tender.maxBidUnit})` : " - "}
-                      </p>
-                    </div>
-                  </div> */}
                 </div>
 
                 {tender.remarks && (
@@ -297,11 +286,112 @@ const LiveBidding = () => {
                   </div>
                 )}
 
+                {/* Materials Accordion */}
+                {tender.materials?.length > 0 && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => toggleMaterials(tender._id)}
+                      className="w-full flex items-center justify-between gap-2 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors shadow-sm mb-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="bg-emerald-100 p-2 rounded-full">
+                          <Package className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-slate-800">Materials</h4>
+                          <p className="text-xs text-slate-500">
+                            {tender.materials.length}{" "}
+                            {tender.materials.length === 1 ? "material" : "materials"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500 hidden sm:inline">
+                          {isMaterialsExpanded ? "Hide details" : "Show details"}
+                        </span>
+                        {isMaterialsExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-slate-500" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-slate-500" />
+                        )}
+                      </div>
+                    </button>
+
+                    <div
+                      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isMaterialsExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      {/* Large Screen Table */}
+                      <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-slate-50 to-slate-100">
+                              <th className="px-4 py-3 text-left font-medium text-slate-700">HSN Code</th>
+                              <th className="px-4 py-3 text-left font-medium text-slate-700">Material Name</th>
+                              <th className="px-4 py-3 text-right font-medium text-slate-700">Qty</th>
+                              <th className="px-4 py-3 text-left font-medium text-slate-700">Unit</th>
+                              <th className="px-4 py-3 text-left font-medium text-slate-700">Remarks</th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {tender.materials.map((m, i) => (
+                              <tr
+                                key={`${m.hsnDigits || m.hsnCode || i}`}
+                                className={`border-t border-slate-200 ${i % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
+                              >
+                                <td className="px-4 py-3 font-medium text-slate-700">{m.hsnCode || m.hsnDigits || "-"}</td>
+                                <td className="px-4 py-3 text-slate-700">{m.materialName || "-"}</td>
+                                <td className="px-4 py-3 text-right text-slate-700">{m.quantity ?? "-"}</td>
+                                <td className="px-4 py-3 text-slate-700">{m.unit || "-"}</td>
+                                <td className="px-4 py-3 text-slate-600">{m.remarks || "-"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden space-y-3 mt-2">
+                        {tender.materials.map((m, i) => (
+                          <div key={`${m.hsnDigits || m.hsnCode || i}`} className="bg-white rounded-lg border border-slate-200 p-3 shadow-sm">
+                            <div className="flex justify-between items-start mb-2 gap-2">
+                              <h5 className="font-medium text-slate-800 break-words">
+                                {m.materialName || "-"}
+                              </h5>
+                              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                {m.hsnCode || m.hsnDigits || "-"}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-xs text-slate-500">Quantity</p>
+                                <p className="text-slate-700 font-medium">{m.quantity ?? "-"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-slate-500">Unit</p>
+                                <p className="text-slate-700 font-medium">{m.unit || "-"}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <p className="text-xs text-slate-500">Remarks</p>
+                                <p className="text-slate-700">{m.remarks || "-"}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Vehicle Requirements Accordion */}
                 {tender.vehicleRequirements?.length > 0 && (
                   <div className="mb-6">
                     <button
-                      onClick={() => toggleMaterials(tender._id)}
+                      onClick={() => toggleVehicleRequirements(tender._id)}
                       className="w-full flex items-center justify-between gap-2 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors shadow-sm mb-2"
                     >
                       <div className="flex items-center gap-2">
@@ -320,9 +410,9 @@ const LiveBidding = () => {
 
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-500 hidden sm:inline">
-                          {isMaterialsExpanded ? "Hide details" : "Show details"}
+                          {isVehicleRequirementsExpanded ? "Hide details" : "Show details"}
                         </span>
-                        {isMaterialsExpanded ? (
+                        {isVehicleRequirementsExpanded ? (
                           <ChevronUp className="w-5 h-5 text-slate-500" />
                         ) : (
                           <ChevronDown className="w-5 h-5 text-slate-500" />
@@ -331,8 +421,9 @@ const LiveBidding = () => {
                     </button>
 
                     <div
-                      className={`transition-all duration-300 ease-in-out overflow-hidden ${isMaterialsExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-                        }`}
+                      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isVehicleRequirementsExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                      }`}
                     >
                       {/* Large Screen Table */}
                       <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
@@ -414,28 +505,6 @@ const LiveBidding = () => {
                 )}
 
                 {/* Action Button */}
-                {/* <div className="flex justify-center mt-8">
-                  {isExpired ? (
-                    <div className="px-6 py-3 rounded-lg bg-slate-100 text-slate-500 flex items-center gap-2 shadow-sm">
-                      <X className="w-5 h-5" />
-                      <span>Bidding Closed</span>
-                    </div>
-                  ) : tender.bidsUsed >= 3 ? (
-                    <div className="px-6 py-3 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-2 shadow-sm">
-                      <Check className="w-5 h-5" />
-                      <span>You have submitted 3/3 quotations</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setSelectedTender(tender)}
-                      className="px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-md flex items-center gap-2 font-medium"
-                    >
-                      <Upload className="w-5 h-5" />
-                      <span>Submit Quotation</span>
-                    </button>
-                  )}
-                </div> */}
-
                 <div className="flex justify-center mt-8">
                   {isExpired ? (
                     <div className="px-6 py-3 rounded-lg bg-slate-100 text-slate-500 flex items-center gap-2 shadow-sm">

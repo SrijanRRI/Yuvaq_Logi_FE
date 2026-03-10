@@ -294,6 +294,57 @@ const DraftAccordionItem = ({
             </div>
           </div>
 
+          {/* Materials table */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <Clipboard className="h-4 w-4 text-indigo-600" />
+                Materials
+              </div>
+              <div className="text-xs text-slate-600">
+                Count: <b>{Array.isArray(draft?.materials) ? draft.materials.length : 0}</b>
+              </div>
+            </div>
+
+            {Array.isArray(draft?.materials) && draft.materials.length ? (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border border-slate-200">
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">HSN Code</th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">Material Name</th>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-700">Qty</th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">Unit</th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {draft.materials.map((m, i) => (
+                      <tr
+                        key={`${m?.hsnDigits || m?.hsnCode || "mat"}-${i}`}
+                        className="border-b border-slate-200"
+                      >
+                        <td className="px-3 py-2 font-medium text-slate-800">
+                          {safe(m?.hsnCode || m?.hsnDigits)}
+                        </td>
+                        <td className="px-3 py-2">{safe(m?.materialName)}</td>
+                        <td className="px-3 py-2 text-right font-semibold">
+                          {safe(m?.quantity)}
+                        </td>
+                        <td className="px-3 py-2">{safe(m?.unit)}</td>
+                        <td className="px-3 py-2">{safe(m?.remarks)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="mt-3 text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                No materials added.
+              </div>
+            )}
+          </div>
+
           {/* Vehicles table (minimal) */}
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
