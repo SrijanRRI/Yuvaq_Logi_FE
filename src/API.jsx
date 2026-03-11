@@ -58,6 +58,13 @@ const API = {
   ACCEPT_FEE_VERIFY: `${serverUrl}/tenders`,       // use with /:id/selection/accept/payment/verify
 
   //RR USer Tenders
+  // Draft Tender APIs (RR)
+  DRAFT_TENDER_CREATE: `${serverUrl}/tenders/drafts`,
+  DRAFT_TENDER_ACTIVE: `${serverUrl}/tenders/drafts/active`,
+  DRAFT_TENDER_UPDATE: `${serverUrl}/tenders/drafts`, // use `${...}/${id}`
+  DRAFT_TENDER_CANCEL: `${serverUrl}/tenders/drafts`, // use `${...}/${id}/cancel`
+  DELETE_TENDER: `${serverUrl}/tenders`,
+
   CREATE_TENDER: `${serverUrl}/tenders/create-tender`,
   FETCH_ALL_TENDER_CREATED_BY_RRUSER: `${serverUrl}/tenders/my-tenders`,
   FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER: `${serverUrl}/tenders/quotations`,
@@ -65,6 +72,9 @@ const API = {
   REOPEN_QUOTATION: `${serverUrl}/tenders/reopen`,
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
   VEHICLE_CATALOG: `${serverUrl}/vehicle/vehicle-catalog`,
+
+  // search the material in the tender form 
+  HSN_LOOKUP: `${serverUrl}/hsn/lookup`,
 
   //Post-Bid Negotiation : 
   START_POST_BID: `${serverUrl}/tenders`,

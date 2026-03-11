@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react"
-import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles, Info, Truck } from "lucide-react"
+import { useState, useMemo } from "react";
+import { Briefcase, Package, Scale, Users, Calendar, MapPin, FileText, Clock, Sparkles, Info, Truck } from "lucide-react";
 
-const MAX_VISIBLE_TRANSPORTERS = 10
+const MAX_VISIBLE_TRANSPORTERS = 10;
 
 const TenderDetails = ({ tender, getTransporterName }) => {
   const formatDate = (date) =>
@@ -9,22 +9,22 @@ const TenderDetails = ({ tender, getTransporterName }) => {
       year: "numeric",
       month: "short",
       day: "numeric",
-    })
+    });
 
   const formatDateWithTime = (dateStr) => {
-    const date = new Date(dateStr)
+    const date = new Date(dateStr);
     const datePart = date.toLocaleDateString("en-GB", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    })
+    });
     const timePart = date.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-    })
-    return `${datePart}, ${timePart}`
-  }
+    });
+    return `${datePart}, ${timePart}`;
+  };
 
   const moneyIN = (v) => {
     const n = Number(v);
@@ -38,21 +38,19 @@ const TenderDetails = ({ tender, getTransporterName }) => {
         ? "Fixed price for entire tender"
         : "";
 
-  const transporters = tender.transporters || []
+  const transporters = tender.transporters || [];
+  const materials = Array.isArray(tender.materials) ? tender.materials : [];
 
-  const [showAllTransporters, setShowAllTransporters] = useState(false)
+  const [showAllTransporters, setShowAllTransporters] = useState(false);
 
-  // totalHidden stays constant regardless of the toggle,
-  // so the button can appear for both "Show all" and "Show fewer".
-  const totalHidden = Math.max(transporters.length - MAX_VISIBLE_TRANSPORTERS, 0)
+  const totalHidden = Math.max(transporters.length - MAX_VISIBLE_TRANSPORTERS, 0);
 
   const visibleTransporters = useMemo(() => {
-    if (showAllTransporters) return transporters
-    return transporters.slice(0, MAX_VISIBLE_TRANSPORTERS)
-  }, [showAllTransporters, transporters])
+    if (showAllTransporters) return transporters;
+    return transporters.slice(0, MAX_VISIBLE_TRANSPORTERS);
+  }, [showAllTransporters, transporters]);
 
-  // Only show the "+N more" pill when we're collapsed.
-  const hiddenCountDisplay = !showAllTransporters ? totalHidden : 0
+  const hiddenCountDisplay = !showAllTransporters ? totalHidden : 0;
 
   const softEnd = tender.biddingSoftEnd || tender.biddingEnd;
   const hardEnd = tender.biddingHardEnd || softEnd;
@@ -62,7 +60,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-      {/* Left Column */}
       <div className="space-y-4 sm:space-y-5">
         {(tender.projectName || tender.projectCode || tender.purchaseOrder) && (
           <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
@@ -145,24 +142,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </span>
           </div>
 
-          {/* <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-           
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Start</div>
-              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
-                {tender.biddingStart ? formatDateWithTime(tender.biddingStart) : "-"}
-              </div>
-            </div>
-
-            
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">End</div>
-              <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
-                {tender.biddingEnd ? formatDateWithTime(tender.biddingEnd) : "-"}
-              </div>
-            </div>
-          </div> */}
-
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
               <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Start</div>
@@ -172,7 +151,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </div>
 
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Soft End (RR set)</div>
+              <div className="text-[11px] sm:text-xs text-slate-500 mb-1">Soft End</div>
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
                 {softEnd ? formatDateWithTime(softEnd) : "-"}
               </div>
@@ -191,16 +170,8 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               Effective End (auto-extended): <b>{formatDateWithTime(effectiveEnd)}</b>
             </div>
           )}
-
-          {/* Optional compact line (keeps clarity on large screens) */}
-          <div className="mt-3 text-[11px] sm:text-xs text-slate-500">
-            {tender.biddingStart && tender.biddingEnd
-              ? `Window: ${formatDateWithTime(tender.biddingStart)} → ${formatDateWithTime(tender.biddingEnd)}`
-              : "Not specified"}
-          </div>
         </div>
 
-        {/* NEW: Bid Details (Min/Max/Unit) */}
         <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-amber-200 shadow-sm hover:shadow-md transition-all duration-300">
           <div className="flex items-start justify-between gap-3">
             <h4 className="text-xs sm:text-sm font-medium text-amber-700 mb-2 flex items-center gap-1.5">
@@ -214,7 +185,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Min */}
             <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
               <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Minimum Bid</div>
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
@@ -222,7 +192,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               </div>
             </div>
 
-            {/* Max */}
             <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
               <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Maximum Bid</div>
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
@@ -230,10 +199,8 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               </div>
             </div>
 
-            {/* Unit */}
             <div className="rounded-lg border border-amber-100 bg-white p-3">
               <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Unit Type</div>
-
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm sm:text-base font-bold text-slate-900 truncate">
                   {tender.maxBidUnit || "-"}
@@ -256,7 +223,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-
           <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 sm:col-span-2">
             <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
@@ -264,7 +230,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Pickup */}
               <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">Pickup</div>
 
@@ -280,7 +245,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                 </p>
               </div>
 
-              {/* Drop */}
               <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">Drop</div>
 
@@ -298,12 +262,77 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </div>
           </div>
         </div>
-
-
+        
+        {tender.remarks && (
+          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+            <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
+              <span className="truncate">Remarks</span>
+            </h4>
+            <p className="text-slate-700 bg-slate-50 p-2 sm:p-3 rounded-lg text-xs sm:text-sm break-words text-pretty">
+              {tender.remarks}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Right Column */}
       <div className="space-y-4 sm:space-y-5">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h4 className="text-sm sm:text-base font-semibold text-slate-700 flex items-center gap-2">
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+              <span className="truncate text-pretty">Materials</span>
+            </h4>
+            {materials.length > 0 && (
+              <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                {materials.length} item{materials.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {materials.length > 0 ? (
+            <div className="space-y-3">
+              {materials.map((m, idx) => (
+                <div
+                  key={`${m.hsnDigits || m.hsnCode}-${idx}`}
+                  className="rounded-lg border border-slate-100 bg-slate-50 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] sm:text-xs text-slate-500">HSN</div>
+                      <div className="font-semibold text-slate-800">
+                        {m.hsnCode || m.hsnDigits || "-"}
+                      </div>
+                    </div>
+                    {m.quantity != null && (
+                      <div className="text-right">
+                        <div className="text-[11px] sm:text-xs text-slate-500">Qty</div>
+                        <div className="font-semibold text-slate-800">
+                          {m.quantity} {m.unit || ""}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-2 text-sm font-medium text-slate-800 break-words">
+                    {m.materialName || "-"}
+                  </div>
+
+                  {m.remarks && (
+                    <div className="mt-2 text-xs text-slate-500 break-words">
+                      Remarks: {m.remarks}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-500 italic bg-slate-50 p-3 rounded-lg text-center text-xs sm:text-sm">
+              No materials added
+            </p>
+          )}
+        </div>
+
         <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
           <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
@@ -312,7 +341,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
 
           {tender.vehicleRequirements?.length > 0 ? (
             <div>
-              {/* Mobile Card Layout */}
               <div className="block sm:hidden space-y-3">
                 {tender.vehicleRequirements.map((v, idx) => (
                   <div
@@ -339,7 +367,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                 ))}
               </div>
 
-              {/* Desktop Table Layout */}
               <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-100">
                 <table className="w-full text-xs sm:text-sm">
                   <thead>
@@ -374,7 +401,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                 </table>
               </div>
 
-              {/* Total Weight and Quantity Section (keep same style as earlier) */}
               <div className="mt-4 sm:mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-3 sm:p-4 shadow-sm border border-emerald-100 transition-all hover:shadow-md">
                   <div className="flex items-center justify-between gap-2">
@@ -416,7 +442,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           )}
         </div>
 
-        {/* NEW: Price Difference rule card (left column) */}
         <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-300">
           <h4 className="text-xs sm:text-sm font-medium text-emerald-700 mb-2 flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
@@ -424,10 +449,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </h4>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="text-slate-800 text-xs sm:text-sm">
-              Minimum decrement required to beat the current lowest bid (L1).
-              {/* <div className="text-slate-600 mt-1">
-                Example: L1 ₹300, difference ₹20 → next valid quote must be <b>₹280 or lower</b>.
-              </div> */}
+              Minimum decrement required to beat the current lowest bid.
             </div>
             <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 font-semibold whitespace-nowrap">
               ₹{tender.priceDifference != null ? Number(tender.priceDifference).toLocaleString() : "-"}
@@ -451,18 +473,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           {transporters.length > 0 ? (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                {/* {visibleTransporters.map((tid) => (
-                  <div
-                    key={tid}
-                    className="group bg-indigo-50 px-3 py-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 border border-indigo-100 shadow-sm min-w-0 max-w-full transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="bg-indigo-100 p-1 rounded-full flex-shrink-0">
-                      <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" />
-                    </div>
-                    <span className="font-medium text-slate-700 truncate text-pretty">{getTransporterName(tid)}</span>
-                  </div>
-                ))} */}
-
                 {visibleTransporters.map((tid, index) => (
                   <div
                     key={tid}
@@ -471,8 +481,6 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                     <div className="bg-indigo-100 p-1 rounded-full flex-shrink-0">
                       <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" />
                     </div>
-
-                    {/* ✅ DEMO MODE: hide transporter name */}
                     <span className="font-medium text-slate-700 truncate text-pretty">
                       Transporter {index + 1}
                     </span>
@@ -486,13 +494,12 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                 )}
               </div>
 
-              {/* Button shows if we *can* expand/collapse at all */}
               {totalHidden > 0 && (
                 <div className="flex items-center justify-center">
                   <button
                     type="button"
                     onClick={() => setShowAllTransporters((prev) => !prev)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition
                       ${showAllTransporters
                         ? "border-indigo-200 bg-white text-indigo-700 hover:bg-slate-50"
                         : "border-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700"}`}
@@ -510,21 +517,9 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </p>
           )}
         </div>
-
-        {tender.remarks && (
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-            <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
-              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 flex-shrink-0" />
-              <span className="truncate">Remarks</span>
-            </h4>
-            <p className="text-slate-700 bg-slate-50 p-2 sm:p-3 rounded-lg text-xs sm:text-sm break-words text-pretty">
-              {tender.remarks}
-            </p>
-          </div>
-        )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TenderDetails
+export default TenderDetails;
