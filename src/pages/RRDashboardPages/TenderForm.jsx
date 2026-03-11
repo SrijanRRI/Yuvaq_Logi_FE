@@ -855,9 +855,6 @@ const TenderForm = ({
                     <Package className="h-5 w-5 text-emerald-600" />
                     Materials
                   </h2>
-                  <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    HSN based
-                  </span>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
