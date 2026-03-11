@@ -23,6 +23,7 @@ import TransporterModal from "../modals/TransporterModal";
 import ShipmentDetailsTab from "./RRDashboardPages/ShipmentDetailsTab";
 import ShipmentPlannedTab from "./RRDashboardPages/ShipmentPlannedTab";
 import DraftTendersPanel from "./RRDashboardPages/DraftTendersPanel";
+import ProfileSection from "./ProfileSection";
 
 const blankLocation = {
   pincode: "",
@@ -1168,12 +1169,15 @@ const RRDashboardPage = () => {
       <Navbar
         title="Dashboard"
         userName={userName}
-        actions={navActions}     // ✅ dynamic buttons, Navbar UI unchanged
+        actions={navActions}     // dynamic buttons, Navbar UI unchanged
         onLogout={onLogout}
+        onProfileClick={() => setScreen("profile")}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {screen === "home" && <HomeCards />}
+
+        {screen === "profile" && <ProfileSection fallbackUser={userInfo} />}
 
         {screen === "drafts" && (
           <DraftTendersPanel

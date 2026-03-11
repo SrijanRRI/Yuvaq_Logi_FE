@@ -73,6 +73,9 @@ const API = {
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
   VEHICLE_CATALOG: `${serverUrl}/vehicle/vehicle-catalog`,
 
+  //Get profile updates : 
+  GET_MY_PROFILE: `${serverUrl}/api/auth/profile`,
+
   // search the material in the tender form 
   HSN_LOOKUP: `${serverUrl}/hsn/lookup`,
 
