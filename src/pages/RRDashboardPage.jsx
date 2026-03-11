@@ -1265,6 +1265,7 @@ const RRDashboardPage = () => {
       {showTransporterModal && (
         <TransporterModal
           selected={form.transporter}
+          vehicleRequirements={form.vehicleRequirements}
           onClose={() => setShowTransporterModal(false)}
           onSave={handleTransporterSave}
           setTransporterList={setTransporterList}
