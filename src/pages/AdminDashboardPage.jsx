@@ -44,7 +44,12 @@ const AdminDashboardPage = () => {
 
   const [vehicleRequests, setVehicleRequests] = useState([]);
   const [vehicleRequestsLoading, setVehicleRequestsLoading] = useState(false);
-  const [vehicleProcessingId, setVehicleProcessingId] = useState("");
+
+  // ✅ IMPORTANT: use object state, not single id
+  const [vehicleProcessingState, setVehicleProcessingState] = useState({
+    id: "",
+    action: "", // "approve" | "reject"
+  });
 
   const userInfo = useSelector((state) => state.User?.userInfo);
   const userName = userInfo?.name || "Admin User";
@@ -175,8 +180,10 @@ const AdminDashboardPage = () => {
     });
   };
 
+  // ✅ APPROVE VEHICLE
   const handleApproveVehicleRequest = async (id, payload) => {
-    setVehicleProcessingId(id);
+    setVehicleProcessingState({ id, action: "approve" });
+
     try {
       const res = await axios.post(API.APPROVE_VEHICLE_REQUEST(id), payload, authCfg());
       toast.success(res?.data?.message || "Vehicle request approved.");
@@ -185,15 +192,17 @@ const AdminDashboardPage = () => {
       console.error("Vehicle approve error:", err);
       toast.error(err?.response?.data?.message || "Failed to approve vehicle request.");
     } finally {
-      setVehicleProcessingId("");
+      setVehicleProcessingState({ id: "", action: "" });
     }
   };
 
+  // ✅ REJECT VEHICLE
   const handleRejectVehicleRequest = async (id, payload) => {
     setConfirmDialog({
       message: `Are you sure you want to reject this vehicle request?`,
       onConfirm: async () => {
-        setVehicleProcessingId(id);
+        setVehicleProcessingState({ id, action: "reject" });
+
         try {
           const res = await axios.post(API.REJECT_VEHICLE_REQUEST(id), payload, authCfg());
           toast.success(res?.data?.message || "Vehicle request rejected.");
@@ -202,11 +211,13 @@ const AdminDashboardPage = () => {
           console.error("Vehicle reject error:", err);
           toast.error(err?.response?.data?.message || "Failed to reject vehicle request.");
         } finally {
-          setVehicleProcessingId("");
+          setVehicleProcessingState({ id: "", action: "" });
           setConfirmDialog(null);
         }
       },
-      onCancel: () => setConfirmDialog(null),
+      onCancel: () => {
+        setConfirmDialog(null);
+      },
     });
   };
 
@@ -487,7 +498,7 @@ const AdminDashboardPage = () => {
             <AdminVehicleRequests
               requests={vehicleRequests}
               loading={vehicleRequestsLoading}
-              processingId={vehicleProcessingId}
+              processingState={vehicleProcessingState}
               onApprove={handleApproveVehicleRequest}
               onReject={handleRejectVehicleRequest}
             />
@@ -503,7 +514,10 @@ const AdminDashboardPage = () => {
           message={confirmDialog.message}
           onConfirm={confirmDialog.onConfirm}
           onCancel={confirmDialog.onCancel}
-          isLoading={isRejecting || !!vehicleProcessingId}
+          isLoading={
+            isRejecting ||
+            (vehicleProcessingState?.id && vehicleProcessingState?.action === "reject")
+          }
         />
       )}
     </div>
