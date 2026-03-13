@@ -73,7 +73,6 @@ const API = {
   FETCH_FINALIZED_TRANSPORTER_CONTACT: `${serverUrl}/tenders/transporter-contact`,
   VEHICLE_CATALOG: `${serverUrl}/vehicle/vehicle-catalog`,
 
-
   GET_MY_FLEET: `${serverUrl}/vehicle/my-fleet`,
   ADD_CATALOG_VEHICLE_TO_FLEET: `${serverUrl}/vehicle/my-fleet/catalog`,
   ADD_CUSTOM_VEHICLE_REQUEST: `${serverUrl}/vehicle/my-fleet/custom-request`,
@@ -84,6 +83,10 @@ const API = {
   REJECT_VEHICLE_REQUEST: (id) => `${serverUrl}/admin/vehicle-requests/${id}/reject`,
 
   ELIGIBLE_TRANSPORT_USERS: `${serverUrl}/admin/transport-users/eligible`,
+
+  //Feedback
+  FEEDBACK_SUBMIT: `${serverUrl}/feedback`,
+  MY_FEEDBACKS: `${serverUrl}/feedback/my`,
 
   //Get profile updates : 
   GET_MY_PROFILE: `${serverUrl}/api/auth/profile`,

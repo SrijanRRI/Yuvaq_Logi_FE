@@ -22,6 +22,7 @@ import {
   Clock3,
   XCircle,
   PackagePlus,
+  Star,
 } from "lucide-react";
 import API from "../API";
 
@@ -40,9 +41,9 @@ const authCfg = () => {
 const fmtDateTime = (d) =>
   d
     ? new Date(d).toLocaleString("en-IN", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
     : "—";
 
 const safe = (v) => (v === null || v === undefined || v === "" ? "—" : String(v));
@@ -55,11 +56,10 @@ const roleLabel = (role) => {
 
 const StatusBadge = ({ active, text }) => (
   <span
-    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-      active
-        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-        : "bg-amber-50 text-amber-700 border-amber-200"
-    }`}
+    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${active
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : "bg-amber-50 text-amber-700 border-amber-200"
+      }`}
   >
     <span className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-amber-500"}`} />
     {text}
@@ -103,6 +103,120 @@ const StatTile = ({ label, value }) => (
   </div>
 );
 
+const FEEDBACK_CATEGORY_OPTIONS = [
+  "general",
+  "bug",
+  "ui_ux",
+  "performance",
+  "feature_request",
+  "profile",
+  "fleet_management",
+  "upcoming_tenders",
+  "live_bidding",
+  "post_bid",
+  "confirmations",
+  "history",
+  "draft_tenders",
+  "shipment_planning",
+  "subscription",
+  "payment",
+  "notification",
+  "other",
+];
+
+const FEEDBACK_MODULE_OPTIONS = [
+  "profile",
+  "dashboard",
+  "fleet",
+  "upcoming_tenders",
+  "live_bidding",
+  "post_bid",
+  "confirmations",
+  "history",
+  "draft_tenders",
+  "shipment_planning",
+  "subscription",
+  "payment",
+  "notification",
+  "general",
+  "other",
+];
+
+const prettifyLabel = (value) =>
+  String(value || "—")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+
+const FeedbackStatusBadge = ({ status }) => {
+  const map = {
+    new: "bg-sky-50 text-sky-700 border-sky-200",
+    reviewed: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    planned: "bg-violet-50 text-violet-700 border-violet-200",
+    resolved: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    ignored: "bg-slate-100 text-slate-700 border-slate-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${map[status] || map.new
+        }`}
+    >
+      {prettifyLabel(status)}
+    </span>
+  );
+};
+
+const StaticStars = ({ value = 0, size = 14 }) => (
+  <div className="flex items-center gap-1">
+    {[1, 2, 3, 4, 5].map((n) => {
+      const active = n <= Number(value || 0);
+      return (
+        <Star
+          key={n}
+          style={{ fill: active ? "currentColor" : "none" }}
+          className={active ? "text-amber-400" : "text-slate-300"}
+          size={size}
+        />
+      );
+    })}
+  </div>
+);
+
+const StarRatingInput = ({ value, onChange, disabled = false }) => {
+  const [hovered, setHovered] = useState(0);
+
+  return (
+    <div className="flex items-center gap-2">
+      {[1, 2, 3, 4, 5].map((n) => {
+        const active = (hovered || value) >= n;
+
+        return (
+          <button
+            key={n}
+            type="button"
+            disabled={disabled}
+            onMouseEnter={() => setHovered(n)}
+            onMouseLeave={() => setHovered(0)}
+            onClick={() => onChange(value === n ? 0 : n)}
+            className="transition disabled:opacity-60"
+            title={`${n} star${n > 1 ? "s" : ""}`}
+          >
+            <Star
+              size={26}
+              style={{ fill: active ? "currentColor" : "none" }}
+              className={active ? "text-amber-400" : "text-slate-300"}
+            />
+          </button>
+        );
+      })}
+
+      <span className="text-sm text-slate-600 ml-1">
+        {value ? `${value}/5` : "Select rating"}
+      </span>
+    </div>
+  );
+};
+
 const InfoTile = ({ icon: Icon, label, value, mono = false, onCopy }) => (
   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
     <div className="flex items-start justify-between gap-3">
@@ -126,9 +240,8 @@ const InfoTile = ({ icon: Icon, label, value, mono = false, onCopy }) => (
     </div>
 
     <div
-      className={`mt-3 break-words text-slate-900 font-semibold ${
-        mono ? "font-mono text-xs" : "text-sm"
-      }`}
+      className={`mt-3 break-words text-slate-900 font-semibold ${mono ? "font-mono text-xs" : "text-sm"
+        }`}
     >
       {value}
     </div>
@@ -179,6 +292,26 @@ export default function ProfileSection({ fallbackUser = null }) {
 
   const isTransportUser = (profile?.role || fallbackUser?.role) === "transportUser";
   const subscription = profile?.subscription || {};
+
+  const [feedbackForm, setFeedbackForm] = useState({
+    rating: 0,
+    title: "",
+    review: "",
+    category: "general",
+    module: "profile",
+    source: "profile",
+    contactAllowed: true,
+  });
+
+  const [feedbackItems, setFeedbackItems] = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackMeta, setFeedbackMeta] = useState({
+    page: 1,
+    limit: 5,
+    totalPages: 1,
+    totalCount: 0,
+  });
 
   const isSubActive = useMemo(() => {
     if (typeof subscription?.isActive === "boolean") return subscription.isActive;
@@ -241,8 +374,95 @@ export default function ProfileSection({ fallbackUser = null }) {
     }
   };
 
+  const loadMyFeedbacks = async (page = 1, limit = feedbackMeta.limit || 5) => {
+    try {
+      setFeedbackLoading(true);
+      const res = await axios.get(
+        `${API.MY_FEEDBACKS}?page=${page}&limit=${limit}`,
+        authCfg()
+      );
+
+      setFeedbackItems(res?.data?.data || []);
+      setFeedbackMeta(
+        res?.data?.pagination || {
+          page,
+          limit,
+          totalPages: 1,
+          totalCount: (res?.data?.data || []).length,
+        }
+      );
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to load feedback history.");
+      setFeedbackItems([]);
+      setFeedbackMeta({
+        page: 1,
+        limit: 5,
+        totalPages: 1,
+        totalCount: 0,
+      });
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const submitFeedback = async () => {
+    if (!feedbackForm.rating || feedbackForm.rating < 1 || feedbackForm.rating > 5) {
+      toast.error("Please select a star rating.");
+      return;
+    }
+
+    if (!feedbackForm.review.trim() || feedbackForm.review.trim().length < 10) {
+      toast.error("Please write at least 10 characters in review.");
+      return;
+    }
+
+    try {
+      setFeedbackSubmitting(true);
+
+      await axios.post(
+        API.FEEDBACK_SUBMIT,
+        {
+          rating: feedbackForm.rating,
+          title: feedbackForm.title.trim(),
+          review: feedbackForm.review.trim(),
+          category: feedbackForm.category,
+          module: feedbackForm.module,
+          source: feedbackForm.source,
+          contactAllowed: feedbackForm.contactAllowed,
+        },
+        authCfg()
+      );
+
+      toast.success("Feedback submitted successfully.");
+
+      setFeedbackForm({
+        rating: 0,
+        title: "",
+        review: "",
+        category: "general",
+        module: "profile",
+        source: "profile",
+        contactAllowed: true,
+      });
+
+      await loadMyFeedbacks(1, feedbackMeta.limit || 5);
+    } catch (e) {
+      const msg = e?.response?.data?.message || "Failed to submit feedback.";
+      const nextAllowedAt = e?.response?.data?.nextAllowedAt;
+
+      if (nextAllowedAt) {
+        toast.error(`${msg} Try again after ${fmtDateTime(nextAllowedAt)}.`);
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
+    loadMyFeedbacks(1, 5);
   }, []);
 
   useEffect(() => {
@@ -256,6 +476,8 @@ export default function ProfileSection({ fallbackUser = null }) {
     setRefreshing(true);
     try {
       await loadProfile(true);
+      await loadMyFeedbacks(1, feedbackMeta.limit || 5);
+
       if (isTransportUser) {
         await Promise.all([loadFleet(), loadCatalog()]);
       }
@@ -542,11 +764,10 @@ export default function ProfileSection({ fallbackUser = null }) {
               </div>
 
               <div
-                className={`rounded-xl border p-4 ${
-                  isSubActive
-                    ? "border-emerald-200 bg-emerald-50"
-                    : "border-amber-200 bg-amber-50"
-                }`}
+                className={`rounded-xl border p-4 ${isSubActive
+                  ? "border-emerald-200 bg-emerald-50"
+                  : "border-amber-200 bg-amber-50"
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   {isSubActive ? (
@@ -590,6 +811,261 @@ export default function ProfileSection({ fallbackUser = null }) {
                 </div>
               ) : null}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Feedback  */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-b border-slate-200">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Star className="h-5 w-5 text-amber-500" />
+            Product Feedback
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Share your experience, report issues, or suggest improvements.
+          </p>
+        </div>
+
+        <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Rating
+              </label>
+              <StarRatingInput
+                value={feedbackForm.rating}
+                onChange={(rating) =>
+                  setFeedbackForm((p) => ({ ...p, rating }))
+                }
+                disabled={feedbackSubmitting}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Title <span className="text-slate-400">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={feedbackForm.title}
+                onChange={(e) =>
+                  setFeedbackForm((p) => ({ ...p, title: e.target.value }))
+                }
+                maxLength={120}
+                placeholder="Short summary"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Category
+                </label>
+                <select
+                  value={feedbackForm.category}
+                  onChange={(e) =>
+                    setFeedbackForm((p) => ({ ...p, category: e.target.value }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  {FEEDBACK_CATEGORY_OPTIONS.map((item) => (
+                    <option key={item} value={item}>
+                      {prettifyLabel(item)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Module
+                </label>
+                <select
+                  value={feedbackForm.module}
+                  onChange={(e) =>
+                    setFeedbackForm((p) => ({ ...p, module: e.target.value }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  {FEEDBACK_MODULE_OPTIONS.map((item) => (
+                    <option key={item} value={item}>
+                      {prettifyLabel(item)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Review
+              </label>
+              <textarea
+                rows={5}
+                value={feedbackForm.review}
+                onChange={(e) =>
+                  setFeedbackForm((p) => ({ ...p, review: e.target.value }))
+                }
+                placeholder="Tell us what is good, what is missing, or what should improve..."
+                className="w-full px-3 py-3 border border-slate-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+              <div className="mt-1 text-xs text-slate-500">
+                Minimum 10 characters
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={feedbackForm.contactAllowed}
+                onChange={(e) =>
+                  setFeedbackForm((p) => ({
+                    ...p,
+                    contactAllowed: e.target.checked,
+                  }))
+                }
+                className="mt-1"
+              />
+              <div>
+                <div className="text-sm font-medium text-slate-800">
+                  Allow team to contact me about this feedback
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  Your account details will already be stored with the feedback.
+                </div>
+              </div>
+            </label>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={submitFeedback}
+                disabled={feedbackSubmitting}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition disabled:opacity-60"
+              >
+                {feedbackSubmitting ? (
+                  <RefreshCcw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Star className="h-4 w-4" />
+                )}
+                Submit Feedback
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFeedbackForm({
+                    rating: 0,
+                    title: "",
+                    review: "",
+                    category: "general",
+                    module: "profile",
+                    source: "profile",
+                    contactAllowed: true,
+                  })
+                }
+                disabled={feedbackSubmitting}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">My Previous Feedback</h3>
+                <p className="text-sm text-slate-500">
+                  Recent submissions and review status
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => loadMyFeedbacks(1, feedbackMeta.limit || 5)}
+                disabled={feedbackLoading}
+                className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition disabled:opacity-60"
+                title="Refresh feedback history"
+              >
+                <RefreshCcw className={`h-4 w-4 ${feedbackLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+
+            {feedbackLoading ? (
+              <div className="text-center py-10">
+                <RefreshCcw className="h-8 w-8 mx-auto text-amber-500 animate-spin" />
+                <div className="mt-3 text-slate-700 font-medium">Loading feedback...</div>
+              </div>
+            ) : feedbackItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+                <Star className="h-10 w-10 text-slate-300 mx-auto" />
+                <div className="mt-3 text-slate-700 font-medium">No feedback submitted yet</div>
+                <div className="text-sm text-slate-500 mt-1">
+                  Your submitted feedback history will appear here.
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {feedbackItems.map((item) => (
+                  <div
+                    key={item._id}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StaticStars value={item.rating} />
+                          <span className="text-xs text-slate-500">
+                            {fmtDateTime(item.createdAt)}
+                          </span>
+                        </div>
+
+                        {item.title ? (
+                          <h4 className="text-sm font-bold text-slate-900">
+                            {item.title}
+                          </h4>
+                        ) : null}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs px-2 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-600">
+                            {prettifyLabel(item.category)}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-600">
+                            {prettifyLabel(item.module)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <FeedbackStatusBadge status={item.status} />
+                    </div>
+
+                    <div className="mt-3 text-sm text-slate-700 leading-6 whitespace-pre-wrap">
+                      {item.review}
+                    </div>
+
+                    {item.adminRemark ? (
+                      <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+                        <div className="text-xs font-semibold text-indigo-800">
+                          Admin Remark
+                        </div>
+                        <div className="mt-1 text-sm text-indigo-900">
+                          {item.adminRemark}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+
+                {feedbackMeta.totalCount > feedbackItems.length ? (
+                  <div className="text-xs text-slate-500 text-right">
+                    Showing {feedbackItems.length} of {feedbackMeta.totalCount} feedback entries
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       </div>
