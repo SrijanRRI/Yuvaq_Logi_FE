@@ -51,7 +51,7 @@ const safe = (v) => (v === null || v === undefined || v === "" ? "—" : String(
 const roleLabel = (role) => {
   if (role === "transportUser") return "Transport User";
   if (role === "admin") return "Admin";
-  return "RR User";
+  return "User";
 };
 
 const StatusBadge = ({ active, text }) => (
