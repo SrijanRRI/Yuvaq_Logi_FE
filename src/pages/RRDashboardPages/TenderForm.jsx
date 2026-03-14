@@ -157,6 +157,43 @@ const TenderForm = ({
     return () => clearTimeout(t);
   }, [hsnInput]);
 
+  // const addMaterialFromLookup = () => {
+  //   if (!hsnLookupData) {
+  //     setHsnLookupError("Enter a valid HSN code first");
+  //     return;
+  //   }
+
+  //   let qty = null;
+  //   if (materialQty !== "") {
+  //     qty = Number(materialQty);
+  //     if (!Number.isFinite(qty) || qty < 0) {
+  //       setHsnLookupError("Material quantity must be a valid number");
+  //       return;
+  //     }
+  //   }
+
+  //   const nextMaterial = {
+  //     hsnCode: hsnLookupData.codeDisplay || hsnLookupData.codeDigits,
+  //     hsnDigits: hsnLookupData.codeDigits,
+  //     materialName: hsnLookupData.description,
+  //     quantity: qty,
+  //     unit: materialUnit.trim(),
+  //     remarks: materialRemarks.trim(),
+  //   };
+
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     materials: [...(prev.materials || []), nextMaterial],
+  //   }));
+
+  //   setHsnInput("");
+  //   setHsnLookupData(null);
+  //   setHsnLookupError("");
+  //   setMaterialQty("");
+  //   setMaterialUnit("");
+  //   setMaterialRemarks("");
+  // };
+
   const addMaterialFromLookup = () => {
     if (!hsnLookupData) {
       setHsnLookupError("Enter a valid HSN code first");
@@ -181,10 +218,70 @@ const TenderForm = ({
       remarks: materialRemarks.trim(),
     };
 
-    setForm((prev) => ({
-      ...prev,
-      materials: [...(prev.materials || []), nextMaterial],
-    }));
+    setForm((prev) => {
+      const existingMaterials = [...(prev.materials || [])];
+
+      const normalizeHsnValue = (value) => String(value || "").replace(/\D/g, "");
+      const normalizeUnitValue = (value) => String(value || "").trim().toLowerCase();
+
+      const nextHsn = normalizeHsnValue(nextMaterial.hsnDigits || nextMaterial.hsnCode);
+      const nextUnit = normalizeUnitValue(nextMaterial.unit);
+
+      const existingIndex = existingMaterials.findIndex((m) => {
+        const rowHsn = normalizeHsnValue(m.hsnDigits || m.hsnCode);
+        return rowHsn === nextHsn;
+      });
+
+      // no existing same HSN -> add normally
+      if (existingIndex === -1) {
+        return {
+          ...prev,
+          materials: [...existingMaterials, nextMaterial],
+        };
+      }
+
+      const existing = existingMaterials[existingIndex];
+      const existingUnit = normalizeUnitValue(existing.unit);
+
+      // same HSN but different non-empty unit -> do not merge
+      if (existingUnit && nextUnit && existingUnit !== nextUnit) {
+        setHsnLookupError(
+          `Same HSN already exists with unit "${existing.unit}". Please use same unit to merge quantity.`
+        );
+        return prev;
+      }
+
+      const oldQty =
+        existing.quantity === null || existing.quantity === undefined || existing.quantity === ""
+          ? 0
+          : Number(existing.quantity);
+
+      const newQty =
+        nextMaterial.quantity === null ||
+          nextMaterial.quantity === undefined ||
+          nextMaterial.quantity === ""
+          ? 0
+          : Number(nextMaterial.quantity);
+
+      const mergedRemarks = [existing.remarks, nextMaterial.remarks]
+        .map((x) => String(x || "").trim())
+        .filter(Boolean);
+
+      existingMaterials[existingIndex] = {
+        ...existing,
+        quantity:
+          oldQty === 0 && newQty === 0
+            ? null
+            : oldQty + newQty,
+        unit: existing.unit || nextMaterial.unit,
+        remarks: [...new Set(mergedRemarks)].join(" | "),
+      };
+
+      return {
+        ...prev,
+        materials: existingMaterials,
+      };
+    });
 
     setHsnInput("");
     setHsnLookupData(null);
@@ -234,7 +331,7 @@ const TenderForm = ({
 
         return { state, district };
       }
-    } catch {}
+    } catch { }
 
     const res2 = await fetch(`https://api.zippopotam.us/IN/${pin}`, {
       signal,
