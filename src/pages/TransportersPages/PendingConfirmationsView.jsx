@@ -194,10 +194,10 @@ export default function PendingConfirmationsView({
       <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
         <CheckCircle className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-slate-800">
-          No pending confirmations
+          No pending confirmations  
         </h3>
         <p className="text-slate-500 text-sm mt-1">
-          If RR requests confirmation, it will appear here.
+          If User requests confirmation, it will appear here.
         </p>
       </div>
     );

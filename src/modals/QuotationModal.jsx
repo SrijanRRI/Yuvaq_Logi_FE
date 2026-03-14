@@ -22,11 +22,38 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
 
   const [touched, setTouched] = useState({ price: false, vehicle: false });
 
+  const [lastQuotedPrice, setLastQuotedPrice] = useState(null);
+
   // ✅ Step value from tender
   const priceStep = useMemo(() => {
     const v = Number(tender?.priceDifference);
     return Number.isFinite(v) && v > 0 ? v : 0;
   }, [tender?.priceDifference]);
+
+  // const validateForm = () => {
+  //   const newErrors = {};
+
+  //   const n = Number(price);
+  //   const min = tender?.minBidAmount != null ? Number(tender.minBidAmount) : null;
+  //   const max = tender?.maxBidAmount != null ? Number(tender.maxBidAmount) : null;
+
+  //   if (!Number.isFinite(n) || n <= 0) {
+  //     newErrors.price = "Please enter a valid price";
+  //   } else if (min != null && n < min) {
+  //     newErrors.price = `Bid must be at least ₹${min.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
+  //       }`;
+  //   } else if (max != null && n > max) {
+  //     newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
+  //       }`;
+  //   }
+
+  //   // if (!vehicleNo) newErrors.vehicleNo = "Vehicle number is required";
+
+  //   setErrors(newErrors);
+  //   if (newErrors.price) toast.error(newErrors.price);
+
+  //   return Object.keys(newErrors).length === 0;
+  // };
 
   const validateForm = () => {
     const newErrors = {};
@@ -43,9 +70,15 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     } else if (max != null && n > max) {
       newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
         }`;
+    } else if (
+      lastQuotedPrice != null &&
+      Number.isFinite(lastQuotedPrice) &&
+      n > lastQuotedPrice
+    ) {
+      newErrors.price = `You cannot quote higher than your previous quoted amount ₹${lastQuotedPrice.toLocaleString(
+        "en-IN"
+      )}`;
     }
-
-    // if (!vehicleNo) newErrors.vehicleNo = "Vehicle number is required";
 
     setErrors(newErrors);
     if (newErrors.price) toast.error(newErrors.price);
@@ -70,6 +103,11 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
       return;
     }
 
+    if (dir > 0 && lastQuotedPrice != null) {
+      toast.info("You cannot increase price after already quoting once.");
+      return;
+    }
+
     const base = price?.trim() !== "" ? Number(price) : 0;
     if (!Number.isFinite(base)) {
       toast.info("Please enter a valid price first.");
@@ -81,6 +119,14 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     // keep within max if present (don’t force min while clicking)
     const max = tender?.maxBidAmount != null ? Number(tender.maxBidAmount) : null;
     if (max != null && Number.isFinite(max)) next = Math.min(next, max);
+
+    if (
+      lastQuotedPrice != null &&
+      Number.isFinite(lastQuotedPrice) &&
+      next > lastQuotedPrice
+    ) {
+      next = lastQuotedPrice;
+    }
 
     setPrice(String(next));
     if (errors.price) setErrors((p) => ({ ...p, price: null }));
@@ -102,11 +148,24 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
 
         if (cancelled || !last) return;
 
+        if (!last) {
+          setLastQuotedPrice(null);
+          return;
+        }
+
+        const prevPrice =
+          last.price != null && Number.isFinite(Number(last.price))
+            ? Number(last.price)
+            : null;
+
+        setLastQuotedPrice(prevPrice);
+
         // Prefill only if user hasn't started typing
         if (!touched.price && last.price != null) setPrice(String(last.price));
         if (!touched.vehicle && last.vehicleNumber) setVehicleNo(String(last.vehicleNumber));
       } catch (e) {
         // ignore silently (keep empty fields)
+        setLastQuotedPrice(null);
       }
     };
 
@@ -213,7 +272,15 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                 inputMode="numeric"
                 value={price}
                 min={tender?.minBidAmount ?? undefined}
-                max={tender?.maxBidAmount ?? undefined}
+                // max={tender?.maxBidAmount ?? undefined}
+                max={
+                  lastQuotedPrice != null
+                    ? Math.min(
+                      tender?.maxBidAmount != null ? Number(tender.maxBidAmount) : Infinity,
+                      Number(lastQuotedPrice)
+                    )
+                    : tender?.maxBidAmount ?? undefined
+                }
                 step="1"
                 onChange={(e) => {
                   setTouched((p) => ({ ...p, price: true }));
@@ -228,9 +295,17 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
               <button
                 type="button"
                 onClick={() => adjustPrice(+1)}
-                disabled={!priceStep}
+                // disabled={!priceStep}
+                disabled={!priceStep || lastQuotedPrice != null}
                 className="w-12 shrink-0 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                title={priceStep ? `Increase by ₹${priceStep}` : "Price difference not set"}
+                // title={priceStep ? `Increase by ₹${priceStep}` : "Price difference not set"}
+                title={
+                  lastQuotedPrice != null
+                    ? "You cannot increase price after already quoting"
+                    : priceStep
+                      ? `Increase by ₹${priceStep}`
+                      : "Price difference not set"
+                }
               >
                 <Plus className="w-4 h-4 text-slate-700" />
               </button>
@@ -241,6 +316,12 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
               {minTxt || maxTxt ? [minTxt, maxTxt].filter(Boolean).join(" • ") : "Enter your bid amount"}
               {priceStep ? ` • Step ₹${priceStep.toLocaleString("en-IN")}` : ""}
             </p>
+
+            {lastQuotedPrice != null && (
+              <p className="mt-1 text-xs text-amber-700">
+                Your previous quote was ₹{lastQuotedPrice.toLocaleString("en-IN")}. New quote must be lower.
+              </p>
+            )}
 
             {errors.price && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
