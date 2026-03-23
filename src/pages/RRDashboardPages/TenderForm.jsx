@@ -540,6 +540,10 @@ const TenderForm = ({
     }));
   };
 
+  const RequiredAsterisk = () => (
+    <span className="ml-1 text-red-500">*</span>
+  );
+
   const StatusLine = ({ status, msg }) => {
     if (!msg || status === "idle") return null;
     const dot =
@@ -590,7 +594,7 @@ const TenderForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
-                        From
+                        From<RequiredAsterisk />
                       </label>
                       <input
                         type="date"
@@ -612,7 +616,7 @@ const TenderForm = ({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
-                        To
+                        To<RequiredAsterisk />
                       </label>
                       <input
                         type="date"
@@ -641,7 +645,7 @@ const TenderForm = ({
                   </h2>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Tender Closing Date
+                      Tender Closing Date<RequiredAsterisk />
                     </label>
                     <input
                       type="date"
@@ -663,7 +667,7 @@ const TenderForm = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Bidding Start
+                      Bidding Start<RequiredAsterisk />
                     </label>
                     <input
                       type="datetime-local"
@@ -677,7 +681,7 @@ const TenderForm = ({
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Soft End (Shown to Transporter)
+                      Soft End (Shown to Transporter)<RequiredAsterisk />
                     </label>
                     <input
                       type="datetime-local"
@@ -694,7 +698,7 @@ const TenderForm = ({
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Hard Stop (Final End)
+                      Hard Stop (Final End)<RequiredAsterisk />
                     </label>
                     <input
                       type="datetime-local"
@@ -719,7 +723,7 @@ const TenderForm = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Minimum Bid Amount
+                      Minimum Bid Amount<RequiredAsterisk />
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -741,7 +745,7 @@ const TenderForm = ({
 
                   <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Maximum Bid Amount
+                      Maximum Bid Amount<RequiredAsterisk />
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -764,7 +768,7 @@ const TenderForm = ({
 
                 <div className="relative mt-5">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Unit Type
+                    Unit Type<RequiredAsterisk />
                   </label>
 
                   <div className="relative">
@@ -851,7 +855,7 @@ const TenderForm = ({
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Project Name
+                      Project Name<RequiredAsterisk />
                     </label>
                     <input
                       type="text"
@@ -865,7 +869,7 @@ const TenderForm = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Project Code
+                      Project Code<RequiredAsterisk />
                     </label>
                     <input
                       type="text"
@@ -879,7 +883,7 @@ const TenderForm = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Purchase Order
+                      Purchase Order<RequiredAsterisk />
                     </label>
                     <input
                       type="text"
@@ -893,7 +897,7 @@ const TenderForm = ({
                   </div>
                   <div className="md:col-span-3">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Project Remark
+                      Project Remark<RequiredAsterisk />
                     </label>
                     <textarea
                       name="projectRemark"
@@ -908,7 +912,7 @@ const TenderForm = ({
                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-1">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Price Difference (₹)
+                      Price Difference (₹)<RequiredAsterisk />
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -923,6 +927,7 @@ const TenderForm = ({
                         onChange={handleChange}
                         placeholder="e.g., 20"
                         className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/40"
+                        required
                       />
                     </div>
                   </div>
@@ -1170,7 +1175,7 @@ const TenderForm = ({
 
                 <div className="grid lg:grid-cols-2 gap-6">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-800 mb-3">Pickup</div>
+                    <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
@@ -1295,7 +1300,7 @@ const TenderForm = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-800 mb-3">Drop</div>
+                    <div className="font-semibold text-slate-800 mb-3">Drop<RequiredAsterisk /></div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
@@ -1439,7 +1444,7 @@ const TenderForm = ({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                   <div className="lg:col-span-5">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Category
+                      Category<RequiredAsterisk />
                     </label>
                     <select
                       value={vehCategory}
@@ -1460,7 +1465,7 @@ const TenderForm = ({
 
                   <div className="lg:col-span-4">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Vehicle
+                      Vehicle<RequiredAsterisk />
                     </label>
                     <select
                       value={vehVehicleId}
@@ -1481,7 +1486,7 @@ const TenderForm = ({
 
                   <div className="lg:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Qty
+                      Qty<RequiredAsterisk />
                     </label>
 
                     <input
@@ -1576,7 +1581,7 @@ const TenderForm = ({
                       <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100 shadow-sm">
                         <label className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
                           <Scale className="h-4 w-4 text-emerald-600" />
-                          Total Weight (MT)
+                          Total Weight (MT)<RequiredAsterisk />
                         </label>
                         <input
                           type="number"
@@ -1592,7 +1597,7 @@ const TenderForm = ({
                       <div className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl p-4 border border-sky-100 shadow-sm">
                         <label className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
                           <Package className="h-4 w-4 text-sky-600" />
-                          Total Quantity
+                          Total Quantity<RequiredAsterisk />
                         </label>
                         <input
                           type="number"
@@ -1620,7 +1625,7 @@ const TenderForm = ({
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                     <Truck className="h-5 w-5 text-emerald-600" />
-                    Transporters
+                    Transporters<RequiredAsterisk />
                   </h2>
                   <button
                     type="button"
