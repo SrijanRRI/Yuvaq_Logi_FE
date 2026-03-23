@@ -142,6 +142,69 @@ const FEEDBACK_MODULE_OPTIONS = [
   "other",
 ];
 
+const FEEDBACK_TYPE_OPTIONS = [
+  { value: "product", label: "Product Feedback" },
+  { value: "tender", label: "Tender Feedback" },
+  { value: "bidding", label: "Bidding Feedback" },
+];
+
+const FEEDBACK_PRESET_BY_TYPE = {
+  product: {
+    category: "general",
+    module: "profile",
+    source: "profile",
+  },
+  tender: {
+    category: "history",
+    module: "history",
+    source: "dashboard",
+  },
+  bidding: {
+    category: "live_bidding",
+    module: "live_bidding",
+    source: "dashboard",
+  },
+};
+
+const FEEDBACK_CATEGORY_BY_TYPE = {
+  product: FEEDBACK_CATEGORY_OPTIONS,
+  tender: [
+    "history",
+    "draft_tenders",
+    "shipment_planning",
+    "confirmations",
+    "other",
+  ],
+  bidding: [
+    "upcoming_tenders",
+    "live_bidding",
+    "post_bid",
+    "confirmations",
+    "other",
+  ],
+};
+
+const FEEDBACK_MODULE_BY_TYPE = {
+  product: FEEDBACK_MODULE_OPTIONS,
+  tender: [
+    "history",
+    "draft_tenders",
+    "shipment_planning",
+    "confirmations",
+    "general",
+    "other",
+  ],
+  bidding: [
+    "upcoming_tenders",
+    "live_bidding",
+    "post_bid",
+    "confirmations",
+    "dashboard",
+    "general",
+    "other",
+  ],
+};
+
 const prettifyLabel = (value) =>
   String(value || "—")
     .replace(/_/g, " ")
@@ -294,6 +357,8 @@ export default function ProfileSection({ fallbackUser = null }) {
   const subscription = profile?.subscription || {};
 
   const [feedbackForm, setFeedbackForm] = useState({
+    feedbackType: "product",
+    referenceId: "",
     rating: 0,
     title: "",
     review: "",
@@ -302,6 +367,20 @@ export default function ProfileSection({ fallbackUser = null }) {
     source: "profile",
     contactAllowed: true,
   });
+
+  const resetFeedbackForm = () => {
+    setFeedbackForm({
+      feedbackType: "product",
+      referenceId: "",
+      rating: 0,
+      title: "",
+      review: "",
+      category: "general",
+      module: "profile",
+      source: "profile",
+      contactAllowed: true,
+    });
+  };
 
   const [feedbackItems, setFeedbackItems] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -319,6 +398,26 @@ export default function ProfileSection({ fallbackUser = null }) {
     if (!subscription?.endsAt) return true;
     return new Date(subscription.endsAt) > new Date();
   }, [subscription]);
+
+  const handleFeedbackTypeChange = (type) => {
+    const preset = FEEDBACK_PRESET_BY_TYPE[type] || FEEDBACK_PRESET_BY_TYPE.product;
+
+    setFeedbackForm((prev) => ({
+      ...prev,
+      feedbackType: type,
+      category: preset.category,
+      module: preset.module,
+      source: preset.source,
+    }));
+  };
+
+  const feedbackCategoryOptions = useMemo(() => {
+    return FEEDBACK_CATEGORY_BY_TYPE[feedbackForm.feedbackType] || FEEDBACK_CATEGORY_OPTIONS;
+  }, [feedbackForm.feedbackType]);
+
+  const feedbackModuleOptions = useMemo(() => {
+    return FEEDBACK_MODULE_BY_TYPE[feedbackForm.feedbackType] || FEEDBACK_MODULE_OPTIONS;
+  }, [feedbackForm.feedbackType]);
 
   const loadProfile = async (isRefresh = false) => {
     try {
@@ -405,6 +504,61 @@ export default function ProfileSection({ fallbackUser = null }) {
     }
   };
 
+  // const submitFeedback = async () => {
+  //   if (!feedbackForm.rating || feedbackForm.rating < 1 || feedbackForm.rating > 5) {
+  //     toast.error("Please select a star rating.");
+  //     return;
+  //   }
+
+  //   if (!feedbackForm.review.trim() || feedbackForm.review.trim().length < 10) {
+  //     toast.error("Please write at least 10 characters in review.");
+  //     return;
+  //   }
+
+  //   try {
+  //     setFeedbackSubmitting(true);
+
+  //     await axios.post(
+  //       API.FEEDBACK_SUBMIT,
+  //       {
+  //         rating: feedbackForm.rating,
+  //         title: feedbackForm.title.trim(),
+  //         review: feedbackForm.review.trim(),
+  //         category: feedbackForm.category,
+  //         module: feedbackForm.module,
+  //         source: feedbackForm.source,
+  //         contactAllowed: feedbackForm.contactAllowed,
+  //       },
+  //       authCfg()
+  //     );
+
+  //     toast.success("Feedback submitted successfully.");
+
+  //     setFeedbackForm({
+  //       rating: 0,
+  //       title: "",
+  //       review: "",
+  //       category: "general",
+  //       module: "profile",
+  //       source: "profile",
+  //       contactAllowed: true,
+  //     });
+
+  //     await loadMyFeedbacks(1, feedbackMeta.limit || 5);
+  //   } catch (e) {
+  //     const msg = e?.response?.data?.message || "Failed to submit feedback.";
+  //     const nextAllowedAt = e?.response?.data?.nextAllowedAt;
+
+  //     if (nextAllowedAt) {
+  //       toast.error(`${msg} Try again after ${fmtDateTime(nextAllowedAt)}.`);
+  //     } else {
+  //       toast.error(msg);
+  //     }
+  //   } finally {
+  //     setFeedbackSubmitting(false);
+  //   }
+  // };
+
   const submitFeedback = async () => {
     if (!feedbackForm.rating || feedbackForm.rating < 1 || feedbackForm.rating > 5) {
       toast.error("Please select a star rating.");
@@ -416,6 +570,18 @@ export default function ProfileSection({ fallbackUser = null }) {
       return;
     }
 
+    const reference = String(feedbackForm.referenceId || "").trim();
+    const feedbackTypeLabel = prettifyLabel(feedbackForm.feedbackType);
+
+    const finalReview = [
+      `Feedback Type: ${feedbackTypeLabel}`,
+      reference ? `Reference: ${reference}` : "",
+      "",
+      feedbackForm.review.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     try {
       setFeedbackSubmitting(true);
 
@@ -424,7 +590,7 @@ export default function ProfileSection({ fallbackUser = null }) {
         {
           rating: feedbackForm.rating,
           title: feedbackForm.title.trim(),
-          review: feedbackForm.review.trim(),
+          review: finalReview,
           category: feedbackForm.category,
           module: feedbackForm.module,
           source: feedbackForm.source,
@@ -435,16 +601,7 @@ export default function ProfileSection({ fallbackUser = null }) {
 
       toast.success("Feedback submitted successfully.");
 
-      setFeedbackForm({
-        rating: 0,
-        title: "",
-        review: "",
-        category: "general",
-        module: "profile",
-        source: "profile",
-        contactAllowed: true,
-      });
-
+      resetFeedbackForm();
       await loadMyFeedbacks(1, feedbackMeta.limit || 5);
     } catch (e) {
       const msg = e?.response?.data?.message || "Failed to submit feedback.";
@@ -820,15 +977,82 @@ export default function ProfileSection({ fallbackUser = null }) {
         <div className="px-6 py-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-b border-slate-200">
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <Star className="h-5 w-5 text-amber-500" />
-            Product Feedback
+            Product, Tender & Bidding Feedback
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Share your experience, report issues, or suggest improvements.
+            Share app feedback, tender experience, bidding issues, or suggestions for improvement.
           </p>
         </div>
 
         <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Feedback Type
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {FEEDBACK_TYPE_OPTIONS.map((item) => {
+                  const active = feedbackForm.feedbackType === item.value;
+
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => handleFeedbackTypeChange(item.value)}
+                      className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition ${active
+                        ? "bg-amber-500 text-white border-amber-500"
+                        : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                        }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-2 text-xs text-slate-500">
+                {feedbackForm.feedbackType === "product" &&
+                  "Use this for app UI, features, bugs, performance, or general product experience."}
+                {feedbackForm.feedbackType === "tender" &&
+                  "Use this for tender creation, shipment planning, confirmations, or tender history related feedback."}
+                {feedbackForm.feedbackType === "bidding" &&
+                  "Use this for live bidding, post-bid flow, quotation experience, or bidding related issues."}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                {feedbackForm.feedbackType === "product"
+                  ? "Screen / Page Reference"
+                  : feedbackForm.feedbackType === "tender"
+                    ? "Tender Reference"
+                    : "Bid / Tender Reference"}{" "}
+                <span className="text-slate-400">(optional)</span>
+              </label>
+
+              <input
+                type="text"
+                value={feedbackForm.referenceId}
+                onChange={(e) =>
+                  setFeedbackForm((p) => ({ ...p, referenceId: e.target.value }))
+                }
+                maxLength={120}
+                placeholder={
+                  feedbackForm.feedbackType === "product"
+                    ? "Example: Profile page / Dashboard / Shipment tab"
+                    : feedbackForm.feedbackType === "tender"
+                      ? "Example: Tender ID / Tender Number / Project Code"
+                      : "Example: Bid ID / Tender ID / Auction reference"
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+
+              <div className="mt-1 text-xs text-slate-500">
+                This helps admin understand which tender or bidding case your feedback is about.
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Rating
@@ -870,7 +1094,7 @@ export default function ProfileSection({ fallbackUser = null }) {
                   }
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
-                  {FEEDBACK_CATEGORY_OPTIONS.map((item) => (
+                  {feedbackCategoryOptions.map((item) => (
                     <option key={item} value={item}>
                       {prettifyLabel(item)}
                     </option>
@@ -889,7 +1113,7 @@ export default function ProfileSection({ fallbackUser = null }) {
                   }
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
-                  {FEEDBACK_MODULE_OPTIONS.map((item) => (
+                  {feedbackModuleOptions.map((item) => (
                     <option key={item} value={item}>
                       {prettifyLabel(item)}
                     </option>
@@ -955,20 +1179,10 @@ export default function ProfileSection({ fallbackUser = null }) {
 
               <button
                 type="button"
-                onClick={() =>
-                  setFeedbackForm({
-                    rating: 0,
-                    title: "",
-                    review: "",
-                    category: "general",
-                    module: "profile",
-                    source: "profile",
-                    contactAllowed: true,
-                  })
-                }
+                onClick={() => resetFeedbackForm()}
                 disabled={feedbackSubmitting}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
-              >
+               >
                 Reset
               </button>
             </div>
