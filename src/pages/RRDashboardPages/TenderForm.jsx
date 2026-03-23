@@ -66,6 +66,7 @@ const TenderForm = ({
   const openConfirmModal = (e) => {
     e?.preventDefault?.();
     if (loading || formDisabled) return;
+    if (hardEndBeforeSoftEnd) return;
     setShowConfirm(true);
   };
 
@@ -99,6 +100,22 @@ const TenderForm = ({
   const selectedOption = unitOptions.find(
     (option) => option.value === form.maxBidUnit,
   );
+
+  const parseDateTimeLocal = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const softEndDate = parseDateTimeLocal(form.biddingEnd);
+  const hardEndDate = parseDateTimeLocal(form.biddingHardEnd);
+
+  const hardEndBeforeSoftEnd =
+    !!form.biddingEnd &&
+    !!form.biddingHardEnd &&
+    !!softEndDate &&
+    !!hardEndDate &&
+    hardEndDate < softEndDate;
 
   const lookupHsn = async (rawCode) => {
     const code = normalizeHsn(rawCode);
@@ -698,18 +715,28 @@ const TenderForm = ({
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Hard Stop (Final End)<RequiredAsterisk />
+                      Hard Stop (Final End)
                     </label>
                     <input
                       type="datetime-local"
                       name="biddingHardEnd"
                       value={form.biddingHardEnd || ""}
+                      min={form.biddingEnd || undefined}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${hardEndBeforeSoftEnd
+                          ? "border-red-400 focus:ring-red-500"
+                          : "border-slate-300 focus:ring-emerald-500"
+                        }`}
                     />
-                    <p className="mt-1 text-xs text-slate-500">
-                      Optional. If empty, Hard Stop = Soft End.
-                    </p>
+                    {hardEndBeforeSoftEnd ? (
+                      <p className="mt-1 text-xs text-red-600">
+                        Hard Stop must be greater than or equal to Soft End.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Optional. If empty, Hard Stop = Soft End.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
