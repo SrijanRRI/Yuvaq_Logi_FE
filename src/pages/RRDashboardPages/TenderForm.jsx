@@ -30,6 +30,7 @@ const TenderForm = ({
   selectedTransporters,
   loading,
   formDisabled,
+  onClearForm,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -86,14 +87,38 @@ const TenderForm = ({
     },
   ];
 
+  const BID_AMOUNT_RANGE_BY_UNIT = {
+    "Per MT": {
+      minBidAmount: "1000",
+      maxBidAmount: "1000000",
+    },
+    "Per Tender": {
+      minBidAmount: "5000",
+      maxBidAmount: "1000000",
+    },
+  };
+
+  // const handleUnitSelect = (value) => {
+  //   const event = {
+  //     target: {
+  //       name: "maxBidUnit",
+  //       value,
+  //     },
+  //   };
+  //   handleChange(event);
+  //   setIsDropdownOpen(false);
+  // };
+
   const handleUnitSelect = (value) => {
-    const event = {
-      target: {
-        name: "maxBidUnit",
-        value,
-      },
-    };
-    handleChange(event);
+    const range = BID_AMOUNT_RANGE_BY_UNIT[value];
+
+    setForm((prev) => ({
+      ...prev,
+      maxBidUnit: value,
+      minBidAmount: range?.minBidAmount || "",
+      maxBidAmount: range?.maxBidAmount || "",
+    }));
+
     setIsDropdownOpen(false);
   };
 
@@ -173,43 +198,6 @@ const TenderForm = ({
 
     return () => clearTimeout(t);
   }, [hsnInput]);
-
-  // const addMaterialFromLookup = () => {
-  //   if (!hsnLookupData) {
-  //     setHsnLookupError("Enter a valid HSN code first");
-  //     return;
-  //   }
-
-  //   let qty = null;
-  //   if (materialQty !== "") {
-  //     qty = Number(materialQty);
-  //     if (!Number.isFinite(qty) || qty < 0) {
-  //       setHsnLookupError("Material quantity must be a valid number");
-  //       return;
-  //     }
-  //   }
-
-  //   const nextMaterial = {
-  //     hsnCode: hsnLookupData.codeDisplay || hsnLookupData.codeDigits,
-  //     hsnDigits: hsnLookupData.codeDigits,
-  //     materialName: hsnLookupData.description,
-  //     quantity: qty,
-  //     unit: materialUnit.trim(),
-  //     remarks: materialRemarks.trim(),
-  //   };
-
-  //   setForm((prev) => ({
-  //     ...prev,
-  //     materials: [...(prev.materials || []), nextMaterial],
-  //   }));
-
-  //   setHsnInput("");
-  //   setHsnLookupData(null);
-  //   setHsnLookupError("");
-  //   setMaterialQty("");
-  //   setMaterialUnit("");
-  //   setMaterialRemarks("");
-  // };
 
   const addMaterialFromLookup = () => {
     if (!hsnLookupData) {
@@ -588,13 +576,27 @@ const TenderForm = ({
     <div className="space-y-8">
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Package className="h-6 w-6" />
-            Create New Tender
-          </h1>
-          <p className="mt-1 opacity-80">
-            Fill in the details to create a new tender request
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Package className="h-6 w-6" />
+                Create New Tender
+              </h1>
+              <p className="mt-1 opacity-80">
+                Fill in the details to create a new tender request
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClearForm}
+              disabled={loading || formDisabled}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/15 border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear Form
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -724,8 +726,8 @@ const TenderForm = ({
                       min={form.biddingEnd || undefined}
                       onChange={handleChange}
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${hardEndBeforeSoftEnd
-                          ? "border-red-400 focus:ring-red-500"
-                          : "border-slate-300 focus:ring-emerald-500"
+                        ? "border-red-400 focus:ring-red-500"
+                        : "border-slate-300 focus:ring-emerald-500"
                         }`}
                     />
                     {hardEndBeforeSoftEnd ? (
@@ -756,7 +758,7 @@ const TenderForm = ({
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
-                      <input
+                      {/* <input
                         type="number"
                         name="minBidAmount"
                         step="1"
@@ -765,6 +767,16 @@ const TenderForm = ({
                         onChange={handleChange}
                         placeholder="Enter minimum bid"
                         className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
+                        required
+                      /> */}
+
+                      <input
+                        type="number"
+                        name="minBidAmount"
+                        value={form.minBidAmount || ""}
+                        readOnly
+                        placeholder="Select Unit Type first"
+                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed focus:outline-none text-lg font-medium"
                         required
                       />
                     </div>
@@ -778,7 +790,7 @@ const TenderForm = ({
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
-                      <input
+                      {/* <input
                         type="number"
                         name="maxBidAmount"
                         step="1"
@@ -787,6 +799,16 @@ const TenderForm = ({
                         onChange={handleChange}
                         placeholder="Enter maximum bid"
                         className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
+                        required
+                      /> */}
+
+                      <input
+                        type="number"
+                        name="maxBidAmount"
+                        value={form.maxBidAmount || ""}
+                        readOnly
+                        placeholder="Select Unit Type first"
+                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed focus:outline-none text-lg font-medium"
                         required
                       />
                     </div>
@@ -1201,7 +1223,7 @@ const TenderForm = ({
                 </p>
 
                 <div className="grid lg:grid-cols-2 gap-6">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  {/* <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -1320,6 +1342,80 @@ const TenderForm = ({
                           }
                           placeholder="Enter full address / landmark / exact pickup location"
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[90px] resize-none"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div> */}
+
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                    <div className="font-semibold text-slate-800 mb-3">
+                      Pickup<RequiredAsterisk />
+                    </div>
+
+                    <div className="mb-4 rounded-lg border border-emerald-200 bg-white/80 p-3 text-xs text-emerald-800">
+                      Pickup location is fixed by default for this company.
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      <div className="md:col-span-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          PIN Code
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.pincode || ""}
+                          readOnly
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed"
+                          required
+                        />
+                      </div>
+
+                      <div className="md:col-span-8">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.state || ""}
+                          readOnly
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed"
+                        />
+                      </div>
+
+                      <div className="md:col-span-6">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          District
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.district || ""}
+                          readOnly
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed"
+                        />
+                      </div>
+
+                      <div className="md:col-span-6">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          City / Town
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pickup?.city || ""}
+                          readOnly
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed"
+                          required
+                        />
+                      </div>
+
+                      <div className="md:col-span-12">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Exact Pickup Address / Location
+                        </label>
+                        <textarea
+                          value={form.pickup?.address || ""}
+                          readOnly
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed min-h-[90px] resize-none"
                           required
                         />
                       </div>
