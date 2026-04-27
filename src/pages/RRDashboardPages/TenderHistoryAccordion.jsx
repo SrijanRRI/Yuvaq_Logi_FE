@@ -54,8 +54,8 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
 
   const [requestingConfirmByQ, setRequestingConfirmByQ] = useState({});
 
-  const [startingPostBid, setStartingPostBid] = useState({});
-  const [postBidDraftByTender, setPostBidDraftByTender] = useState({});
+  // const [startingPostBid, setStartingPostBid] = useState({});
+  // const [postBidDraftByTender, setPostBidDraftByTender] = useState({});
 
   const [nowMs, setNowMs] = useState(Date.now());
 
@@ -73,6 +73,33 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     const id = setInterval(() => setNowMs(Date.now()), 1000); // refresh every sec
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!fetchTenderHistory) return;
+
+    const shouldRefresh = tenderHistories.some((t) => {
+      const biddingEndMs = t?.biddingEnd ? new Date(t.biddingEnd).getTime() : null;
+      const postBidStatus = String(t?.postBid?.status || "").toLowerCase();
+
+      if (!biddingEndMs) return false;
+
+      const now = Date.now();
+
+      return (
+        now >= biddingEndMs &&
+        t.status !== "finalized" &&
+        postBidStatus !== "ended"
+      );
+    });
+
+    if (!shouldRefresh) return;
+
+    const id = setInterval(() => {
+      fetchTenderHistory(page, limit, scope);
+    }, 15000);
+
+    return () => clearInterval(id);
+  }, [tenderHistories, fetchTenderHistory, page, limit, scope]);
 
   const fetchFinalizedContact = async (tenderId) => {
     if (!tenderId) return;
@@ -158,47 +185,47 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     );
   };
 
-  const startPostBid = async (tender, { rangeMin, rangeMax } = {}) => {
-    const tenderId = tender?._id;
-    if (!tenderId) return;
+  // const startPostBid = async (tender, { rangeMin, rangeMax } = {}) => {
+  //   const tenderId = tender?._id;
+  //   if (!tenderId) return;
 
-    const st = String(tender?.postBid?.status || "").toLowerCase();
-    if (st === "active") {
-      toast.info("Post bid is already live for this tender.");
-      return;
-    }
+  //   const st = String(tender?.postBid?.status || "").toLowerCase();
+  //   if (st === "active") {
+  //     toast.info("Post bid is already live for this tender.");
+  //     return;
+  //   }
 
-    const min = Number(rangeMin);
-    const max = Number(rangeMax);
+  //   const min = Number(rangeMin);
+  //   const max = Number(rangeMax);
 
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-      toast.error("Please enter valid numbers for range.");
-      return;
-    }
-    if (min > max) {
-      toast.error("Range Min must be <= Range Max.");
-      return;
-    }
+  //   if (!Number.isFinite(min) || !Number.isFinite(max)) {
+  //     toast.error("Please enter valid numbers for range.");
+  //     return;
+  //   }
+  //   if (min > max) {
+  //     toast.error("Range Min must be <= Range Max.");
+  //     return;
+  //   }
 
-    try {
-      setStartingPostBid((p) => ({ ...p, [tenderId]: true }));
+  //   try {
+  //     setStartingPostBid((p) => ({ ...p, [tenderId]: true }));
 
-      await axios.post(
-        `${API.START_POST_BID}/${tenderId}/post-bid/start`,
-        { durationMinutes: 10, rangeMin: min, rangeMax: max },
-        authCfg()
-      );
+  //     await axios.post(
+  //       `${API.START_POST_BID}/${tenderId}/post-bid/start`,
+  //       { durationMinutes: 10, rangeMin: min, rangeMax: max },
+  //       authCfg()
+  //     );
 
-      toast.success("Post bid started (10 minutes). Transporters can now improve their quotes.");
-      setPostBidDraftByTender((p) => ({ ...p, [tenderId]: { ...p[tenderId], open: false } }));
+  //     toast.success("Post bid started (10 minutes). Transporters can now improve their quotes.");
+  //     setPostBidDraftByTender((p) => ({ ...p, [tenderId]: { ...p[tenderId], open: false } }));
 
-      if (fetchTenderHistory) await fetchTenderHistory();
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Could not start post bid.");
-    } finally {
-      setStartingPostBid((p) => ({ ...p, [tenderId]: false }));
-    }
-  };
+  //     if (fetchTenderHistory) await fetchTenderHistory();
+  //   } catch (e) {
+  //     toast.error(e?.response?.data?.message || "Could not start post bid.");
+  //   } finally {
+  //     setStartingPostBid((p) => ({ ...p, [tenderId]: false }));
+  //   }
+  // };
 
   const handleRequestConfirmation = async ({ tender, quotation }) => {
 
@@ -874,7 +901,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                       <TenderDetails tender={tender} getTransporterName={getTransporterName} />
 
                       {/* ✅ POST BID BAR — paste exactly here */}
-                      {(() => {
+                      {/* {(() => {
 
                         const POST_BID_START_WINDOW_MS = 10 * 60 * 1000;
 
@@ -1024,7 +1051,7 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                               </div>
                             </div>
 
-                            {/* ✅ Inputs (only when open + canStart) */}
+                           
                             {ui.open && canStartBase && (
                               <div className="bg-white border border-slate-200 rounded-lg p-3">
                                 <div className="flex items-center gap-3 mb-2">
@@ -1093,6 +1120,127 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
                                 )}
                               </div>
                             )}
+                          </div>
+                        );
+                      })()} */}
+
+                      {/* AUTO POST BID STATUS BAR */}
+                      {(() => {
+                        const postBidStatus = String(tender?.postBid?.status || "inactive").toLowerCase();
+
+                        const biddingEndMs = tender?.biddingEnd
+                          ? new Date(tender.biddingEnd).getTime()
+                          : null;
+
+                        const endsAt = tender?.postBid?.endsAt
+                          ? new Date(tender.postBid.endsAt)
+                          : null;
+
+                        const rangeMin = tender?.postBid?.rangeMin;
+                        const rangeMax = tender?.postBid?.rangeMax;
+                        const baseL1Price = tender?.postBid?.baseL1Price;
+
+                        const isBeforeBiddingEnd = biddingEndMs && nowMs < biddingEndMs;
+                        const isAfterBiddingEnd = biddingEndMs && nowMs >= biddingEndMs;
+
+                        const isActive = postBidStatus === "active";
+                        const isEnded = postBidStatus === "ended";
+                        const isInactive = !postBidStatus || postBidStatus === "inactive";
+
+                        let title = "";
+                        let description = "";
+                        let badgeClass = "bg-slate-100 text-slate-600 border-slate-200";
+
+                        if (isBeforeBiddingEnd) {
+                          const left = biddingEndMs - nowMs;
+                          const mm = Math.floor(left / 60000);
+                          const ss = Math.floor((left % 60000) / 1000);
+
+                          title = "Normal bidding is active";
+                          description = `Auto post-bid will start after bidding ends. Time left: ${mm}:${String(ss).padStart(2, "0")}`;
+                          badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                        } else if (isAfterBiddingEnd && isInactive) {
+                          title = "Waiting for auto post-bid";
+                          description = "Bidding has ended. Backend will calculate L1 and start post-bid automatically.";
+                          badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
+                        } else if (isActive) {
+                          const remainingMs = endsAt ? endsAt.getTime() - nowMs : 0;
+                          const safeRemaining = Math.max(0, remainingMs);
+                          const mm = Math.floor(safeRemaining / 60000);
+                          const ss = Math.floor((safeRemaining % 60000) / 1000);
+
+                          title = "Post-bid is live";
+                          description = `Transporters can submit improved quotes. Time left: ${mm}:${String(ss).padStart(2, "0")}`;
+                          badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                        } else if (isEnded) {
+                          title = "Post-bid ended";
+                          description = "Post-bid window has ended. You can proceed with selection/finalization.";
+                          badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+                        } else {
+                          title = "Post-bid status unavailable";
+                          description = "Refresh tender history to check latest post-bid status.";
+                        }
+
+                        return (
+                          <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {isAfterBiddingEnd && isInactive && (
+                                    <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                                  )}
+
+                                  <h3 className="text-sm font-semibold text-slate-800">
+                                    {title}
+                                  </h3>
+
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                    {postBidStatus.toUpperCase()}
+                                  </span>
+
+                                  {tender?.postBid?.autoStarted && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">
+                                      AUTO STARTED
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="mt-1 text-xs text-slate-600">
+                                  {description}
+                                </p>
+                              </div>
+
+                              {(rangeMin != null || rangeMax != null || baseL1Price != null) && (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                  {baseL1Price != null && (
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                      <div className="text-slate-500">Base L1 Price</div>
+                                      <div className="font-semibold text-slate-800">
+                                        ₹{Number(baseL1Price).toLocaleString("en-IN")}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {rangeMin != null && (
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                      <div className="text-slate-500">Post-bid Min</div>
+                                      <div className="font-semibold text-emerald-700">
+                                        ₹{Number(rangeMin).toLocaleString("en-IN")}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {rangeMax != null && (
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                      <div className="text-slate-500">Post-bid Max</div>
+                                      <div className="font-semibold text-emerald-700">
+                                        ₹{Number(rangeMax).toLocaleString("en-IN")}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })()}
