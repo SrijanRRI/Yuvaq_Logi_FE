@@ -35,7 +35,7 @@ const TransporterResponseItem = ({
 
   // ✅ ACCORDION
   isOpen = false,
-  onToggle = () => {},
+  onToggle = () => { },
 }) => {
   const tenderId = tender._id;
 
@@ -72,6 +72,17 @@ const TransporterResponseItem = ({
   const qid = String(response._id);
 
   const isRequestingConfirm = !!requestingConfirmByQ?.[qid];
+
+  const postBidStatus = String(tender?.postBid?.status || "").toLowerCase();
+  const postBidEndsAtMs = tender?.postBid?.endsAt
+    ? new Date(tender.postBid.endsAt).getTime()
+    : null;
+
+  const isPostBidTimerLive =
+    phase === "postBid" &&
+    postBidStatus === "active" &&
+    postBidEndsAtMs &&
+    Date.now() < postBidEndsAtMs;
 
   const meta = selectionMetaByQuotationId?.[qid];
 
@@ -114,36 +125,32 @@ const TransporterResponseItem = ({
 
   return (
     <div
-      className={`rounded-lg sm:rounded-xl shadow-sm transition duration-300 overflow-hidden ${
-        isDimmed
-          ? "border border-slate-200 bg-slate-50"
-          : isSelected
+      className={`rounded-lg sm:rounded-xl shadow-sm transition duration-300 overflow-hidden ${isDimmed
+        ? "border border-slate-200 bg-slate-50"
+        : isSelected
           ? "border-2 border-emerald-500 bg-white"
           : "border border-slate-200 bg-white"
-      }`}
+        }`}
     >
       {/* ✅ ACCORDION HEADER (always visible) */}
       <div
-        className={`${
-          isSelected
-            ? "bg-emerald-50 border-b border-emerald-100"
-            : isDimmed
+        className={`${isSelected
+          ? "bg-emerald-50 border-b border-emerald-100"
+          : isDimmed
             ? "bg-slate-100 border-b border-slate-200"
             : "bg-indigo-50 border-b border-indigo-100"
-        } px-4 sm:px-5 py-3`}
+          } px-4 sm:px-5 py-3`}
       >
         <div className="flex items-start justify-between gap-3">
           {/* left */}
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <div
-              className={`p-2 rounded-full flex-shrink-0 ${
-                isSelected ? "bg-emerald-100" : "bg-indigo-100"
-              }`}
+              className={`p-2 rounded-full flex-shrink-0 ${isSelected ? "bg-emerald-100" : "bg-indigo-100"
+                }`}
             >
               <Truck
-                className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                  isSelected ? "text-emerald-600" : "text-indigo-600"
-                }`}
+                className={`h-4 w-4 sm:h-5 sm:w-5 ${isSelected ? "text-emerald-600" : "text-indigo-600"
+                  }`}
               />
             </div>
 
@@ -195,9 +202,8 @@ const TransporterResponseItem = ({
               title={isOpen ? "Collapse" : "Expand"}
             >
               <ChevronDown
-                className={`h-4 w-4 text-slate-600 transition-transform ${
-                  isOpen ? "rotate-180" : ""
-                }`}
+                className={`h-4 w-4 text-slate-600 transition-transform ${isOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
           </div>
@@ -391,19 +397,18 @@ const TransporterResponseItem = ({
                     <button
                       onClick={() => onReopen(tenderId)}
                       disabled={!canReopenQuotation}
-                      className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${
-                        canReopenQuotation
-                          ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
-                          : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
-                      }`}
+                      className={`px-3 sm:px-4 py-2 rounded-lg transition border flex items-center justify-center gap-2 text-sm sm:text-base ${canReopenQuotation
+                        ? "text-indigo-600 border-indigo-300 bg-white hover:bg-indigo-50"
+                        : "text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed"
+                        }`}
                     >
                       <RefreshCcw className="h-4 w-4 flex-shrink-0" />
                       <span className="truncate">
                         {canReopenQuotation
                           ? "Reopen Quotation"
                           : !isBeforeOrOnClosingDay()
-                          ? "Closed"
-                          : "Max Reopens Reached"}
+                            ? "Closed"
+                            : "Max Reopens Reached"}
                       </span>
                     </button>
 
@@ -447,12 +452,34 @@ const TransporterResponseItem = ({
                     Another selection is pending confirmation.
                   </div>
                 ) : isActionable ? (
+                  // <button
+                  //   onClick={() => onRequestConfirmation({ tender, quotation: response })}
+                  //   disabled={isRequestingConfirm}
+                  //   className={`px-3 sm:px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base ${isRequestingConfirm ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+                  //     }`}
+                  //  >
+                  //   {isRequestingConfirm ? (
+                  //     <>
+                  //       <Loader2 className="h-4 w-4 animate-spin" />
+                  //       Requesting...
+                  //     </>
+                  //   ) : (
+                  //     <>Request Confirmation ({response.rank || "L1"})</>
+                  //   )}
+                  // </button>
+
                   <button
                     onClick={() => onRequestConfirmation({ tender, quotation: response })}
-                    disabled={isRequestingConfirm}
-                    className={`px-3 sm:px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base ${
-                      isRequestingConfirm ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
-                    }`}
+                    disabled={isRequestingConfirm || isPostBidTimerLive}
+                    title={
+                      isPostBidTimerLive
+                        ? "Post-bid timer is live. You can request confirmation after the timer ends."
+                        : ""
+                    }
+                    className={`px-3 sm:px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base ${isRequestingConfirm || isPostBidTimerLive
+                        ? "bg-slate-400 cursor-not-allowed"
+                        : "bg-indigo-600 hover:bg-indigo-700"
+                      }`}
                   >
                     {isRequestingConfirm ? (
                       <>
@@ -460,7 +487,7 @@ const TransporterResponseItem = ({
                         Requesting...
                       </>
                     ) : (
-                      <>Request Confirmation ({response.rank || "L1"})</>
+                      <>Request Confirmation ({displayRank || response.rank || "L1"})</>
                     )}
                   </button>
                 ) : (

@@ -749,7 +749,7 @@ const TenderForm = ({
                   Bid Amount Range
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Minimum Bid Amount<RequiredAsterisk />
@@ -758,17 +758,6 @@ const TenderForm = ({
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
-                      {/* <input
-                        type="number"
-                        name="minBidAmount"
-                        step="1"
-                        min="0"
-                        value={form.minBidAmount || ""}
-                        onChange={handleChange}
-                        placeholder="Enter minimum bid"
-                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
-                        required
-                      /> */}
 
                       <input
                         type="number"
@@ -790,17 +779,6 @@ const TenderForm = ({
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
-                      {/* <input
-                        type="number"
-                        name="maxBidAmount"
-                        step="1"
-                        min="1"
-                        value={form.maxBidAmount || ""}
-                        onChange={handleChange}
-                        placeholder="Enter maximum bid"
-                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
-                        required
-                      /> */}
 
                       <input
                         type="number"
@@ -813,7 +791,7 @@ const TenderForm = ({
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="relative mt-5">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
