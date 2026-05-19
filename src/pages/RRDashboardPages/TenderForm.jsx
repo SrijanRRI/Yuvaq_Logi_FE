@@ -715,7 +715,7 @@ const TenderForm = ({
                     </p>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Hard Stop (Final End)
                     </label>
@@ -739,6 +739,24 @@ const TenderForm = ({
                         Optional. If empty, Hard Stop = Soft End.
                       </p>
                     )}
+                  </div> */}
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Hard Stop (Final End)
+                    </label>
+
+                    <input
+                      type="datetime-local"
+                      name="biddingHardEnd"
+                      value={form.biddingHardEnd || form.biddingEnd || ""}
+                      disabled
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed focus:outline-none"
+                    />
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Hard Stop is disabled. It will follow Soft End by default.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1331,8 +1349,8 @@ const TenderForm = ({
                       Pickup<RequiredAsterisk />
                     </div>
 
-                    <div className="mb-4 rounded-lg border border-emerald-200 bg-white/80 p-3 text-xs text-emerald-800">
-                      Pickup location is fixed by default for this company.
+                    <div className="mb-4 rounded-lg border font-bold border-emerald-200 bg-white/80 p-3 text-sm text-emerald-800">
+                      RR ISPAT 
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">

@@ -36,13 +36,13 @@ const blankLocation = {
 };
 
 const DEFAULT_PICKUP_LOCATION = {
-  pincode: "492003",
+  pincode: "493221",
   state: "Chhattisgarh",
   district: "Raipur",
   city: "Birgoan",
   location: "Urla Industrial Complex",
   address:
-    "Road no.8, Urla Industrial Complex, Birgoan, Raipur, Chhattisgarh 492003",
+    "RRIspat : Road no.8, Urla Industrial Complex, Birgoan, Raipur, Chhattisgarh 493221",
   country: "India",
 };
 
@@ -176,7 +176,7 @@ const RRDashboardPage = () => {
       const response = await axios.get(url, { withCredentials: true });
       const data = response?.data?.data || response?.data?.results || [];
 
-      console.log("transporters detail", data);
+      // console.log("transporters detail", data);
 
       const meta =
         response?.data?.pagination ||
@@ -496,7 +496,7 @@ const RRDashboardPage = () => {
         setEditingDraft(createdDraft);
 
         toast.success("Draft created. You have 3 minutes to edit.");
-        console.log("draft available", createdDraft);
+        // console.log("draft available", createdDraft);
 
         // RESET FORM
         setForm(initialFormState);
