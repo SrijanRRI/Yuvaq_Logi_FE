@@ -99,8 +99,6 @@ const HistoryView = ({ tenders }) => {
           const finalizedStatus = tender.finalizedStatus;
 
           const sel = tender.selection || {};
-          const isPendingForMe =
-            sel.status === "pending" && String(sel.quotation) === String(q._id);
 
           const pickup = tender.pickup || null;
           const drop = tender.drop || null;
