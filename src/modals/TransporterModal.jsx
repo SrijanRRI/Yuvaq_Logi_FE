@@ -235,7 +235,7 @@ const TransporterModal = ({
               <div className="text-amber-600 text-xs">Manual Review</div>
             </div>
 
-            <button
+            {/* <button
               type="button"
               onClick={handleSelectAllTransporters}
               disabled={loading || manualReviewTransporterIds.length === 0}
@@ -256,7 +256,7 @@ const TransporterModal = ({
               </span>
 
               Select Manual Review
-            </button>
+            </button> */}
           </div>
         </div>
 

@@ -13,6 +13,8 @@ import {
 import axios from "axios";
 import API from "../API";
 
+const MAX_QUOTATION_SUBMISSIONS = 5
+
 const QuotationModal = ({ tender, onClose, onSuccess }) => {
   const [price, setPrice] = useState("");
   const [vehicleNo, setVehicleNo] = useState("");
@@ -23,12 +25,16 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
   const [touched, setTouched] = useState({ price: false, vehicle: false });
 
   const [lastQuotedPrice, setLastQuotedPrice] = useState(null);
+  const [quoteCount, setQuoteCount] = useState(0);
 
   // ✅ Step value from tender
   const priceStep = useMemo(() => {
     const v = Number(tender?.priceDifference);
     return Number.isFinite(v) && v > 0 ? v : 0;
   }, [tender?.priceDifference]);
+
+  const remainingQuotes = Math.max(0, MAX_QUOTATION_SUBMISSIONS - quoteCount);
+  const hasReachedQuoteLimit = quoteCount >= MAX_QUOTATION_SUBMISSIONS;
 
   // const validateForm = () => {
   //   const newErrors = {};
@@ -45,9 +51,15 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
   //   } else if (max != null && n > max) {
   //     newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
   //       }`;
+  //   } else if (
+  //     lastQuotedPrice != null &&
+  //     Number.isFinite(lastQuotedPrice) &&
+  //     n > lastQuotedPrice
+  //   ) {
+  //     newErrors.price = `You cannot quote higher than your previous quoted amount ₹${lastQuotedPrice.toLocaleString(
+  //       "en-IN"
+  //     )}`;
   //   }
-
-  //   // if (!vehicleNo) newErrors.vehicleNo = "Vehicle number is required";
 
   //   setErrors(newErrors);
   //   if (newErrors.price) toast.error(newErrors.price);
@@ -56,6 +68,11 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
   // };
 
   const validateForm = () => {
+    if (hasReachedQuoteLimit) {
+      toast.error("You have already submitted 5 quotations for this tender.");
+      return false;
+    }
+
     const newErrors = {};
 
     const n = Number(price);
@@ -132,6 +149,71 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     if (errors.price) setErrors((p) => ({ ...p, price: null }));
   };
 
+  // useEffect(() => {
+  //   let cancelled = false;
+
+  //   const loadMyLastQuote = async () => {
+  //     try {
+  //       const res = await axios.get(`${API.MY_TENDER_QUOTES}/${tender._id}`, {
+  //         withCredentials: true,
+  //         headers: { "Content-Type": "application/json" },
+  //       });
+
+  //       // const list = res.data?.quotations || [];
+  //       // // your backend sorts createdAt: 1, so last item is latest
+  //       // const last = list.length ? list[list.length - 1] : null;
+
+  //       // if (cancelled || !last) return;
+
+  //       // if (!last) {
+  //       //   setLastQuotedPrice(null);
+  //       //   return;
+  //       // }
+
+  //       const list = Array.isArray(res.data?.quotations) ? res.data.quotations : [];
+
+  //       const normalQuotes = list.filter((q) => !q.phase || q.phase === "normal");
+
+  //       const countFromApi =
+  //         typeof res.data?.submittedCount === "number"
+  //           ? res.data.submittedCount
+  //           : normalQuotes.length;
+
+  //       if (cancelled) return;
+
+  //       setQuoteCount(countFromApi);
+
+  //       const last = normalQuotes.length ? normalQuotes[normalQuotes.length - 1] : null;
+
+  //       if (!last) {
+  //         setLastQuotedPrice(null);
+  //         return;
+  //       }
+
+  //       const prevPrice =
+  //         last.price != null && Number.isFinite(Number(last.price))
+  //           ? Number(last.price)
+  //           : null;
+
+  //       setLastQuotedPrice(prevPrice);
+
+  //       // Prefill only if user hasn't started typing
+  //       if (!touched.price && last.price != null) setPrice(String(last.price));
+  //       if (!touched.vehicle && last.vehicleNumber) setVehicleNo(String(last.vehicleNumber));
+  //     } catch (e) {
+  //       // ignore silently (keep empty fields)
+  //       setLastQuotedPrice(null);
+  //     }
+  //   };
+
+  //   if (tender?._id) loadMyLastQuote();
+
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  //   // IMPORTANT: run when modal opens for another tender
+  // }, [tender?._id]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -142,11 +224,20 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
           headers: { "Content-Type": "application/json" },
         });
 
-        const list = res.data?.quotations || [];
-        // your backend sorts createdAt: 1, so last item is latest
-        const last = list.length ? list[list.length - 1] : null;
+        const list = Array.isArray(res.data?.quotations) ? res.data.quotations : [];
 
-        if (cancelled || !last) return;
+        const normalQuotes = list.filter((q) => !q.phase || q.phase === "normal");
+
+        const countFromApi =
+          typeof res.data?.submittedCount === "number"
+            ? res.data.submittedCount
+            : normalQuotes.length;
+
+        if (cancelled) return;
+
+        setQuoteCount(countFromApi);
+
+        const last = normalQuotes.length ? normalQuotes[normalQuotes.length - 1] : null;
 
         if (!last) {
           setLastQuotedPrice(null);
@@ -160,12 +251,13 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
 
         setLastQuotedPrice(prevPrice);
 
-        // Prefill only if user hasn't started typing
         if (!touched.price && last.price != null) setPrice(String(last.price));
         if (!touched.vehicle && last.vehicleNumber) setVehicleNo(String(last.vehicleNumber));
       } catch (e) {
-        // ignore silently (keep empty fields)
-        setLastQuotedPrice(null);
+        if (!cancelled) {
+          setLastQuotedPrice(null);
+          setQuoteCount(0);
+        }
       }
     };
 
@@ -174,7 +266,6 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     return () => {
       cancelled = true;
     };
-    // IMPORTANT: run when modal opens for another tender
   }, [tender?._id]);
 
   const handleSubmit = async () => {
@@ -260,7 +351,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
               <button
                 type="button"
                 onClick={() => adjustPrice(-1)}
-                disabled={!priceStep}
+                disabled={!priceStep || hasReachedQuoteLimit}
                 className="w-12 shrink-0 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 title={priceStep ? `Decrease by ₹${priceStep}` : "Price difference not set"}
               >
@@ -271,6 +362,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                 type="number"
                 inputMode="numeric"
                 value={price}
+                disabled={hasReachedQuoteLimit}
                 min={tender?.minBidAmount ?? undefined}
                 // max={tender?.maxBidAmount ?? undefined}
                 max={
@@ -296,7 +388,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                 type="button"
                 onClick={() => adjustPrice(+1)}
                 // disabled={!priceStep}
-                disabled={!priceStep || lastQuotedPrice != null}
+                disabled={!priceStep || lastQuotedPrice != null || hasReachedQuoteLimit}
                 className="w-12 shrink-0 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 // title={priceStep ? `Increase by ₹${priceStep}` : "Price difference not set"}
                 title={
@@ -321,6 +413,23 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
               <p className="mt-1 text-xs text-amber-700">
                 Your previous quote was ₹{lastQuotedPrice.toLocaleString("en-IN")}. New quote must be lower.
               </p>
+            )}
+
+            <p
+              className={`mt-1 text-xs ${hasReachedQuoteLimit ? "text-red-600" : "text-slate-500"
+                }`}
+            >
+              Quotations submitted: {quoteCount}/{MAX_QUOTATION_SUBMISSIONS}
+              {!hasReachedQuoteLimit ? ` • Remaining: ${remainingQuotes}` : " • Limit reached"}
+            </p>
+
+            {hasReachedQuoteLimit && (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  You have reached the maximum limit of 5 quotations for this tender.
+                </span>
+              </div>
             )}
 
             {errors.price && (
@@ -416,7 +525,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasReachedQuoteLimit}
             className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 flex items-center gap-2 shadow-sm disabled:cursor-not-allowed transition-all"
           >
             {isSubmitting ? (
@@ -431,6 +540,11 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
                 Submitting...
+              </>
+            ) : hasReachedQuoteLimit ? (
+              <>
+                <AlertCircle className="w-4 h-4" />
+                Limit Reached
               </>
             ) : (
               <>
