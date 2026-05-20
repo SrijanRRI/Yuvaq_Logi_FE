@@ -235,7 +235,7 @@ const TransporterModal = ({
               <div className="text-amber-600 text-xs">Manual Review</div>
             </div>
 
-            {/* <button
+            <button
               type="button"
               onClick={handleSelectAllTransporters}
               disabled={loading || manualReviewTransporterIds.length === 0}
@@ -243,7 +243,7 @@ const TransporterModal = ({
                 ? "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
                 : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
                 }`}
-             >
+            >
               <span
                 className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isAllManualReviewSelected
                   ? "bg-white border-white"
@@ -256,7 +256,7 @@ const TransporterModal = ({
               </span>
 
               Select Manual Review
-            </button> */}
+            </button>
           </div>
         </div>
 

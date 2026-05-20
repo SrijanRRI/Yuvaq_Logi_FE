@@ -30,7 +30,7 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
   // ✅ Step value from tender
   const priceStep = useMemo(() => {
     const v = Number(tender?.priceDifference);
-    return Number.isFinite(v) && v > 0 ? v : 0;
+    return Number.isFinite(v) && v > 0 ? v : 25;
   }, [tender?.priceDifference]);
 
   const remainingQuotes = Math.max(0, MAX_QUOTATION_SUBMISSIONS - quoteCount);
@@ -87,14 +87,33 @@ const QuotationModal = ({ tender, onClose, onSuccess }) => {
     } else if (max != null && n > max) {
       newErrors.price = `Bid must be at most ₹${max.toLocaleString("en-IN")}${tender?.maxBidUnit ? ` (${tender.maxBidUnit})` : ""
         }`;
-    } else if (
-      lastQuotedPrice != null &&
-      Number.isFinite(lastQuotedPrice) &&
-      n > lastQuotedPrice
-    ) {
-      newErrors.price = `You cannot quote higher than your previous quoted amount ₹${lastQuotedPrice.toLocaleString(
-        "en-IN"
-      )}`;
+    } else {
+      const currentL1 = tender?.currentL1 != null ? Number(tender.currentL1) : null;
+
+      if (currentL1 != null && Number.isFinite(currentL1)) {
+        const diff = currentL1 - n;
+
+        if (n >= currentL1) {
+          newErrors.price = `Your quote must be lower than current lowest quote ₹${currentL1.toLocaleString(
+            "en-IN",
+          )}. Minimum difference required is ₹${priceStep}.`;
+        } else if (diff < priceStep) {
+          newErrors.price = `Your quote must be at least ₹${priceStep.toLocaleString(
+            "en-IN",
+          )} lower than current lowest quote ₹${currentL1.toLocaleString("en-IN")}.`;
+        }
+      }
+
+      if (
+        !newErrors.price &&
+        lastQuotedPrice != null &&
+        Number.isFinite(lastQuotedPrice) &&
+        n > lastQuotedPrice
+      ) {
+        newErrors.price = `You cannot quote higher than your previous quoted amount ₹${lastQuotedPrice.toLocaleString(
+          "en-IN",
+        )}`;
+      }
     }
 
     setErrors(newErrors);
