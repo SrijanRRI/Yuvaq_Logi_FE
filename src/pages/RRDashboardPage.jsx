@@ -69,7 +69,7 @@ const initialFormState = {
   minBidAmount: "",
   maxBidAmount: "",
   maxBidUnit: "",
-  priceDifference: "",
+  priceDifference: "25",
 };
 
 const RRDashboardPage = () => {
@@ -164,7 +164,10 @@ const RRDashboardPage = () => {
     minBidAmount: t?.minBidAmount != null ? String(t.minBidAmount) : "",
     maxBidAmount: t?.maxBidAmount != null ? String(t.maxBidAmount) : "",
     maxBidUnit: t?.maxBidUnit || "",
-    priceDifference: t?.priceDifference != null ? String(t.priceDifference) : "",
+    priceDifference:
+      t?.priceDifference != null && Number(t.priceDifference) >= 25
+        ? String(t.priceDifference)
+        : "25",
   });
 
   const fetchTenderHistory = async (page = historyPage, limit = historyLimit, scope = historyScope) => {
@@ -249,10 +252,15 @@ const RRDashboardPage = () => {
       const rounded = value ? parseInt(value, 10) : "";
       setForm((p) => ({ ...p, maxBidAmount: rounded.toString() }));
     } else if (name === "priceDifference") {
-      // accept only non-negative integers
-      const v = value === "" ? "" : Math.max(0, parseInt(value, 10) || 0);
-      setForm((p) => ({ ...p, priceDifference: v === "" ? "" : String(v) }));
-    } else if (name === "weight" || name === "quantity") {
+      const clean = value.replace(/\D/g, "");
+
+      // Allow empty while typing/backspacing
+      setForm((p) => ({
+        ...p,
+        priceDifference: clean,
+      }));
+    }
+    else if (name === "weight" || name === "quantity") {
       setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
     } else if (name === "maxBidAmount" || name === "minBidAmount") {
       const rounded = value ? parseInt(value, 10) : "";
@@ -361,8 +369,20 @@ const RRDashboardPage = () => {
       }
 
       // OPTIONAL validation: priceDifference present and non-negative integer
-      if (form.priceDifference !== "" && Number.isNaN(parseInt(form.priceDifference, 10))) {
-        toast.error("Price Difference must be a number (₹).");
+      // if (form.priceDifference !== "" && Number.isNaN(parseInt(form.priceDifference, 10))) {
+      //   toast.error("Price Difference must be a number (₹).");
+      //   return;
+      // }
+
+      const priceDiff = parseInt(form.priceDifference, 10);
+
+      if (Number.isNaN(priceDiff)) {
+        toast.error("Price Difference is required.");
+        return;
+      }
+
+      if (priceDiff < 25) {
+        toast.error("Price Difference cannot be less than ₹25.");
         return;
       }
 
@@ -450,7 +470,7 @@ const RRDashboardPage = () => {
         minBidAmount: form.minBidAmount === "" ? null : parseInt(form.minBidAmount, 10),
         maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
         maxBidUnit: form.maxBidUnit || null,
-        priceDifference: form.priceDifference === "" ? null : parseInt(form.priceDifference, 10),
+        priceDifference: Math.max(25, parseInt(form.priceDifference || "25", 10)),
       };
 
       // ---------------- AUTH CFG ----------------
@@ -556,7 +576,7 @@ const RRDashboardPage = () => {
       pickup: { ...DEFAULT_PICKUP_LOCATION },
       drop: { ...blankLocation }, // keep empty unless shipment provides drop
       vehicleRequirements: [],
-
+      priceDifference: "25",
       deliveryWindow: { from: "", to: "" },
       closingDate: "",
       biddingStart: "",

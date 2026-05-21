@@ -959,22 +959,47 @@ const TenderForm = ({
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Price Difference (₹)<RequiredAsterisk />
                     </label>
+
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500">₹</span>
                       </div>
+
                       <input
-                        type="number"
-                        min="0"
-                        step="1"
+                        type="text"
+                        inputMode="numeric"
                         name="priceDifference"
-                        value={form.priceDifference}
+                        value={form.priceDifference ?? ""}
                         onChange={handleChange}
-                        placeholder="e.g., 20"
-                        className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/40"
+                        onBlur={() => {
+                          const n = parseInt(form.priceDifference, 10);
+
+                          if (!Number.isFinite(n) || n < 25) {
+                            setForm((prev) => ({
+                              ...prev,
+                              priceDifference: "25",
+                            }));
+                          }
+                        }}
+                        placeholder="Minimum ₹25"
+                        className={`w-full pl-7 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-emerald-50/40 ${form.priceDifference !== "" &&
+                            Number(form.priceDifference) < 25
+                            ? "border-red-300 focus:ring-red-400"
+                            : "border-emerald-200 focus:ring-emerald-500"
+                          }`}
                         required
                       />
                     </div>
+
+                    {form.priceDifference !== "" && Number(form.priceDifference) < 25 ? (
+                      <p className="mt-1 text-xs text-red-600">
+                        Minimum allowed price difference is ₹25.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-emerald-700">
+                        Default is ₹25. You can edit it to ₹25 or more.
+                      </p>
+                    )}
                   </div>
 
                   <div className="lg:col-span-2">
@@ -983,10 +1008,13 @@ const TenderForm = ({
                         <div className="bg-emerald-100 p-2 rounded-lg shrink-0">
                           <Info className="h-4 w-4 text-emerald-700" />
                         </div>
+
                         <div className="text-sm text-emerald-800">
                           <p className="font-medium">Minimum decrement to beat L1</p>
                           <p className="mt-1">
-                            Set the minimum amount by which a transporter must undercut the current lowest bid.
+                            This amount controls how much lower the next bid must be compared
+                            to the current lowest bid. You can change it, but it must be at
+                            least ₹25.
                           </p>
                         </div>
                       </div>
@@ -1350,7 +1378,7 @@ const TenderForm = ({
                     </div>
 
                     <div className="mb-4 rounded-lg border font-bold border-emerald-200 bg-white/80 p-3 text-sm text-emerald-800">
-                      RR ISPAT 
+                      RR ISPAT
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
