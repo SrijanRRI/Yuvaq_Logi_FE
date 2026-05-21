@@ -255,7 +255,7 @@ const TransporterModal = ({
                 ) : null}
               </span>
 
-              Select Manual Review
+              Select Remaining
             </button>
           </div>
         </div>
