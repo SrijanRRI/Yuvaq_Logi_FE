@@ -657,6 +657,7 @@ const RRDashboardPage = () => {
   const onLogout = async () => {
     try {
       await axios.post(API.LOGOUT_USER, {}, { withCredentials: true });
+      localStorage.removeItem("session_token");
       dispatch(logout());
       toast.success("Logged out successfully!");
     } catch (err) {
