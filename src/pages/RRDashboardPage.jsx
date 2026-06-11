@@ -240,6 +240,37 @@ const RRDashboardPage = () => {
   // const [shipmentsRefreshSignal, setShipmentsRefreshSignal] = useState(0);
 
   // handlers
+  // const handleChange = (e) => {
+  //   const { name, value, options } = e.target;
+
+  //   if (name === "transporter") {
+  //     const selected = Array.from(options)
+  //       .filter((o) => o.selected)
+  //       .map((o) => o.value);
+  //     setForm((p) => ({ ...p, transporter: selected }));
+  //   } else if (name === "maxBidAmount") {
+  //     const rounded = value ? parseInt(value, 10) : "";
+  //     setForm((p) => ({ ...p, maxBidAmount: rounded.toString() }));
+  //   } else if (name === "priceDifference") {
+  //     const clean = value.replace(/\D/g, "");
+
+  //     // Allow empty while typing/backspacing
+  //     setForm((p) => ({
+  //       ...p,
+  //       priceDifference: clean,
+  //     }));
+  //   }
+  //   else if (name === "weight" || name === "quantity") {
+  //     setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
+  //   } else if (name === "maxBidAmount" || name === "minBidAmount") {
+  //     const rounded = value ? parseInt(value, 10) : "";
+  //     setForm((p) => ({ ...p, [name]: rounded === "" ? "" : String(rounded) }));
+  //   }
+  //   else {
+  //     setForm((p) => ({ ...p, [name]: value }));
+  //   }
+  // };
+
   const handleChange = (e) => {
     const { name, value, options } = e.target;
 
@@ -247,28 +278,41 @@ const RRDashboardPage = () => {
       const selected = Array.from(options)
         .filter((o) => o.selected)
         .map((o) => o.value);
+
       setForm((p) => ({ ...p, transporter: selected }));
-    } else if (name === "maxBidAmount") {
-      const rounded = value ? parseInt(value, 10) : "";
-      setForm((p) => ({ ...p, maxBidAmount: rounded.toString() }));
-    } else if (name === "priceDifference") {
+      return;
+    }
+
+    if (name === "priceDifference") {
       const clean = value.replace(/\D/g, "");
 
-      // Allow empty while typing/backspacing
       setForm((p) => ({
         ...p,
         priceDifference: clean,
       }));
+      return;
     }
-    else if (name === "weight" || name === "quantity") {
-      setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
-    } else if (name === "maxBidAmount" || name === "minBidAmount") {
-      const rounded = value ? parseInt(value, 10) : "";
-      setForm((p) => ({ ...p, [name]: rounded === "" ? "" : String(rounded) }));
+
+    if (name === "minBidAmount" || name === "maxBidAmount") {
+      const clean = value.replace(/\D/g, "");
+
+      setForm((p) => ({
+        ...p,
+        [name]: clean,
+      }));
+      return;
     }
-    else {
-      setForm((p) => ({ ...p, [name]: value }));
+
+    if (name === "weight" || name === "quantity") {
+      setForm((p) => ({
+        ...p,
+        [name]: value,
+        isManualTotals: true,
+      }));
+      return;
     }
+
+    setForm((p) => ({ ...p, [name]: value }));
   };
 
   const handleRemoveMaterial = (indexToRemove) => {

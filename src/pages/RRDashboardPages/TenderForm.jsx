@@ -89,12 +89,12 @@ const TenderForm = ({
 
   const BID_AMOUNT_RANGE_BY_UNIT = {
     "Per MT": {
-      minBidAmount: "1000",
-      maxBidAmount: "1000000",
+      minBidAmount: "0",
+      maxBidAmount: "9999",
     },
     "Per Tender": {
-      minBidAmount: "5000",
-      maxBidAmount: "1000000",
+      minBidAmount: "0",
+      maxBidAmount: "400000",
     },
   };
 
@@ -767,7 +767,7 @@ const TenderForm = ({
                   Bid Amount Range
                 </h2>
 
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Minimum Bid Amount<RequiredAsterisk />
@@ -777,13 +777,24 @@ const TenderForm = ({
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
 
-                      <input
+                      {/* <input
                         type="number"
                         name="minBidAmount"
                         value={form.minBidAmount || ""}
                         readOnly
                         placeholder="Select Unit Type first"
                         className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed focus:outline-none text-lg font-medium"
+                        required
+                      /> */}
+
+                      <input
+                        type="number"
+                        name="minBidAmount"
+                        value={form.minBidAmount || ""}
+                        onChange={handleChange}
+                        min="0"
+                        placeholder="Enter minimum amount"
+                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
                         required
                       />
                     </div>
@@ -798,7 +809,7 @@ const TenderForm = ({
                         <span className="text-slate-500 text-lg">₹</span>
                       </div>
 
-                      <input
+                      {/* <input
                         type="number"
                         name="maxBidAmount"
                         value={form.maxBidAmount || ""}
@@ -806,10 +817,21 @@ const TenderForm = ({
                         placeholder="Select Unit Type first"
                         className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed focus:outline-none text-lg font-medium"
                         required
+                      /> */}
+
+                      <input
+                        type="number"
+                        name="maxBidAmount"
+                        value={form.maxBidAmount || ""}
+                        onChange={handleChange}
+                        min="0"
+                        placeholder="Enter maximum amount"
+                        className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
+                        required
                       />
                     </div>
                   </div>
-                </div> */}
+                </div>
 
                 <div className="relative mt-5">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -983,9 +1005,9 @@ const TenderForm = ({
                         }}
                         placeholder="Minimum ₹25"
                         className={`w-full pl-7 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-emerald-50/40 ${form.priceDifference !== "" &&
-                            Number(form.priceDifference) < 25
-                            ? "border-red-300 focus:ring-red-400"
-                            : "border-emerald-200 focus:ring-emerald-500"
+                          Number(form.priceDifference) < 25
+                          ? "border-red-300 focus:ring-red-400"
+                          : "border-emerald-200 focus:ring-emerald-500"
                           }`}
                         required
                       />

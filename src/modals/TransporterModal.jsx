@@ -74,12 +74,15 @@ const TransporterModal = ({
         setTransporterList(data);
         updateParentTransporterList?.(data);
 
+        const autoSelected = data
+          .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+          .map((t) => String(t._id));
+
         if (Array.isArray(selected) && selected.length > 0) {
-          setLocalSelection(selected.map(String));
+          setLocalSelection([
+            ...new Set([...autoSelected, ...selected.map(String)]),
+          ]);
         } else {
-          const autoSelected = data
-            .filter((t) => t.defaultSelected)
-            .map((t) => String(t._id));
           setLocalSelection(autoSelected);
         }
       } catch (error) {
@@ -98,16 +101,45 @@ const TransporterModal = ({
     };
   }, [selected, updateParentTransporterList, JSON.stringify(vehicleRequirements)]);
 
-  const handleCheckboxChange = (transporterId) => {
-    const id = String(transporterId);
+  // const handleCheckboxChange = (transporterId) => {
+  //   const id = String(transporterId);
 
-    // Eligible transporters must always stay selected.
-    if (eligibleTransporterIds.includes(id)) return;
+  //   // Eligible transporters must always stay selected.
+  //   if (eligibleTransporterIds.includes(id)) return;
 
-    setLocalSelection((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+  //   setLocalSelection((prev) =>
+  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  //   );
+  // };
+
+  // const eligibleTransporterIds = useMemo(() => {
+  //   return transporterList
+  //     .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+  //     .map((t) => String(t._id));
+  // }, [transporterList]);
+
+  // const manualReviewTransporterIds = useMemo(() => {
+  //   return transporterList
+  //     .filter((t) => !(t.matchType === "full" || t.eligible || t.defaultSelected))
+  //     .map((t) => String(t._id));
+  // }, [transporterList]);
+
+  // const isAllManualReviewSelected =
+  //   manualReviewTransporterIds.length > 0 &&
+  //   manualReviewTransporterIds.every((id) => localSelection.includes(id));
+
+  // const handleSelectAllTransporters = () => {
+  //   if (isAllManualReviewSelected) {
+  //     // Deselect Manual Review only. Eligible will remain selected.
+  //     setLocalSelection(eligibleTransporterIds);
+  //     return;
+  //   }
+
+  //   // Select Eligible + all Manual Review.
+  //   setLocalSelection([
+  //     ...new Set([...eligibleTransporterIds, ...manualReviewTransporterIds]),
+  //   ]);
+  // };
 
   const eligibleTransporterIds = useMemo(() => {
     return transporterList
@@ -121,18 +153,26 @@ const TransporterModal = ({
       .map((t) => String(t._id));
   }, [transporterList]);
 
-  const isAllManualReviewSelected =
+  const isSelectRemainingChecked =
     manualReviewTransporterIds.length > 0 &&
     manualReviewTransporterIds.every((id) => localSelection.includes(id));
 
+  const handleCheckboxChange = () => {
+    // Individual selection is disabled.
+    // Only Select Remaining button can select/deselect manual review transporters.
+    return;
+  };
+
   const handleSelectAllTransporters = () => {
-    if (isAllManualReviewSelected) {
-      // Deselect Manual Review only. Eligible will remain selected.
+    if (isSelectRemainingChecked) {
+      // Untick Select Remaining:
+      // remove all manual-review transporters, keep only eligible/auto-selected.
       setLocalSelection(eligibleTransporterIds);
       return;
     }
 
-    // Select Eligible + all Manual Review.
+    // Tick Select Remaining:
+    // select eligible + all remaining/manual-review transporters.
     setLocalSelection([
       ...new Set([...eligibleTransporterIds, ...manualReviewTransporterIds]),
     ]);
@@ -239,18 +279,18 @@ const TransporterModal = ({
               type="button"
               onClick={handleSelectAllTransporters}
               disabled={loading || manualReviewTransporterIds.length === 0}
-              className={`px-4 py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center gap-2 shadow-sm text-sm border ${isAllManualReviewSelected
+              className={`px-4 py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center gap-2 shadow-sm text-sm border ${isSelectRemainingChecked
                 ? "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
                 : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
                 }`}
             >
               <span
-                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isAllManualReviewSelected
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelectRemainingChecked
                   ? "bg-white border-white"
                   : "bg-white border-slate-300"
                   }`}
               >
-                {isAllManualReviewSelected ? (
+                {isSelectRemainingChecked ? (
                   <Check className="h-3.5 w-3.5 text-emerald-600" />
                 ) : null}
               </span>
@@ -282,14 +322,14 @@ const TransporterModal = ({
                 const meta = statusMeta(transporter.matchType);
                 const Icon = meta.icon;
                 const isEligibleLocked = eligibleTransporterIds.includes(id);
+                const isRowLocked = true;
 
                 return (
                   <label
                     key={id}
-                    className={`flex items-start gap-3 p-4 rounded-xl border transition ${isEligibleLocked ? "cursor-not-allowed" : "cursor-pointer"
-                      } ${checked
-                        ? "border-emerald-300 bg-emerald-50/50"
-                        : "border-slate-200 bg-white hover:bg-slate-50"
+                    className={`flex items-start gap-3 p-4 rounded-xl border transition cursor-not-allowed ${checked
+                      ? "border-emerald-300 bg-emerald-50/50"
+                      : "border-slate-200 bg-white"
                       }`}
                   >
                     <div className="relative flex items-center justify-center pt-1">
@@ -297,6 +337,7 @@ const TransporterModal = ({
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleCheckboxChange(id)}
+                        disabled={isRowLocked}
                         className="sr-only"
                       />
                       <div
