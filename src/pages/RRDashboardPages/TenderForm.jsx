@@ -1817,7 +1817,7 @@ const TenderForm = ({
                             <Users className="h-3.5 w-3.5 text-emerald-600" />
                           </div>
                           <span className="font-medium text-slate-700">
-                            Transporter {index + 1}
+                            {transporter.anonymousLabel || `Transporter ${index + 1}`}
                           </span>
                         </div>
                       ))}

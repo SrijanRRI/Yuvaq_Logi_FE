@@ -323,8 +323,14 @@ const RRDashboardPage = () => {
   };
 
   const handleTransporterSave = (selectedIds) => {
-    setForm((p) => ({ ...p, transporter: selectedIds }));
-    const objs = transporterList.filter((t) => selectedIds.includes(t._id));
+    const cleanIds = selectedIds.map(String);
+
+    setForm((p) => ({ ...p, transporter: cleanIds }));
+
+    const objs = transporterList.filter((t) =>
+      cleanIds.includes(String(t._id))
+    );
+
     setSelectedTransporters(objs);
   };
 

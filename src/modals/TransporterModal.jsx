@@ -39,6 +39,20 @@ const statusMeta = (matchType) => {
   };
 };
 
+const shuffleTransporters = (list = []) => {
+  const arr = [...list];
+
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return arr.map((item, index) => ({
+    ...item,
+    anonymousLabel: `Transporter ${index + 1}`,
+  }));
+};
+
 const TransporterModal = ({
   selected = [],
   vehicleRequirements = [],
@@ -67,7 +81,19 @@ const TransporterModal = ({
           authCfg()
         );
 
-        const data = Array.isArray(response?.data?.data) ? response.data.data : [];
+        // const data = Array.isArray(response?.data?.data) ? response.data.data : [];
+
+        // if (ignore) return;
+
+        // setTransporterList(data);
+        // updateParentTransporterList?.(data);
+
+        // const autoSelected = data
+        //   .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+        //   .map((t) => String(t._id));
+
+        const rawData = Array.isArray(response?.data?.data) ? response.data.data : [];
+        const data = shuffleTransporters(rawData);
 
         if (ignore) return;
 
@@ -183,19 +209,11 @@ const TransporterModal = ({
     onClose();
   };
 
-  const demoLabelById = useMemo(() => {
-    const map = {};
-    transporterList.forEach((t, idx) => {
-      map[t._id] = `Transporter ${idx + 1}`;
-    });
-    return map;
-  }, [transporterList]);
-
   const filteredTransporters = transporterList.filter((t) => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
 
-    const demoLabel = (demoLabelById[t._id] || "").toLowerCase();
+    const demoLabel = String(t.anonymousLabel || "").toLowerCase();
 
     return (
       demoLabel.includes(q) ||
@@ -354,7 +372,7 @@ const TransporterModal = ({
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                         <div>
                           <div className="font-medium text-slate-800">
-                            {demoLabelById[transporter._id] || "Transporter"}
+                            {transporter.anonymousLabel || "Transporter"}
                           </div>
                           <div className="text-xs text-slate-500 mt-1">
                             Match {Number(transporter.matchedCount || 0)}/
