@@ -5,10 +5,7 @@ export const MASK_TRANSPORTER_NAMES_IN_EXPORT = true;
 export const asId = (x) => (x && typeof x === "object" ? x._id : x);
 
 export const htmlEscape = (s = "") =>
-  String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 export const formatDate = (date) =>
   new Date(date).toLocaleDateString("en-US", {
@@ -29,6 +26,38 @@ export const formatDateTime = (date) =>
 const formatDatePretty = (d) => (d ? formatDate(d) : "-");
 const formatDateTimePretty = (d) => (d ? formatDateTime(d) : "-");
 
+export const normalizeTenderMaterials = (tender) => {
+  const materials = Array.isArray(tender?.materials) ? tender.materials : [];
+
+  return materials.map((m) => ({
+    hsnCode: m?.hsnCode || m?.hsnDigits || "-",
+    description:
+      m?.materialName || m?.description || m?.material || m?.subMaterial || "-",
+    quantity:
+      m?.quantity === null || m?.quantity === undefined || m?.quantity === ""
+        ? "-"
+        : m.quantity,
+    unit: m?.unit || "-",
+    remarks: m?.remarks || "-",
+  }));
+};
+
+export const formatLocationForExport = (loc) => {
+  if (!loc || typeof loc !== "object") return "-";
+
+  return [
+    loc.address,
+    loc.location,
+    loc.city,
+    loc.district,
+    loc.state,
+    loc.pincode,
+    loc.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
 /** ✅ IMPORTANT: normalize any weird response shape into a plain array */
 export const normalizeResponses = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -45,19 +74,66 @@ export const normalizeResponses = (raw) => {
   return [];
 };
 
+// export const getNameFromList = (idOrObj, transporterList = []) => {
+//   const id = asId(idOrObj);
+//   const found = transporterList.find((t) => t._id === id);
+//   return found?.name || found?.email || id;
+// };
+
 export const getNameFromList = (idOrObj, transporterList = []) => {
   const id = asId(idOrObj);
-  const found = transporterList.find((t) => t._id === id);
+  const found = transporterList.find((t) => String(t._id) === String(id));
   return found?.name || found?.email || id;
 };
 
 export const getTransporterName = (transporter, transporterList = []) => {
   if (!transporter) return "Unknown";
   if (typeof transporter === "object") {
-    return transporter.name || transporter.email || transporter._id || "Unknown";
+    return (
+      transporter.name || transporter.email || transporter._id || "Unknown"
+    );
   }
   const found = transporterList.find((t) => t._id === transporter);
   return found ? found.name || found.email : transporter;
+};
+
+export const shouldMaskTransporterNames = (tender, maskNames = true) => {
+  const isFinalized =
+    String(tender?.status || "").toLowerCase() === "finalized";
+
+  // Mask only before finalized.
+  // After finalized, names can be shown.
+  return Boolean(maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT && !isFinalized);
+};
+
+export const getExportTransporterName = (
+  response,
+  transporterList = [],
+  index = 0,
+  shouldMask = true,
+) => {
+  if (shouldMask) {
+    return `Transporter ${index + 1}`;
+  }
+
+  const transporter = response?.transportUser;
+
+  if (!transporter) {
+    return `Transporter ${index + 1}`;
+  }
+
+  if (typeof transporter === "object") {
+    return (
+      transporter.name ||
+      transporter.email ||
+      getNameFromList(transporter._id, transporterList) ||
+      `Transporter ${index + 1}`
+    );
+  }
+
+  return (
+    getNameFromList(transporter, transporterList) || `Transporter ${index + 1}`
+  );
 };
 
 // ✅ deterministic aliases: Transporter 1, Transporter 2...
@@ -90,7 +166,9 @@ export const ensureRanks = (raw = []) => {
 
   const keyOf = (r, i) => String(r?._id || r?.id || r?.quotationId || i);
 
-  const byKey = new Map(sorted.map((r, i) => [keyOf(r, i), labels[i] || `L${i + 1}`]));
+  const byKey = new Map(
+    sorted.map((r, i) => [keyOf(r, i), labels[i] || `L${i + 1}`]),
+  );
 
   return arr.map((r, i) => ({
     ...r,
@@ -101,8 +179,13 @@ export const ensureRanks = (raw = []) => {
 /* =========================================================
    ===============  PDF (print) HTML builder  ===============
    ========================================================= */
-export const buildPrintableHTML = (tender, responses = [], transporterList = [], maskNames = true) => {
-  const materials = tender?.materials || [];
+export const buildPrintableHTML = (
+  tender,
+  responses = [],
+  transporterList = [],
+  maskNames = true,
+) => {
+  const materials = normalizeTenderMaterials(tender);
 
   const rankOrder = ["L1", "L2", "L3", "L4", "L5", "L6"];
   const orderIndex = (r) => {
@@ -118,30 +201,48 @@ export const buildPrintableHTML = (tender, responses = [], transporterList = [],
     return (a.price ?? Infinity) - (b.price ?? Infinity);
   });
 
-  const getAliasName = buildAliasResolver(sortedResponses);
+  // const getAliasName = buildAliasResolver(sortedResponses);
 
-  const isFinalized = tender?.status === "finalized";
-  const selectedQuotationId = tender?.selectedQuotation?._id || null;
+  // const isFinalized = tender?.status === "finalized";
+  // const selectedQuotationId = tender?.selectedQuotation?._id || null;
+
+  const shouldMaskNames = shouldMaskTransporterNames(tender, maskNames);
+
+  const isFinalized =
+    String(tender?.status || "").toLowerCase() === "finalized";
+
+  const selectedQuotationId =
+    asId(tender?.selectedQuotation) || tender?.selectedQuotation?._id || null;
 
   const rows = sortedResponses.length
-    ? sortedResponses.map((r) => {
-        const name =
-          maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT
-            ? getAliasName(r)
-            : r.name || getNameFromList(r.transportUser, transporterList) || "-";
+    ? sortedResponses.map((r, index) => {
+        // const name =
+        //   maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT
+        //     ? getAliasName(r)
+        //     : r.name ||
+        //       getNameFromList(r.transportUser, transporterList) ||
+        //       "-";
+
+        const name = getExportTransporterName(
+          r,
+          transporterList,
+          index,
+          shouldMaskNames,
+        );
 
         const isThisFinal =
           isFinalized &&
           (String(r._id) === String(selectedQuotationId) ||
-            String(asId(r.transportUser)) === String(asId(tender?.selectedQuotation?.transportUser)) ||
+            String(asId(r.transportUser)) ===
+              String(asId(tender?.selectedQuotation?.transportUser)) ||
             String(asId(r.transportUser)) === String(tender?.finalTransporter));
 
         const rawAmount =
           isThisFinal && tender?.finalPrice != null
             ? `₹${Number(tender.finalPrice).toLocaleString()}`
             : r?.price != null
-            ? `₹${Number(r.price).toLocaleString()}`
-            : "-";
+              ? `₹${Number(r.price).toLocaleString()}`
+              : "-";
 
         const vehicle = r?.vehicleNumber || "-";
         const quotedAt = r?.createdAt
@@ -270,10 +371,17 @@ export const buildPrintableHTML = (tender, responses = [], transporterList = [],
       <div class="item"><div class="label">Created</div><div class="value">${formatDatePretty(tender?.createdAt)}</div></div>
     </div>
 
-    <h3>Location</h3>
-    <div class="item"><div class="label">Dispatch Address</div><div class="value">${htmlEscape(
-      [tender?.dispatchLocation, tender?.address, tender?.pincode].filter(Boolean).join(", ")
-    )}</div></div>
+   <h3>Pickup & Drop</h3>
+    <div class="grid">
+      <div class="item">
+        <div class="label">Pickup</div>
+        <div class="value">${htmlEscape(formatLocationForExport(tender?.pickup))}</div>
+      </div>
+      <div class="item">
+        <div class="label">Drop</div>
+        <div class="value">${htmlEscape(formatLocationForExport(tender?.drop))}</div>
+      </div>
+    </div>
 
     ${
       tender?.projectRemark
@@ -281,21 +389,30 @@ export const buildPrintableHTML = (tender, responses = [], transporterList = [],
         : ""
     }
 
-    <h3>Materials</h3>
+    <h3>Materials / HSN Details</h3>
     ${
-      (materials || []).length
+      materials.length
         ? `<table>
-            <thead><tr><th>Material</th><th>Sub Item</th><th>Weight (MT)</th><th>Quantity (pcs)</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="width:16%;">HSN Code</th>
+                <th style="width:42%;">Material Description</th>
+                <th style="width:12%;">Qty</th>
+                <th style="width:12%;">Unit</th>
+                <th style="width:18%;">Remarks</th>
+              </tr>
+            </thead>
             <tbody>
               ${materials
                 .map(
                   (m) => `
                     <tr>
-                      <td>${htmlEscape(m?.material || "-")}</td>
-                      <td>${htmlEscape(m?.subMaterial || "-")}</td>
-                      <td>${m?.weight ?? "-"}</td>
-                      <td>${m?.quantity ?? "-"}</td>
-                    </tr>`
+                      <td>${htmlEscape(m.hsnCode)}</td>
+                      <td>${htmlEscape(m.description)}</td>
+                      <td>${htmlEscape(m.quantity)}</td>
+                      <td>${htmlEscape(m.unit)}</td>
+                      <td>${htmlEscape(m.remarks)}</td>
+                    </tr>`,
                 )
                 .join("")}
             </tbody>
@@ -322,7 +439,7 @@ export const buildPrintableHTML = (tender, responses = [], transporterList = [],
         ? `<table>
             <thead>
               <tr>
-                <th>${maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT ? "Transporter" : "Name / Email"}</th>
+                <th>${shouldMaskNames ? "Transporter" : "Name / Email"}</th>
                 <th>Rank</th>
                 <th>Amount (₹)</th>
                 <th>Vehicle No</th>
@@ -341,7 +458,7 @@ export const buildPrintableHTML = (tender, responses = [], transporterList = [],
                       <td>${htmlEscape(r.vehicle)}</td>
                       <td>${htmlEscape(r.quotedAt)}</td>
                       <td>${htmlEscape(r.status)}</td>
-                    </tr>`
+                    </tr>`,
                 )
                 .join("")}
             </tbody>
@@ -362,9 +479,19 @@ export const buildPrintableHTML = (tender, responses = [], transporterList = [],
 /* =========================================================
    =====================  PDF Export  ======================
    ========================================================= */
-export const exportTenderPDF = (tender, responsesRaw = [], transporterList = [], maskNames = true) => {
+export const exportTenderPDF = (
+  tender,
+  responsesRaw = [],
+  transporterList = [],
+  maskNames = true,
+) => {
   const responses = ensureRanks(responsesRaw);
-  const html = buildPrintableHTML(tender, responses, transporterList, maskNames);
+  const html = buildPrintableHTML(
+    tender,
+    responses,
+    transporterList,
+    maskNames,
+  );
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
@@ -401,7 +528,12 @@ export const exportTenderPDF = (tender, responsesRaw = [], transporterList = [],
 /* =========================================================
    =====================  CSV (Excel)  =====================
    ========================================================= */
-export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [], maskNames = true) => {
+export const exportTenderCSV = (
+  tender,
+  responsesRaw = [],
+  transporterList = [],
+  maskNames = true,
+) => {
   const responses = ensureRanks(responsesRaw);
 
   const rows = [];
@@ -419,8 +551,16 @@ export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [],
   const safeJoin = (arr) => (arr || []).filter(Boolean).join(", ");
   const asText = (v) => (v == null ? "" : `\u200C${String(v)}`);
 
-  const isFinalized = tender?.status === "finalized";
-  const selectedQuotationId = tender?.selectedQuotation?._id || null;
+  // const isFinalized = tender?.status === "finalized";
+  // const selectedQuotationId = tender?.selectedQuotation?._id || null;
+
+  const shouldMaskNames = shouldMaskTransporterNames(tender, maskNames);
+
+  const isFinalized =
+    String(tender?.status || "").toLowerCase() === "finalized";
+
+  const selectedQuotationId =
+    asId(tender?.selectedQuotation) || tender?.selectedQuotation?._id || null;
 
   const rankOrder = ["L1", "L2", "L3", "L4", "L5", "L6"];
   const orderIndex = (r) => {
@@ -434,7 +574,7 @@ export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [],
     return (a.price ?? Infinity) - (b.price ?? Infinity);
   });
 
-  const getAliasName = buildAliasResolver(sortedResponses);
+  // const getAliasName = buildAliasResolver(sortedResponses);
 
   rows.push(["==== TENDER SUMMARY ====", ""]);
   push("Project Name", tender?.projectName || "-");
@@ -446,20 +586,21 @@ export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [],
     "Delivery Window",
     tender?.deliveryWindow?.from && tender?.deliveryWindow?.to
       ? `${formatDate(tender.deliveryWindow.from)} to ${formatDate(tender.deliveryWindow.to)}`
-      : "-"
+      : "-",
   );
 
   push(
     "Bidding Window",
     tender?.biddingStart && tender?.biddingEnd
       ? `${formatDateTime(tender.biddingStart)} to ${formatDateTime(tender.biddingEnd)}`
-      : "-"
+      : "-",
   );
 
   push("Closing Date", tender?.closeDate ? formatDate(tender.closeDate) : "-");
   push("Status", tender?.status || "Pending");
   push("Created", tender?.createdAt ? formatDate(tender.createdAt) : "-");
-  push("Dispatch Address", safeJoin([tender?.dispatchLocation, tender?.address, tender?.pincode]));
+  push("Pickup", formatLocationForExport(tender?.pickup));
+  push("Drop", formatLocationForExport(tender?.drop));
 
   rows.push([]);
   rows.push(["==== TOTALS ====", ""]);
@@ -470,36 +611,62 @@ export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [],
   rows.push(["==== BIDDING RULE ====", ""]);
   push(
     "Price Difference (₹) — min decrement to beat L1",
-    tender?.priceDifference != null ? `₹${Number(tender.priceDifference).toLocaleString()}` : "-"
+    tender?.priceDifference != null
+      ? `₹${Number(tender.priceDifference).toLocaleString()}`
+      : "-",
   );
 
   rows.push([]);
-  rows.push(["==== MATERIALS ====", ""]);
-  rows.push(["Material", "Sub Item", "Weight (MT)", "Quantity (pcs)"]);
+  rows.push(["==== MATERIALS / HSN DETAILS ====", ""]);
 
-  (tender?.materials || []).forEach((m) => {
-    rows.push([m?.material || "-", m?.subMaterial || "-", asText(m?.weight ?? "-"), asText(m?.quantity ?? "-")]);
-  });
+  const exportMaterials = normalizeTenderMaterials(tender);
 
-  if (!tender?.materials || tender.materials.length === 0) {
-    rows.push(["No materials added", ""]);
+  rows.push(["HSN Code", "Material Description", "Qty", "Unit", "Remarks"]);
+
+  if (exportMaterials.length > 0) {
+    exportMaterials.forEach((m) => {
+      rows.push([
+        asText(m.hsnCode),
+        m.description,
+        asText(m.quantity),
+        m.unit,
+        m.remarks,
+      ]);
+    });
+  } else {
+    rows.push(["No materials added", "", "", "", ""]);
   }
 
   rows.push([]);
   rows.push(["==== TRANSPORTERS ====", ""]);
-  rows.push(["Transporter", "Rank", "Amount (₹)", "Vehicle No", "Quoted At", "Status"]);
+  rows.push([
+    "Transporter",
+    "Rank",
+    "Amount (₹)",
+    "Vehicle No",
+    "Quoted At",
+    "Status",
+  ]);
 
   if (sortedResponses.length > 0) {
-    sortedResponses.forEach((r) => {
-      const name =
-        maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT
-          ? getAliasName(r)
-          : getTransporterName(r?.transportUser, transporterList) || "-";
+    sortedResponses.forEach((r, index) => {
+      // const name =
+      //   maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT
+      //     ? getAliasName(r)
+      //     : getTransporterName(r?.transportUser, transporterList) || "-";
+
+      const name = getExportTransporterName(
+        r,
+        transporterList,
+        index,
+        shouldMaskNames,
+      );
 
       const isThisFinal =
         isFinalized &&
         (String(r?._id) === String(selectedQuotationId) ||
-          String(asId(r?.transportUser)) === String(asId(tender?.selectedQuotation?.transportUser)) ||
+          String(asId(r?.transportUser)) ===
+            String(asId(tender?.selectedQuotation?.transportUser)) ||
           String(asId(r?.transportUser)) === String(tender?.finalTransporter));
 
       const statusLabel = isThisFinal ? "FINALIZED ✅" : "—";
@@ -526,7 +693,14 @@ export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [],
       rows.push([name, r?.rank || "-", amount, vehicle, quotedAt, statusLabel]);
     });
   } else {
-    rows.push(["Transporters haven't submitted any quotations for this tender", "", "", "", "", ""]);
+    rows.push([
+      "Transporters haven't submitted any quotations for this tender",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]);
   }
 
   if (tender?.remarks) {
@@ -537,13 +711,22 @@ export const exportTenderCSV = (tender, responsesRaw = [], transporterList = [],
 
   // UTF-8 BOM so Excel renders ₹ properly
   const csv =
-    "\ufeff" + rows.map((r) => (Array.isArray(r) ? r.map(csvEscape).join(",") : csvEscape(String(r)))).join("\n");
+    "\ufeff" +
+    rows
+      .map((r) =>
+        Array.isArray(r) ? r.map(csvEscape).join(",") : csvEscape(String(r)),
+      )
+      .join("\n");
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
-  const fileBase = (tender?.projectCode || tender?.projectName || "tender").replace(/\s+/g, "_");
+  const fileBase = (
+    tender?.projectCode ||
+    tender?.projectName ||
+    "tender"
+  ).replace(/\s+/g, "_");
   a.href = url;
   a.download = `${fileBase}_report.csv`;
 

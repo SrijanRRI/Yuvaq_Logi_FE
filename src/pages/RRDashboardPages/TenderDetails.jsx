@@ -39,6 +39,21 @@ const TenderDetails = ({ tender, getTransporterName }) => {
         : "";
 
   const transporters = tender.transporters || [];
+
+  const isTenderFinalized =
+    String(tender?.status || "").toLowerCase() === "finalized";
+
+  const getSelectedTransporterLabel = (tid, index) => {
+    if (!isTenderFinalized) {
+      return `Transporter ${index + 1}`;
+    }
+
+    return (
+      getTransporterName?.(tid, tender, index) ||
+      `Transporter ${index + 1}`
+    );
+  };
+
   const materials = Array.isArray(tender.materials) ? tender.materials : [];
 
   const [showAllTransporters, setShowAllTransporters] = useState(false);
@@ -262,7 +277,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
             </div>
           </div>
         </div>
-        
+
         {tender.remarks && (
           <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
             <h4 className="text-xs sm:text-sm font-medium text-slate-500 mb-2 flex items-center gap-1.5">
@@ -482,7 +497,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
                       <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" />
                     </div>
                     <span className="font-medium text-slate-700 truncate text-pretty">
-                      Transporter {index + 1}
+                      {getSelectedTransporterLabel(tid, index)}
                     </span>
                   </div>
                 ))}

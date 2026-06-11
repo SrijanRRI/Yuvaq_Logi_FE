@@ -241,6 +241,22 @@ const TransporterResponses = ({
     setOpenResponseId((prev) => (prev === qid ? null : qid));
   };
 
+  const getMaskedOrRealTransporterName = (transporter, index = 0, aliasNo) => {
+    const isFinalized =
+      String(tender?.status || "").toLowerCase() === "finalized";
+
+    const displayIndex = Number(aliasNo || index + 1);
+
+    if (!isFinalized) {
+      return `Transporter ${displayIndex}`;
+    }
+
+    return (
+      getTransporterName?.(transporter, tender, displayIndex - 1) ||
+      `Transporter ${displayIndex}`
+    );
+  };
+
   return (
     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
       <h4 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-slate-800 flex items-center gap-2">
@@ -295,6 +311,11 @@ const TransporterResponses = ({
                       key={res._id || `post-${idx}`}
                       response={res}
                       idx={idx}
+                      transporterDisplayName={getMaskedOrRealTransporterName(
+                        res.transportUser,
+                        idx,
+                        aliasNo
+                      )}
                       tender={tender}
                       selectedQuotationId={selectedQuotationId}
                       confirmedIdxMap={confirmedIdxMap}
@@ -356,6 +377,11 @@ const TransporterResponses = ({
                     key={res._id || `normal-${idx}`}
                     response={res}
                     idx={idx}
+                    transporterDisplayName={getMaskedOrRealTransporterName(
+                      res.transportUser,
+                      idx,
+                      aliasNo
+                    )}
                     tender={tender}
                     selectedQuotationId={selectedQuotationId}
                     confirmedIdxMap={confirmedIdxMap}

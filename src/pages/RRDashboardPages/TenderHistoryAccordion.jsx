@@ -136,14 +136,54 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     }
   };
 
-  const getTransporterName = (transporter) => {
-    if (!transporter) return "Unknown"
-    if (typeof transporter === "object") {
-      return transporter.name || transporter.email || transporter._id
+  // const getTransporterName = (transporter) => {
+  //   if (!transporter) return "Unknown"
+  //   if (typeof transporter === "object") {
+  //     return transporter.name || transporter.email || transporter._id
+  //   }
+  //   const found = transporterList.find((t) => t._id === transporter)
+  //   return found ? found.name || found.email : transporter
+  // }
+
+  const getAnonymousTransporterName = (transporter, index = 0) => {
+    const id =
+      typeof transporter === "object"
+        ? String(transporter?._id || transporter?.id || "")
+        : String(transporter || "");
+
+    if (!id) return `Transporter ${index + 1}`;
+
+    const list = Array.isArray(transporterList) ? transporterList : [];
+
+    const foundIndex = list.findIndex((t) => String(t._id) === id);
+
+    return `Transporter ${foundIndex >= 0 ? foundIndex + 1 : index + 1}`;
+  };
+
+  const getTransporterName = (transporter, tender, index = 0) => {
+    const isFinalized =
+      String(tender?.status || "").toLowerCase() === "finalized";
+
+    if (!isFinalized) {
+      return getAnonymousTransporterName(transporter, index);
     }
-    const found = transporterList.find((t) => t._id === transporter)
-    return found ? found.name || found.email : transporter
-  }
+
+    if (!transporter) return "Unknown Transporter";
+
+    if (typeof transporter === "object") {
+      return (
+        transporter.name ||
+        transporter.email ||
+        `Transporter ${index + 1}`
+      );
+    }
+
+    const found = transporterList.find(
+      (t) => String(t._id) === String(transporter)
+    );
+
+    return found?.name || found?.email || `Transporter ${index + 1}`;
+  };
 
   const toggleResponses = (idx, tenderId) => {
     setOpenIdx((prev) => (prev === idx ? null : idx))
