@@ -1,6 +1,6 @@
 FROM node:18 AS build
 
-ENV PORT=85
+ENV PORT=89
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 ENV VITE_CONFIRM_ACCEPT_FEE_PERCENT=0 \
@@ -35,14 +35,14 @@ EXPOSE ${PORT}
 CMD ["nginx", "-g", "daemon off;"]
 
 
-# docker build  --no-cache -t 192.168.13.72:5000/logiq_fe_21_may_latest .      
-# docker run -d --name logiq_fe_21_may_latest -p 85:85 logiq_fe_image
+# docker build  --no-cache -t 192.168.13.72:5000/logiq_fe_test_30march .      
+# docker run -d --name logiq_fe_test_30march -p 89:89 logiq_fe_image
 
-# docker tag logiq_fe_image 192.168.13.72:5000/logiq_fe_21_may_latest
-# docker push 192.168.13.72:5000/logiq_fe_21_may_latest
-# docker pull 192.168.13.72:5000/logiq_fe_21_may_latest
-# docker run -d --name logiq_fe_21_may_latest -p 85:85 192.168.13.72:5000/logiq_fe_21_may_latest
+# docker tag logiq_fe_image 192.168.13.72:5000/logiq_fe_test_30march
+# docker push 192.168.13.72:5000/logiq_fe_test_30march
+# docker pull 192.168.13.72:5000/logiq_fe_test_30march
+# docker run -d --name logiq_fe_test_30march -p 89:89 192.168.13.72:5000/logiq_fe_test_30march
 
 
 # docker pull 192.168.13.72:5000/rrcomplaint_frontend
-# docker run -d --name rrcomplaint_frontend -p 85:85 192.168.13.72:5000/rrcomplaint_frontend
+# docker run -d --name rrcomplaint_frontend -p 89:89 192.168.13.72:5000/rrcomplaint_frontend

@@ -1247,7 +1247,7 @@ const TenderForm = ({
                 </p>
 
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -1370,9 +1370,9 @@ const TenderForm = ({
                         />
                       </div>
                     </div>
-                  </div> */}
+                  </div>
 
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                  {/* <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
                     <div className="font-semibold text-slate-800 mb-3">
                       Pickup<RequiredAsterisk />
                     </div>
@@ -1444,7 +1444,7 @@ const TenderForm = ({
                         />
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="font-semibold text-slate-800 mb-3">Drop<RequiredAsterisk /></div>
