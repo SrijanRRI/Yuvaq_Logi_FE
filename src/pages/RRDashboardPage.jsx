@@ -172,6 +172,8 @@ const RRDashboardPage = () => {
 
   const fetchTenderHistory = async (page = historyPage, limit = historyLimit, scope = historyScope) => {
     try {
+      setHistoryLoading(true);
+
       // Build URL: include userId only when scope === 'mine'
       const qUser = scope === "mine" && userId ? `&userId=${encodeURIComponent(userId)}` : "";
       const url = `${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}${qUser}`;
@@ -201,6 +203,16 @@ const RRDashboardPage = () => {
     } catch (err) {
       console.error("Failed to fetch tender history", err);
       toast.error("Could not fetch tender history. Please try again later.");
+      
+      setTenderHistories([]);
+      setHistoryMeta({
+        page,
+        limit,
+        totalPages: 1,
+        totalCount: 0,
+      });
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
