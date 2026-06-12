@@ -200,7 +200,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
+            <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
               <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Minimum Bid</div>
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
                 {moneyIN(tender.minBidAmount)}
@@ -212,7 +212,7 @@ const TenderDetails = ({ tender, getTransporterName }) => {
               <div className="text-sm sm:text-base font-bold text-slate-900 break-words">
                 {moneyIN(tender.maxBidAmount)}
               </div>
-            </div> */}
+            </div>
 
             <div className="rounded-lg border border-amber-100 bg-white p-3">
               <div className="text-[11px] sm:text-xs text-slate-600 mb-1">Unit Type</div>

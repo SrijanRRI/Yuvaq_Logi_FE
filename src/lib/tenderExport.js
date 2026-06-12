@@ -74,12 +74,6 @@ export const normalizeResponses = (raw) => {
   return [];
 };
 
-// export const getNameFromList = (idOrObj, transporterList = []) => {
-//   const id = asId(idOrObj);
-//   const found = transporterList.find((t) => t._id === id);
-//   return found?.name || found?.email || id;
-// };
-
 export const getNameFromList = (idOrObj, transporterList = []) => {
   const id = asId(idOrObj);
   const found = transporterList.find((t) => String(t._id) === String(id));
@@ -201,11 +195,6 @@ export const buildPrintableHTML = (
     return (a.price ?? Infinity) - (b.price ?? Infinity);
   });
 
-  // const getAliasName = buildAliasResolver(sortedResponses);
-
-  // const isFinalized = tender?.status === "finalized";
-  // const selectedQuotationId = tender?.selectedQuotation?._id || null;
-
   const shouldMaskNames = shouldMaskTransporterNames(tender, maskNames);
 
   const isFinalized =
@@ -216,12 +205,6 @@ export const buildPrintableHTML = (
 
   const rows = sortedResponses.length
     ? sortedResponses.map((r, index) => {
-        // const name =
-        //   maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT
-        //     ? getAliasName(r)
-        //     : r.name ||
-        //       getNameFromList(r.transportUser, transporterList) ||
-        //       "-";
 
         const name = getExportTransporterName(
           r,
@@ -551,9 +534,6 @@ export const exportTenderCSV = (
   const safeJoin = (arr) => (arr || []).filter(Boolean).join(", ");
   const asText = (v) => (v == null ? "" : `\u200C${String(v)}`);
 
-  // const isFinalized = tender?.status === "finalized";
-  // const selectedQuotationId = tender?.selectedQuotation?._id || null;
-
   const shouldMaskNames = shouldMaskTransporterNames(tender, maskNames);
 
   const isFinalized =
@@ -573,8 +553,6 @@ export const exportTenderCSV = (
     if (ri !== 0) return ri;
     return (a.price ?? Infinity) - (b.price ?? Infinity);
   });
-
-  // const getAliasName = buildAliasResolver(sortedResponses);
 
   rows.push(["==== TENDER SUMMARY ====", ""]);
   push("Project Name", tender?.projectName || "-");
@@ -650,10 +628,6 @@ export const exportTenderCSV = (
 
   if (sortedResponses.length > 0) {
     sortedResponses.forEach((r, index) => {
-      // const name =
-      //   maskNames && MASK_TRANSPORTER_NAMES_IN_EXPORT
-      //     ? getAliasName(r)
-      //     : getTransporterName(r?.transportUser, transporterList) || "-";
 
       const name = getExportTransporterName(
         r,

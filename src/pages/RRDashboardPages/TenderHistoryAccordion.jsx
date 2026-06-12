@@ -185,26 +185,68 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     return found?.name || found?.email || `Transporter ${index + 1}`;
   };
 
-  const toggleResponses = (idx, tenderId) => {
-    setOpenIdx((prev) => (prev === idx ? null : idx))
+  // const toggleResponses = (idx, tenderId) => {
+  //   setOpenIdx((prev) => (prev === idx ? null : idx))
 
-    if (fetchedResponseIds.has(tenderId) || responseErrors[tenderId]) return
+  //   if (fetchedResponseIds.has(tenderId) || responseErrors[tenderId]) return
+
+  //   axios
+  //     .get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
+  //       withCredentials: true,
+  //     })
+  //     .then((res) => {
+  //       setAllResponses((prev) => ({ ...prev, [tenderId]: res.data.data }))
+  //       setFetchedResponseIds((prev) => new Set(prev).add(tenderId))
+  //     })
+  //     .catch((err) => {
+  //       const errorMessage =
+  //         err?.response?.data?.err || err?.response?.data?.message || "Could not load transporter responses."
+
+  //       setResponseErrors((prev) => ({ ...prev, [tenderId]: errorMessage }))
+  //     })
+  // }
+
+  const toggleResponses = (idx, tenderId) => {
+    setOpenIdx((prev) => (prev === idx ? null : idx));
+
+    if (!tenderId) return;
+
+    // ✅ If data already loaded successfully, do not fetch again
+    if (fetchedResponseIds.has(tenderId)) return;
 
     axios
       .get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
         withCredentials: true,
       })
       .then((res) => {
-        setAllResponses((prev) => ({ ...prev, [tenderId]: res.data.data }))
-        setFetchedResponseIds((prev) => new Set(prev).add(tenderId))
+        setAllResponses((prev) => ({
+          ...prev,
+          [tenderId]: res?.data?.data || res?.data,
+        }));
+
+        // ✅ Clear old live-bidding / post-bid expected message after successful fetch
+        setResponseErrors((prev) => {
+          const copy = { ...prev };
+          delete copy[tenderId];
+          return copy;
+        });
+
+        setFetchedResponseIds((prev) => new Set(prev).add(tenderId));
       })
       .catch((err) => {
         const errorMessage =
-          err?.response?.data?.err || err?.response?.data?.message || "Could not load transporter responses."
+          err?.response?.data?.err ||
+          err?.response?.data?.message ||
+          "Could not load transporter responses.";
 
-        setResponseErrors((prev) => ({ ...prev, [tenderId]: errorMessage }))
-      })
-  }
+        // ✅ Do not add tenderId in fetchedResponseIds here.
+        // So after bidding/post-bid completes, user can open again and data will fetch.
+        setResponseErrors((prev) => ({
+          ...prev,
+          [tenderId]: errorMessage,
+        }));
+      });
+  };
 
   const authCfg = () => {
     const token = localStorage.getItem("session_token");
