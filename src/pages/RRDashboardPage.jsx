@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -170,51 +170,66 @@ const RRDashboardPage = () => {
         : "25",
   });
 
-  const fetchTenderHistory = async (page = historyPage, limit = historyLimit, scope = historyScope) => {
-    try {
-      setHistoryLoading(true);
+  const fetchTenderHistory = useCallback(
+    async (page = historyPage, limit = historyLimit, scope = historyScope) => {
+      try {
+        setHistoryLoading(true);
 
-      // Build URL: include userId only when scope === 'mine'
-      const qUser = scope === "mine" && userId ? `&userId=${encodeURIComponent(userId)}` : "";
-      const url = `${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}${qUser}`;
+        const qUser =
+          scope === "mine" && userId
+            ? `&userId=${encodeURIComponent(userId)}`
+            : "";
 
-      const response = await axios.get(url, { withCredentials: true });
-      const data = response?.data?.data || response?.data?.results || [];
+        const url = `${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}${qUser}`;
 
-      // console.log("transporters detail", data);
+        const response = await axios.get(url, { withCredentials: true });
+        const data = response?.data?.data || response?.data?.results || [];
 
-      const meta =
-        response?.data?.pagination ||
-        response?.data?.meta || {
-          page: response?.data?.page ?? page,
-          limit: response?.data?.limit ?? limit,
-          totalPages: response?.data?.totalPages ??
-            Math.max(1, Math.ceil((response?.data?.total || response?.data?.totalCount || data.length) / (limit || 1))),
-          totalCount: response?.data?.totalCount ?? response?.data?.total ?? data.length,
-        };
+        const meta =
+          response?.data?.pagination ||
+          response?.data?.meta || {
+            page: response?.data?.page ?? page,
+            limit: response?.data?.limit ?? limit,
+            totalPages:
+              response?.data?.totalPages ??
+              Math.max(
+                1,
+                Math.ceil(
+                  (response?.data?.total ||
+                    response?.data?.totalCount ||
+                    data.length) / (limit || 1)
+                )
+              ),
+            totalCount:
+              response?.data?.totalCount ??
+              response?.data?.total ??
+              data.length,
+          };
 
-      setTenderHistories(data);
-      setHistoryMeta({
-        page: Number(meta.page) || page,
-        limit: Number(meta.limit) || limit,
-        totalPages: Number(meta.totalPages) || 1,
-        totalCount: Number(meta.totalCount) || data.length,
-      });
-    } catch (err) {
-      console.error("Failed to fetch tender history", err);
-      toast.error("Could not fetch tender history. Please try again later.");
-      
-      setTenderHistories([]);
-      setHistoryMeta({
-        page,
-        limit,
-        totalPages: 1,
-        totalCount: 0,
-      });
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
+        setTenderHistories(data);
+        setHistoryMeta({
+          page: Number(meta.page) || page,
+          limit: Number(meta.limit) || limit,
+          totalPages: Number(meta.totalPages) || 1,
+          totalCount: Number(meta.totalCount) || data.length,
+        });
+      } catch (err) {
+        console.error("Failed to fetch tender history", err);
+        toast.error("Could not fetch tender history. Please try again later.");
+
+        setTenderHistories([]);
+        setHistoryMeta({
+          page,
+          limit,
+          totalPages: 1,
+          totalCount: 0,
+        });
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [historyPage, historyLimit, historyScope, userId]
+  );
 
   const fetchTransporters = async () => {
     try {
@@ -230,9 +245,14 @@ const RRDashboardPage = () => {
   useEffect(() => {
     if (screen === "history") {
       fetchTenderHistory(historyPage, historyLimit, historyScope);
+    }
+  }, [screen, historyPage, historyLimit, historyScope, fetchTenderHistory]);
+
+  useEffect(() => {
+    if (screen === "history" && transporterList.length === 0) {
       fetchTransporters();
     }
-  }, [screen, historyPage, historyLimit, historyScope]);
+  }, [screen, transporterList.length]);
 
   const handleHistoryScopeChange = (scope) => {
     setHistoryScope(scope);

@@ -74,33 +74,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (!fetchTenderHistory) return;
-
-    const shouldRefresh = tenderHistories.some((t) => {
-      const biddingEndMs = t?.biddingEnd ? new Date(t.biddingEnd).getTime() : null;
-      const postBidStatus = String(t?.postBid?.status || "").toLowerCase();
-
-      if (!biddingEndMs) return false;
-
-      const now = Date.now();
-
-      return (
-        now >= biddingEndMs &&
-        t.status !== "finalized" &&
-        postBidStatus !== "ended"
-      );
-    });
-
-    if (!shouldRefresh) return;
-
-    const id = setInterval(() => {
-      fetchTenderHistory(page, limit, scope);
-    }, 15000);
-
-    return () => clearInterval(id);
-  }, [tenderHistories, fetchTenderHistory, page, limit, scope]);
-
   const fetchFinalizedContact = async (tenderId) => {
     if (!tenderId) return;
 
