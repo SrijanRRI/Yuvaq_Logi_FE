@@ -52,8 +52,8 @@ const initialFormState = {
   biddingStart: "",
   biddingEnd: "",          //  Soft End (as per UI)
   biddingHardEnd: "",     //  NEW Hard Stop (Final Stop)
-  pickup: { ...blankLocation },
-  // pickup: { ...DEFAULT_PICKUP_LOCATION },
+  // pickup: { ...blankLocation },
+  pickup: { ...DEFAULT_PICKUP_LOCATION },
   drop: { ...blankLocation },
   projectName: "",
   projectCode: "",
@@ -132,7 +132,12 @@ const RRDashboardPage = () => {
         : "",
     biddingHardEnd: t?.biddingHardEnd ? toDateTimeLocalInput(t.biddingHardEnd) : "",
 
-    pickup: { ...blankLocation, ...(t?.pickup || {}) },
+    // pickup: { ...blankLocation, ...(t?.pickup || {}) },
+
+    pickup: {
+      ...DEFAULT_PICKUP_LOCATION,
+      ...(t?.pickup || {}),
+    },
 
     // Fixed pickup location
     // pickup: { ...DEFAULT_PICKUP_LOCATION },
@@ -654,9 +659,9 @@ const RRDashboardPage = () => {
       //   pincode: shipment.pincode || "",
       // },
 
-      pickup: { ...blankLocation },
+      // pickup: { ...blankLocation },
       // Fixed pickup address
-      // pickup: { ...DEFAULT_PICKUP_LOCATION },
+      pickup: { ...DEFAULT_PICKUP_LOCATION },
       drop: { ...blankLocation }, // keep empty unless shipment provides drop
       vehicleRequirements: [],
       priceDifference: "25",
@@ -696,8 +701,8 @@ const RRDashboardPage = () => {
   const clearForm = () => {
     setForm({
       ...initialFormState,
-      pickup: { ...blankLocation },
-      // pickup: { ...DEFAULT_PICKUP_LOCATION },
+      // pickup: { ...blankLocation },
+      pickup: { ...DEFAULT_PICKUP_LOCATION },
       drop: { ...blankLocation },
       deliveryWindow: { from: "", to: "" },
       materials: [],

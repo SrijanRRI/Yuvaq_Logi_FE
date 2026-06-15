@@ -182,6 +182,27 @@ const TenderForm = ({
     }
   };
 
+  const clearPickupOnly = () => {
+    pickupManualRef.current = { state: false, district: false };
+    pickupLastPinRef.current = null;
+
+    setPickupPinStatus("idle");
+    setPickupPinStatusMsg("");
+
+    setForm((prev) => ({
+      ...prev,
+      pickup: {
+        pincode: "",
+        state: "",
+        district: "",
+        city: "",
+        location: "",
+        address: "",
+        country: "India",
+      },
+    }));
+  };
+
   useEffect(() => {
     const code = normalizeHsn(hsnInput);
 
@@ -1270,7 +1291,29 @@ const TenderForm = ({
 
                 <div className="grid lg:grid-cols-2 gap-6">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div>
+                    {/* <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div> */}
+
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <div className="font-semibold text-slate-800">
+                          Pickup<RequiredAsterisk />
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Default RR ISPAT address is auto-filled. You can edit it or enter a new address.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={clearPickupOnly}
+                        disabled={loading || formDisabled}
+                        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        title="Clear only pickup address fields"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Enter New Address
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
