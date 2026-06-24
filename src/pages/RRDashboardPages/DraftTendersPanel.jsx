@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
@@ -36,6 +36,13 @@ const fmtMs = (ms) => {
   const mm = Math.floor(s / 60);
   const ss = s % 60;
   return `${mm}:${String(ss).padStart(2, "0")}`;
+};
+
+const getDraftPublishTime = (draft) => {
+  const createdAt = draft?.createdAt ? new Date(draft.createdAt).getTime() : null;
+  const submitAt = draft?.draftSubmitAt ? new Date(draft.draftSubmitAt).getTime() : null;
+
+  return submitAt ?? (createdAt ? createdAt + 3 * 60 * 1000 : null);
 };
 
 const toIST = (d) =>
@@ -89,8 +96,7 @@ const DraftAccordionItem = ({
   onCopyId,
 }) => {
   const createdAt = draft?.createdAt ? new Date(draft.createdAt).getTime() : null;
-  const submitAt = draft?.draftSubmitAt ? new Date(draft.draftSubmitAt).getTime() : null;
-  const effectiveSubmitAt = submitAt ?? (createdAt ? createdAt + 3 * 60 * 1000 : null);
+  const effectiveSubmitAt = getDraftPublishTime(draft);
   const msLeft = effectiveSubmitAt ? Math.max(0, effectiveSubmitAt - nowMs) : 0;
 
   const totalMs = 3 * 60 * 1000;
@@ -444,52 +450,89 @@ export default function DraftTendersPanel({ onEditDraft, onGoCreate, onGoHistory
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState(null);
 
+  const autoRefreshLockRef = useRef(false);
+  const autoRefreshCooldownRef = useRef(null);
+
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const normalizeDrafts = (payload) => {
+  const normalizeDrafts = useCallback((payload) => {
     const d0 = payload?.data; // null | object | array
     if (!d0) return [];
     const arr = Array.isArray(d0) ? d0 : [d0];
     return arr.filter((x) => x && x._id);
-  };
+  }, []);
 
-  const fetchDrafts = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(API.DRAFT_TENDER_ACTIVE, authCfg());
-      const payload = res?.data;
+  const fetchDrafts = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!silent) setLoading(true);
 
-      const list = normalizeDrafts(payload);
+      try {
+        const res = await axios.get(API.DRAFT_TENDER_ACTIVE, authCfg());
+        const payload = res?.data;
 
-      // sort: soonest publish first
-      const sorted = [...list].sort((a, b) => {
-        const aT = a?.draftSubmitAt ? new Date(a.draftSubmitAt).getTime() : 0;
-        const bT = b?.draftSubmitAt ? new Date(b.draftSubmitAt).getTime() : 0;
-        return aT - bT;
-      });
+        const list = normalizeDrafts(payload);
 
-      setDrafts(sorted);
+        // sort: soonest publish first
+        const sorted = [...list].sort((a, b) => {
+          const aT = a?.draftSubmitAt ? new Date(a.draftSubmitAt).getTime() : 0;
+          const bT = b?.draftSubmitAt ? new Date(b.draftSubmitAt).getTime() : 0;
+          return aT - bT;
+        });
 
-      // keep open stable
-      setOpenId((prev) => {
-        if (prev && sorted.some((d) => d._id === prev)) return prev;
-        return sorted[0]?._id || null;
-      });
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load drafts.");
-      setDrafts([]);
-      setOpenId(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setDrafts(sorted);
+
+        // keep open stable
+        setOpenId((prev) => {
+          if (prev && sorted.some((d) => d._id === prev)) return prev;
+          return sorted[0]?._id || null;
+        });
+      } catch (e) {
+        toast.error(e?.response?.data?.message || "Failed to load drafts.");
+        setDrafts([]);
+        setOpenId(null);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [normalizeDrafts]
+  );
 
   useEffect(() => {
     fetchDrafts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchDrafts]);
+
+  useEffect(() => {
+    if (!drafts.length) return;
+
+    const hasExpiredDraft = drafts.some((draft) => {
+      const effectiveSubmitAt = getDraftPublishTime(draft);
+      return effectiveSubmitAt && nowMs >= effectiveSubmitAt;
+    });
+
+    if (!hasExpiredDraft || autoRefreshLockRef.current) return;
+
+    autoRefreshLockRef.current = true;
+
+    const refreshAfterExpiry = async () => {
+      await fetchDrafts({ silent: true });
+
+      autoRefreshCooldownRef.current = setTimeout(() => {
+        autoRefreshLockRef.current = false;
+      }, 5000);
+    };
+
+    refreshAfterExpiry();
+  }, [drafts, nowMs, fetchDrafts]);
+
+  useEffect(() => {
+    return () => {
+      if (autoRefreshCooldownRef.current) {
+        clearTimeout(autoRefreshCooldownRef.current);
+      }
+    };
   }, []);
 
   const filtered = useMemo(() => {
