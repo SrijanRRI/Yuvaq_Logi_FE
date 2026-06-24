@@ -35,13 +35,25 @@ const blankLocation = {
   country: "India",
 };
 
+const DEFAULT_PICKUP_LOCATION = {
+  pincode: "492003",
+  state: "Chhattisgarh",
+  district: "Raipur",
+  city: "Birgoan",
+  location: "Urla Industrial Complex",
+  address:
+    "Road no.8, Urla Industrial Complex, Birgoan, Raipur, Chhattisgarh 492003",
+  country: "India",
+};
+
 const initialFormState = {
   deliveryWindow: { from: "", to: "" },
   closingDate: "",
   biddingStart: "",
   biddingEnd: "",          //  Soft End (as per UI)
   biddingHardEnd: "",     //  NEW Hard Stop (Final Stop)
-  pickup: { ...blankLocation },
+  // pickup: { ...blankLocation },
+  pickup: { ...DEFAULT_PICKUP_LOCATION },
   drop: { ...blankLocation },
   projectName: "",
   projectCode: "",
@@ -120,7 +132,10 @@ const RRDashboardPage = () => {
         : "",
     biddingHardEnd: t?.biddingHardEnd ? toDateTimeLocalInput(t.biddingHardEnd) : "",
 
-    pickup: { ...blankLocation, ...(t?.pickup || {}) },
+    // pickup: { ...blankLocation, ...(t?.pickup || {}) },
+
+    // Fixed pickup location
+    pickup: { ...DEFAULT_PICKUP_LOCATION },
     drop: { ...blankLocation, ...(t?.drop || {}) },
 
     projectName: t?.projectName || "",
@@ -197,14 +212,6 @@ const RRDashboardPage = () => {
     }
   };
 
-  // useEffect(() => {
-  //   if (viewHistory) {
-  //     // include scope dependency so switching “mine/all” refetches
-  //     fetchTenderHistory(historyPage, historyLimit, historyScope);
-  //     fetchTransporters();
-  //   }
-  // }, [viewHistory, historyPage, historyLimit, historyScope]);
-
   useEffect(() => {
     if (screen === "history") {
       fetchTenderHistory(historyPage, historyLimit, historyScope);
@@ -256,26 +263,6 @@ const RRDashboardPage = () => {
     }
   };
 
-  // const handleRemoveMaterial = (indexToRemove) => {
-  //   setForm((prev) => {
-  //     const updatedMaterials = prev.materials.filter(
-  //       (_, i) => i !== indexToRemove
-  //     );
-  //     let weight = prev.weight;
-  //     let quantity = prev.quantity;
-  //     if (!prev.isManualTotals) {
-  //       weight = updatedMaterials
-  //         .reduce((a, m) => a + Number(m.weight || 0), 0)
-  //         .toFixed(2);
-  //       quantity = updatedMaterials.reduce(
-  //         (a, m) => a + Number(m.quantity || 0),
-  //         0
-  //       );
-  //     }
-  //     return { ...prev, materials: updatedMaterials, weight, quantity };
-  //   });
-  // };
-
   const handleRemoveMaterial = (indexToRemove) => {
     setForm((prev) => ({
       ...prev,
@@ -288,285 +275,6 @@ const RRDashboardPage = () => {
     const objs = transporterList.filter((t) => selectedIds.includes(t._id));
     setSelectedTransporters(objs);
   };
-
-  // const handleSend = async (e) => {
-  //   e?.preventDefault?.();
-  //   setLoading(true);
-  //   setFormDisabled(true);
-
-  //   const { from, to } = form.deliveryWindow;
-  //   const fromDate = new Date(from);
-  //   const toDate = new Date(to);
-  //   const closing = new Date(form.closingDate);
-  //   // const bidStart = new Date(form.biddingStart);
-  //   // const bidEnd = new Date(form.biddingEnd);
-
-  //   const bidStart = new Date(form.biddingStart);
-  //   const bidSoftEnd = new Date(form.biddingEnd);
-
-  //   // ✅ if user doesn't set hard end, treat hard = soft (no extension; same as current)
-  //   const bidHardEnd = form.biddingHardEnd ? new Date(form.biddingHardEnd) : bidSoftEnd;
-
-  //   if (fromDate > toDate) {
-  //     toast.error("Delivery 'From' date must be before 'To' date.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (closing < fromDate || closing > toDate) {
-  //     toast.error("Closing Date must be within the Delivery Window.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (bidStart < fromDate || bidStart > toDate) {
-  //     toast.error("Bidding Start must be within the Delivery Window.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   // if (bidEnd < fromDate || bidEnd > toDate) {
-  //   //   toast.error("Bidding End must be within the Delivery Window.");
-  //   //   setLoading(false);
-  //   //   setFormDisabled(false);
-  //   //   return;
-  //   // }
-
-  //   // if (bidStart > bidEnd) {
-  //   //   toast.error("Bidding Start cannot be after Bidding End.");
-  //   //   setLoading(false);
-  //   //   setFormDisabled(false);
-  //   //   return;
-  //   // }
-
-  //   if (bidSoftEnd < fromDate || bidSoftEnd > toDate) {
-  //     toast.error("Bidding (Soft End) must be within the Delivery Window.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (bidHardEnd < fromDate || bidHardEnd > toDate) {
-  //     toast.error("Bidding (Hard Stop) must be within the Delivery Window.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (bidStart > bidSoftEnd) {
-  //     toast.error("Bidding Start cannot be after Soft End.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (bidSoftEnd > bidHardEnd) {
-  //     toast.error("Hard Stop must be >= Soft End.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   //  pickup/drop validation (required by backend)
-  //   if (!form.pickup?.pincode || String(form.pickup.pincode).length !== 6 || !form.pickup?.address) {
-  //     toast.error("Please fill Pickup PIN Code and Pickup Address.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (!form.drop?.pincode || String(form.drop.pincode).length !== 6 || !form.drop?.address) {
-  //     toast.error("Please fill Drop PIN Code and Drop Address.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   //  vehicles validation
-  //   if (!Array.isArray(form.vehicleRequirements) || form.vehicleRequirements.length === 0) {
-  //     toast.error("Please add at least one vehicle requirement.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   // totals required when vehicles exist
-  //   if (form.vehicleRequirements.length > 0 && (!form.weight || !form.quantity)) {
-  //     toast.warning("Please enter total weight and quantity.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   // OPTIONAL validation: priceDifference present and non-negative integer
-  //   if (form.priceDifference !== "" && Number.isNaN(parseInt(form.priceDifference, 10))) {
-  //     toast.error("Price Difference must be a number (₹).");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (!form.maxBidUnit) {
-  //     toast.error("Please select Unit Type (Per MT / Per Tender).");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   const minAmt = form.minBidAmount === "" ? null : parseInt(form.minBidAmount, 10);
-  //   const maxAmt = form.maxBidAmount === "" ? null : parseInt(form.maxBidAmount, 10);
-
-  //   if (minAmt === null || Number.isNaN(minAmt)) {
-  //     toast.error("Please enter Min Bid Amount.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (maxAmt === null || Number.isNaN(maxAmt)) {
-  //     toast.error("Please enter Max Bid Amount.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   if (minAmt > maxAmt) {
-  //     toast.error("Min Bid Amount cannot be greater than Max Bid Amount.");
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //     return;
-  //   }
-
-  //   const payload = {
-  //     ...(sourceShipmentId && { shipmentPlanId: sourceShipmentId }),
-  //     deliveryWindow: {
-  //       from: form.deliveryWindow.from,
-  //       to: form.deliveryWindow.to,
-  //     },
-  //     closeDate: form.closingDate,
-  //     biddingStart: form.biddingStart,
-  //     biddingEnd: form.biddingEnd,    // soft end
-  //     ...(form.biddingHardEnd ? { biddingHardEnd: form.biddingHardEnd } : {}),
-
-  //     // ✅ NEW
-  //     pickup: {
-  //       pincode: form.pickup.pincode,
-  //       address: form.pickup.address,
-  //       state: form.pickup.state || "",
-  //       location: form.pickup.location || "",
-  //       city: form.pickup.city || "",
-  //       district: form.pickup.district || "",
-  //       country: form.pickup.country || "India",
-  //     },
-  //     drop: {
-  //       pincode: form.drop.pincode,
-  //       address: form.drop.address,
-  //       state: form.drop.state || "",
-  //       location: form.drop.location || "",
-  //       city: form.drop.city || "",
-  //       district: form.drop.district || "",
-  //       country: form.drop.country || "India",
-  //     },
-
-  //     // ✅ NEW
-  //     vehicleRequirements: form.vehicleRequirements.map((v) => ({
-  //       vehicleId: v.vehicleId,
-  //       category: v.category,
-  //       subCategory: v.subCategory,
-  //       quantity: Number(v.quantity || 1),
-  //     })),
-
-  //     projectName: form.projectName,
-  //     projectCode: form.projectCode,
-  //     purchaseOrder: form.purchaseOrder,
-  //     projectRemark: form.projectRemark,
-  //     totalWeight: form.weight ? Number.parseFloat(form.weight) : null,
-  //     totalQuantity: form.quantity ? Number.parseInt(form.quantity) : null,
-  //     remarks: form.remarks,
-  //     transporters: form.transporter,
-  //     minBidAmount: form.minBidAmount === "" ? null : parseInt(form.minBidAmount, 10),
-  //     maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
-  //     maxBidUnit: form.maxBidUnit || null,
-  //     priceDifference: form.priceDifference === "" ? null : parseInt(form.priceDifference, 10),
-
-  //   };
-
-  //   // console.log("response of tender form ", payload);
-
-  //   try {
-  //     const createRes = await axios.post(`${API.CREATE_TENDER}`, payload, {
-  //       withCredentials: true,
-  //     });
-
-  //     // backend shape is { success: true, data: tender }
-  //     const createdTender = createRes?.data?.data || createRes?.data;
-  //     const tenderId = createdTender?._id;
-
-  //     if (!tenderId) {
-  //       console.warn("No tender _id returned from create API:", createRes?.data);
-  //       toast.warn("Tender created, but ID missing in response.");
-  //     }
-
-  //     // keep your history list consistent with the backend shape
-  //     if (createdTender) setTenderHistories((prev) => [createdTender, ...prev]);
-
-  //     // setTenderHistories((prev) => [response.data, ...prev]);
-  //     toast.success("Tender submitted successfully!");
-
-  //     // NEW: if this tender was created from a shipment, mark that shipment as 'planned'
-  //     if (sourceShipmentId) {
-  //       try {
-  //         await axios.put(
-  //           `${API.SHIPMENT_DETAILS}/${sourceShipmentId}`,
-  //           { status: "planned" },
-  //           { withCredentials: true }
-  //         );
-
-  //         toast.success("Shipment marked as planned.");
-  //         // // tell the Shipments tab to refresh next time we view it
-  //         // setShipmentsRefreshSignal((n) => n + 1);
-  //       } catch (markErr) {
-  //         console.error("Failed to update shipment status:", markErr);
-  //         toast.warn("Tender created, but failed to mark shipment as planned.");
-  //       }
-  //     }
-
-  //     // 3) Notify users on WhatsApp using the tender ID
-  //     if (tenderId) {
-  //       try {
-  //         await axios.post(
-  //           `${API.WHATSAPP_NOTIFICATION}/${tenderId}/notify`,
-  //           {},
-  //           { withCredentials: true }
-  //         );
-
-  //         toast.success("WhatsApp notifications sent.");
-
-  //       } catch (notifyErr) {
-  //         console.error("Failed to send WhatsApp notifications:", notifyErr);
-  //         toast.warn("Tender created, but failed to send WhatsApp notifications.");
-  //       }
-  //     }
-
-  //     // Reset form
-  //     setForm(initialFormState);
-  //     setSelectedTransporters([]);
-  //     setPrefilledFromShipment(false);
-  //     setSourceShipmentId(null);
-
-  //   } catch (error) {
-  //     const msg =
-  //       error?.response?.data?.message ||
-  //       "Something went wrong. Please try again.";
-  //     toast.error(msg);
-  //   } finally {
-  //     setLoading(false);
-  //     setFormDisabled(false);
-  //   }
-  // };
 
   const handleSend = async (e) => {
     e?.preventDefault?.();
@@ -837,12 +545,15 @@ const RRDashboardPage = () => {
       purchaseOrder: shipment.purchaseOrder || "",
       projectRemark: shipment.projectRemark || "",
 
-      pickup: {
-        ...blankLocation,
-        state: shipment.dispatchLocation || "",
-        address: shipment.address || "",
-        pincode: shipment.pincode || "",
-      },
+      // pickup: {
+      //   ...blankLocation,
+      //   state: shipment.dispatchLocation || "",
+      //   address: shipment.address || "",
+      //   pincode: shipment.pincode || "",
+      // },
+
+      // Fixed pickup address
+      pickup: { ...DEFAULT_PICKUP_LOCATION },
       drop: { ...blankLocation }, // keep empty unless shipment provides drop
       vehicleRequirements: [],
 
@@ -872,10 +583,29 @@ const RRDashboardPage = () => {
     }, 50);
   };
 
+  // const clearForm = () => {
+  //   setForm(initialFormState);
+  //   setSelectedTransporters([]);
+  //   setPrefilledFromShipment(false);
+  //   toast.info("Form cleared");
+  // };
+
   const clearForm = () => {
-    setForm(initialFormState);
+    setForm({
+      ...initialFormState,
+      pickup: { ...DEFAULT_PICKUP_LOCATION },
+      drop: { ...blankLocation },
+      deliveryWindow: { from: "", to: "" },
+      materials: [],
+      vehicleRequirements: [],
+      transporter: [],
+    });
+
     setSelectedTransporters([]);
     setPrefilledFromShipment(false);
+    setSourceShipmentId(null);
+    setEditingDraft(null);
+
     toast.info("Form cleared");
   };
 
@@ -1011,159 +741,6 @@ const RRDashboardPage = () => {
   );
 
   return (
-    // <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-    //   <Navbar
-    //     title="Dashboard"
-    //     userName={userName}
-    //     actions={[historyButton]}
-    //     onLogout={onLogout}
-    //   />
-
-    //   <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-    //     {viewHistory ? (
-    //       <TenderHistoryAccordion
-    //         tenderHistories={tenderHistories}
-    //         transporterList={transporterList}
-    //         fetchTenderHistory={fetchTenderHistory}
-    //         page={historyMeta.page}
-    //         limit={historyMeta.limit}
-    //         totalPages={historyMeta.totalPages}
-    //         totalCount={historyMeta.totalCount}
-    //         onPageChange={(p) => setHistoryPage(p)}
-    //         onLimitChange={(l) => {
-    //           setHistoryLimit(l);
-    //           setHistoryPage(1); // reset to first page when page size changes
-    //         }}
-    //         loading={historyLoading}
-    //         scope={historyScope}
-    //         onScopeChange={handleHistoryScopeChange}
-    //         currentUserName={userName}
-    //       />
-    //     ) : (
-    //       <>
-    //         {/* Tabs */}
-    //         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 mb-6">
-    //           <div className="flex">
-    //             {/* <button
-    //               className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === "shipment"
-    //                 ? "bg-emerald-600 text-white shadow"
-    //                 : "text-slate-700 hover:bg-slate-50"
-    //                 }`}
-    //               onClick={() => setActiveTab("shipment")}
-    //              >
-    //               <ClipboardList className="h-4 w-4" /> Shipment Details
-    //             </button> */}
-
-    //             <button
-    //               className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === "create"
-    //                 ? "bg-emerald-600 text-white shadow"
-    //                 : "text-slate-700 hover:bg-slate-50"
-    //                 }`}
-    //               onClick={() => setActiveTab("create")}
-    //             >
-    //               <FilePlus2 className="h-4 w-4" /> Create Tender
-    //             </button>
-
-    //             {/* NEW tab */}
-    //             {/* <button
-    //               className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === "planned"
-    //                 ? "bg-emerald-600 text-white shadow"
-    //                 : "text-slate-700 hover:bg-slate-50"
-    //                 }`}
-    //               onClick={() => setActiveTab("planned")}
-    //              >
-    //               <Calendar className="h-4 w-4" /> Shipment Planned
-    //             </button> */}
-    //           </div>
-    //         </div>
-
-    //         {/* Content */}
-    //         {activeTab === "shipment" ? (
-    //           <ShipmentDetailsTab
-    //             isActive={activeTab === "shipment"}
-    //             onCreateFromShipment={handlePrefillFromShipment}
-    //           />
-    //         ) : activeTab === "create" ? (
-    //           <div id="create-tender-anchor" className="scroll-mt-16 space-y-4">
-    //             {/* Prefill banner + Clear button */}
-    //             {(prefilledFromShipment || true) && (
-    //               <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    //                 <div className="text-sm text-emerald-800">
-    //                   {prefilledFromShipment
-    //                     ? "Form prefilled from Shipment Details. You can edit fields or clear the form to start fresh."
-    //                     : "You can start a fresh tender or clear the form anytime."}
-    //                 </div>
-    //                 <div className="flex gap-2">
-    //                   <button
-    //                     onClick={clearForm}
-    //                     type="button"
-    //                     disabled={loading}
-    //                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50 transition disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-white"
-    //                     title="Clear all form fields"
-    //                   >
-    //                     <RotateCcw className="h-4 w-4" />
-    //                     Clear Form
-    //                   </button>
-    //                 </div>
-    //               </div>
-    //             )}
-
-    //             <TenderForm
-    //               form={form}
-    //               setForm={setForm}
-    //               handleChange={handleChange}
-    //               handleSend={handleSend}
-    //               setShowMaterialModal={setShowMaterialModal}
-    //               setShowTransporterModal={setShowTransporterModal}
-    //               handleRemoveMaterial={handleRemoveMaterial}
-    //               selectedTransporters={selectedTransporters}
-    //               loading={loading}
-    //               formDisabled={formDisabled}
-    //             />
-    //           </div>
-    //         ) : (
-    //           // NEW content render
-    //           <ShipmentPlannedTab
-    //             onCreateFromShipment={handlePrefillFromShipment}
-    //           />
-    //         )}
-    //       </>
-    //     )}
-    //   </div>
-
-    //   {/* modals */}
-    //   {showMaterialModal && (
-    //     <MaterialModal
-    //       close={() => setShowMaterialModal(false)}
-    //       onAdd={(newMaterial) => {
-    //         setForm((prev) => {
-    //           const materials = [...prev.materials, newMaterial];
-    //           let weight = prev.weight;
-    //           let quantity = prev.quantity;
-    //           if (!prev.isManualTotals) {
-    //             weight = materials
-    //               .reduce((sum, m) => sum + Number.parseFloat(m.weight || 0), 0)
-    //               .toFixed(2);
-    //             quantity = materials.reduce(
-    //               (sum, m) => sum + Number.parseInt(m.quantity || 0),
-    //               0
-    //             );
-    //           }
-    //           return { ...prev, materials, weight, quantity };
-    //         });
-    //       }}
-    //     />
-    //   )}
-
-    //   {showTransporterModal && (
-    //     <TransporterModal
-    //       selected={form.transporter}
-    //       onClose={() => setShowTransporterModal(false)}
-    //       onSave={handleTransporterSave}
-    //       setTransporterList={setTransporterList}
-    //     />
-    //   )}
-    // </div>
 
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <Navbar
@@ -1227,40 +804,16 @@ const RRDashboardPage = () => {
               setForm={setForm}
               handleChange={handleChange}
               handleSend={handleSend}
-              // setShowMaterialModal={setShowMaterialModal}
               setShowTransporterModal={setShowTransporterModal}
               handleRemoveMaterial={handleRemoveMaterial}
               selectedTransporters={selectedTransporters}
               loading={loading}
               formDisabled={formDisabled}
+              onClearForm={clearForm}
             />
           </div>
         )}
       </div>
-
-      {/* ✅ keep your modals exactly same */}
-      {/* {showMaterialModal && (
-        <MaterialModal
-          close={() => setShowMaterialModal(false)}
-          onAdd={(newMaterial) => {
-            setForm((prev) => {
-              const materials = [...prev.materials, newMaterial];
-              let weight = prev.weight;
-              let quantity = prev.quantity;
-              if (!prev.isManualTotals) {
-                weight = materials
-                  .reduce((sum, m) => sum + Number.parseFloat(m.weight || 0), 0)
-                  .toFixed(2);
-                quantity = materials.reduce(
-                  (sum, m) => sum + Number.parseInt(m.quantity || 0),
-                  0
-                );
-              }
-              return { ...prev, materials, weight, quantity };
-            });
-          }}
-        />
-      )} */}
 
       {showTransporterModal && (
         <TransporterModal

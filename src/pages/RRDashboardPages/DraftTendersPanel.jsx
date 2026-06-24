@@ -229,8 +229,8 @@ const DraftAccordionItem = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <KV label="Min Bid" value={fmtINR(draft?.minBidAmount)} />
-            <KV label="Max Bid" value={fmtINR(draft?.maxBidAmount)} />
+            {/* <KV label="Min Bid" value={fmtINR(draft?.minBidAmount)} />
+            <KV label="Max Bid" value={fmtINR(draft?.maxBidAmount)} /> */}
             <KV label="Unit" value={safe(draft?.maxBidUnit)} />
           </div>
 
