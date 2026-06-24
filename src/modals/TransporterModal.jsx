@@ -39,6 +39,20 @@ const statusMeta = (matchType) => {
   };
 };
 
+const shuffleTransporters = (list = []) => {
+  const arr = [...list];
+
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return arr.map((item, index) => ({
+    ...item,
+    anonymousLabel: `Transporter ${index + 1}`,
+  }));
+};
+
 const TransporterModal = ({
   selected = [],
   vehicleRequirements = [],
@@ -67,19 +81,34 @@ const TransporterModal = ({
           authCfg()
         );
 
-        const data = Array.isArray(response?.data?.data) ? response.data.data : [];
+        // const data = Array.isArray(response?.data?.data) ? response.data.data : [];
+
+        // if (ignore) return;
+
+        // setTransporterList(data);
+        // updateParentTransporterList?.(data);
+
+        // const autoSelected = data
+        //   .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+        //   .map((t) => String(t._id));
+
+        const rawData = Array.isArray(response?.data?.data) ? response.data.data : [];
+        const data = shuffleTransporters(rawData);
 
         if (ignore) return;
 
         setTransporterList(data);
         updateParentTransporterList?.(data);
 
+        const autoSelected = data
+          .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+          .map((t) => String(t._id));
+
         if (Array.isArray(selected) && selected.length > 0) {
-          setLocalSelection(selected.map(String));
+          setLocalSelection([
+            ...new Set([...autoSelected, ...selected.map(String)]),
+          ]);
         } else {
-          const autoSelected = data
-            .filter((t) => t.defaultSelected)
-            .map((t) => String(t._id));
           setLocalSelection(autoSelected);
         }
       } catch (error) {
@@ -98,11 +127,81 @@ const TransporterModal = ({
     };
   }, [selected, updateParentTransporterList, JSON.stringify(vehicleRequirements)]);
 
-  const handleCheckboxChange = (transporterId) => {
-    const id = String(transporterId);
-    setLocalSelection((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  // const handleCheckboxChange = (transporterId) => {
+  //   const id = String(transporterId);
+
+  //   // Eligible transporters must always stay selected.
+  //   if (eligibleTransporterIds.includes(id)) return;
+
+  //   setLocalSelection((prev) =>
+  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  //   );
+  // };
+
+  // const eligibleTransporterIds = useMemo(() => {
+  //   return transporterList
+  //     .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+  //     .map((t) => String(t._id));
+  // }, [transporterList]);
+
+  // const manualReviewTransporterIds = useMemo(() => {
+  //   return transporterList
+  //     .filter((t) => !(t.matchType === "full" || t.eligible || t.defaultSelected))
+  //     .map((t) => String(t._id));
+  // }, [transporterList]);
+
+  // const isAllManualReviewSelected =
+  //   manualReviewTransporterIds.length > 0 &&
+  //   manualReviewTransporterIds.every((id) => localSelection.includes(id));
+
+  // const handleSelectAllTransporters = () => {
+  //   if (isAllManualReviewSelected) {
+  //     // Deselect Manual Review only. Eligible will remain selected.
+  //     setLocalSelection(eligibleTransporterIds);
+  //     return;
+  //   }
+
+  //   // Select Eligible + all Manual Review.
+  //   setLocalSelection([
+  //     ...new Set([...eligibleTransporterIds, ...manualReviewTransporterIds]),
+  //   ]);
+  // };
+
+  const eligibleTransporterIds = useMemo(() => {
+    return transporterList
+      .filter((t) => t.matchType === "full" || t.eligible || t.defaultSelected)
+      .map((t) => String(t._id));
+  }, [transporterList]);
+
+  const manualReviewTransporterIds = useMemo(() => {
+    return transporterList
+      .filter((t) => !(t.matchType === "full" || t.eligible || t.defaultSelected))
+      .map((t) => String(t._id));
+  }, [transporterList]);
+
+  const isSelectRemainingChecked =
+    manualReviewTransporterIds.length > 0 &&
+    manualReviewTransporterIds.every((id) => localSelection.includes(id));
+
+  const handleCheckboxChange = () => {
+    // Individual selection is disabled.
+    // Only Select Remaining button can select/deselect manual review transporters.
+    return;
+  };
+
+  const handleSelectAllTransporters = () => {
+    if (isSelectRemainingChecked) {
+      // Untick Select Remaining:
+      // remove all manual-review transporters, keep only eligible/auto-selected.
+      setLocalSelection(eligibleTransporterIds);
+      return;
+    }
+
+    // Tick Select Remaining:
+    // select eligible + all remaining/manual-review transporters.
+    setLocalSelection([
+      ...new Set([...eligibleTransporterIds, ...manualReviewTransporterIds]),
+    ]);
   };
 
   const handleSave = () => {
@@ -110,19 +209,11 @@ const TransporterModal = ({
     onClose();
   };
 
-  const demoLabelById = useMemo(() => {
-    const map = {};
-    transporterList.forEach((t, idx) => {
-      map[t._id] = `Transporter ${idx + 1}`;
-    });
-    return map;
-  }, [transporterList]);
-
   const filteredTransporters = transporterList.filter((t) => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
 
-    const demoLabel = (demoLabelById[t._id] || "").toLowerCase();
+    const demoLabel = String(t.anonymousLabel || "").toLowerCase();
 
     return (
       demoLabel.includes(q) ||
@@ -161,7 +252,7 @@ const TransporterModal = ({
           </div>
         </div>
 
-        <div className="p-4 border-b border-slate-200 bg-slate-50">
+        {/* <div className="p-4 border-b border-slate-200 bg-slate-50">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="relative md:col-span-2">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -186,6 +277,45 @@ const TransporterModal = ({
               <div className="text-amber-600 text-xs">Manual Review</div>
             </div>
           </div>
+        </div> */}
+
+        <div className="p-4 border-b border-slate-200 bg-slate-50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+              <div className="text-emerald-700 font-semibold">{eligibleCount}</div>
+              <div className="text-emerald-600 text-xs">Eligible</div>
+            </div>
+
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+              <div className="text-amber-700 font-semibold">
+                {partialCount + noMatchCount}
+              </div>
+              <div className="text-amber-600 text-xs">Manual Review</div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSelectAllTransporters}
+              disabled={loading || manualReviewTransporterIds.length === 0}
+              className={`px-4 py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center gap-2 shadow-sm text-sm border ${isSelectRemainingChecked
+                ? "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
+                : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+            >
+              <span
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelectRemainingChecked
+                  ? "bg-white border-white"
+                  : "bg-white border-slate-300"
+                  }`}
+              >
+                {isSelectRemainingChecked ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                ) : null}
+              </span>
+
+              Select Remaining
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -209,29 +339,30 @@ const TransporterModal = ({
                 const checked = localSelection.includes(id);
                 const meta = statusMeta(transporter.matchType);
                 const Icon = meta.icon;
+                const isEligibleLocked = eligibleTransporterIds.includes(id);
+                const isRowLocked = true;
 
                 return (
                   <label
                     key={id}
-                    className={`flex items-start gap-3 p-4 rounded-xl border transition cursor-pointer ${
-                      checked
-                        ? "border-emerald-300 bg-emerald-50/50"
-                        : "border-slate-200 bg-white hover:bg-slate-50"
-                    }`}
+                    className={`flex items-start gap-3 p-4 rounded-xl border transition cursor-not-allowed ${checked
+                      ? "border-emerald-300 bg-emerald-50/50"
+                      : "border-slate-200 bg-white"
+                      }`}
                   >
                     <div className="relative flex items-center justify-center pt-1">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleCheckboxChange(id)}
+                        disabled={isRowLocked}
                         className="sr-only"
                       />
                       <div
-                        className={`w-5 h-5 rounded transition-all duration-200 border flex items-center justify-center ${
-                          checked
-                            ? "bg-emerald-600 border-emerald-600"
-                            : "bg-white border-slate-300"
-                        }`}
+                        className={`w-5 h-5 rounded transition-all duration-200 border flex items-center justify-center ${checked
+                          ? "bg-emerald-600 border-emerald-600"
+                          : "bg-white border-slate-300"
+                          }`}
                       >
                         {checked ? <Check className="h-3.5 w-3.5 text-white" /> : null}
                       </div>
@@ -241,7 +372,7 @@ const TransporterModal = ({
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                         <div>
                           <div className="font-medium text-slate-800">
-                            {demoLabelById[transporter._id] || "Transporter"}
+                            {transporter.anonymousLabel || "Transporter"}
                           </div>
                           <div className="text-xs text-slate-500 mt-1">
                             Match {Number(transporter.matchedCount || 0)}/

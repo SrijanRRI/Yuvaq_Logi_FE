@@ -89,12 +89,12 @@ const TenderForm = ({
 
   const BID_AMOUNT_RANGE_BY_UNIT = {
     "Per MT": {
-      minBidAmount: "1000",
-      maxBidAmount: "1000000",
+      minBidAmount: "0",
+      maxBidAmount: "9999",
     },
     "Per Tender": {
-      minBidAmount: "5000",
-      maxBidAmount: "1000000",
+      minBidAmount: "0",
+      maxBidAmount: "400000",
     },
   };
 
@@ -180,6 +180,27 @@ const TenderForm = ({
     } finally {
       if (reqId === hsnReqRef.current) setHsnLookupLoading(false);
     }
+  };
+
+  const clearPickupOnly = () => {
+    pickupManualRef.current = { state: false, district: false };
+    pickupLastPinRef.current = null;
+
+    setPickupPinStatus("idle");
+    setPickupPinStatusMsg("");
+
+    setForm((prev) => ({
+      ...prev,
+      pickup: {
+        pincode: "",
+        state: "",
+        district: "",
+        city: "",
+        location: "",
+        address: "",
+        country: "India",
+      },
+    }));
   };
 
   useEffect(() => {
@@ -715,7 +736,7 @@ const TenderForm = ({
                     </p>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Hard Stop (Final End)
                     </label>
@@ -739,6 +760,24 @@ const TenderForm = ({
                         Optional. If empty, Hard Stop = Soft End.
                       </p>
                     )}
+                  </div> */}
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Hard Stop (Final End)
+                    </label>
+
+                    <input
+                      type="datetime-local"
+                      name="biddingHardEnd"
+                      value={form.biddingHardEnd || form.biddingEnd || ""}
+                      disabled
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed focus:outline-none"
+                    />
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Hard Stop is disabled. It will follow Soft End by default.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -749,17 +788,91 @@ const TenderForm = ({
                   Bid Amount Range
                 </h2>
 
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
+                <div className="space-y-5">
+                  <div className="relative">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Minimum Bid Amount<RequiredAsterisk />
+                      Unit Type<RequiredAsterisk />
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span className="text-slate-500 text-lg">₹</span>
-                      </div>
 
-                      <input
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
+                              <Scale className="h-4 w-4 text-amber-600" />
+                            </div>
+                            <div>
+                              {selectedOption ? (
+                                <div>
+                                  <div className="font-medium text-slate-800">
+                                    {selectedOption.label}
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    {selectedOption.description}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-slate-500">Select Unit Type</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <ChevronDown
+                            className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""
+                              }`}
+                          />
+                        </div>
+                      </button>
+
+                      {isDropdownOpen && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
+                          {unitOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => handleUnitSelect(option.value)}
+                              className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b border-amber-100 last:border-b-0"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
+                                    <Scale className="h-4 w-4 text-amber-600" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-slate-800">
+                                      {option.label}
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                      {option.description}
+                                    </div>
+                                  </div>
+                                </div>
+                                {form.maxBidUnit === option.value && (
+                                  <Check className="h-4 w-4 text-amber-600" />
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Minimum Bid Amount<RequiredAsterisk />
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <span className="text-slate-500 text-lg">₹</span>
+                        </div>
+
+                        {/* <input
                         type="number"
                         name="minBidAmount"
                         value={form.minBidAmount || ""}
@@ -767,20 +880,31 @@ const TenderForm = ({
                         placeholder="Select Unit Type first"
                         className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed focus:outline-none text-lg font-medium"
                         required
-                      />
-                    </div>
-                  </div>
+                      /> */}
 
-                  <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Maximum Bid Amount<RequiredAsterisk />
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span className="text-slate-500 text-lg">₹</span>
+                        <input
+                          type="number"
+                          name="minBidAmount"
+                          value={form.minBidAmount || ""}
+                          onChange={handleChange}
+                          min="0"
+                          placeholder="Enter minimum amount"
+                          className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
+                          required
+                        />
                       </div>
+                    </div>
 
-                      <input
+                    <div className="bg-white/70 rounded-xl p-4 border border-amber-200 shadow-sm">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Maximum Bid Amount<RequiredAsterisk />
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <span className="text-slate-500 text-lg">₹</span>
+                        </div>
+
+                        {/* <input
                         type="number"
                         name="maxBidAmount"
                         value={form.maxBidAmount || ""}
@@ -788,89 +912,28 @@ const TenderForm = ({
                         placeholder="Select Unit Type first"
                         className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed focus:outline-none text-lg font-medium"
                         required
-                      />
-                    </div>
-                  </div>
-                </div> */}
+                      /> */}
 
-                <div className="relative mt-5">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Unit Type<RequiredAsterisk />
-                  </label>
-
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="w-full bg-white border border-amber-300 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
-                            <Scale className="h-4 w-4 text-amber-600" />
-                          </div>
-                          <div>
-                            {selectedOption ? (
-                              <div>
-                                <div className="font-medium text-slate-800">
-                                  {selectedOption.label}
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  {selectedOption.description}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-slate-500">Select Unit Type</div>
-                            )}
-                          </div>
-                        </div>
-
-                        <ChevronDown
-                          className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""
-                            }`}
+                        <input
+                          type="number"
+                          name="maxBidAmount"
+                          value={form.maxBidAmount || ""}
+                          onChange={handleChange}
+                          min="0"
+                          placeholder="Enter maximum amount"
+                          className="w-full pl-8 pr-3 py-3 border border-amber-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
+                          required
                         />
                       </div>
-                    </button>
-
-                    {isDropdownOpen && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
-                        {unitOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => handleUnitSelect(option.value)}
-                            className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b border-amber-100 last:border-b-0"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-lg">
-                                  <Scale className="h-4 w-4 text-amber-600" />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-slate-800">
-                                    {option.label}
-                                  </div>
-                                  <div className="text-xs text-slate-500">
-                                    {option.description}
-                                  </div>
-                                </div>
-                              </div>
-                              {form.maxBidUnit === option.value && (
-                                <Check className="h-4 w-4 text-amber-600" />
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-3 flex items-start gap-2 text-amber-700">
-                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs">
-                    Transporters must quote within the allowed range based on the selected unit.
-                  </p>
+                  <div className="mt-3 flex items-start gap-2 text-amber-700">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs">
+                      Transporters must quote within the allowed range based on the selected unit.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -941,22 +1004,47 @@ const TenderForm = ({
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Price Difference (₹)<RequiredAsterisk />
                     </label>
+
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span className="text-slate-500">₹</span>
                       </div>
+
                       <input
-                        type="number"
-                        min="0"
-                        step="1"
+                        type="text"
+                        inputMode="numeric"
                         name="priceDifference"
-                        value={form.priceDifference}
+                        value={form.priceDifference ?? ""}
                         onChange={handleChange}
-                        placeholder="e.g., 20"
-                        className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/40"
+                        onBlur={() => {
+                          const n = parseInt(form.priceDifference, 10);
+
+                          if (!Number.isFinite(n) || n < 25) {
+                            setForm((prev) => ({
+                              ...prev,
+                              priceDifference: "25",
+                            }));
+                          }
+                        }}
+                        placeholder="Minimum ₹25"
+                        className={`w-full pl-7 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-emerald-50/40 ${form.priceDifference !== "" &&
+                          Number(form.priceDifference) < 25
+                          ? "border-red-300 focus:ring-red-400"
+                          : "border-emerald-200 focus:ring-emerald-500"
+                          }`}
                         required
                       />
                     </div>
+
+                    {form.priceDifference !== "" && Number(form.priceDifference) < 25 ? (
+                      <p className="mt-1 text-xs text-red-600">
+                        Minimum allowed price difference is ₹25.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-emerald-700">
+                        Default is ₹25. You can edit it to ₹25 or more.
+                      </p>
+                    )}
                   </div>
 
                   <div className="lg:col-span-2">
@@ -965,10 +1053,13 @@ const TenderForm = ({
                         <div className="bg-emerald-100 p-2 rounded-lg shrink-0">
                           <Info className="h-4 w-4 text-emerald-700" />
                         </div>
+
                         <div className="text-sm text-emerald-800">
                           <p className="font-medium">Minimum decrement to beat L1</p>
                           <p className="mt-1">
-                            Set the minimum amount by which a transporter must undercut the current lowest bid.
+                            This amount controls how much lower the next bid must be compared
+                            to the current lowest bid. You can change it, but it must be at
+                            least ₹25.
                           </p>
                         </div>
                       </div>
@@ -1201,8 +1292,30 @@ const TenderForm = ({
                 </p>
 
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    {/* <div className="font-semibold text-slate-800 mb-3">Pickup<RequiredAsterisk /></div> */}
+
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <div className="font-semibold text-slate-800">
+                          Pickup<RequiredAsterisk />
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Default RR ISPAT address is auto-filled. You can edit it or enter a new address.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={clearPickupOnly}
+                        disabled={loading || formDisabled}
+                        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        title="Clear only pickup address fields"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Enter New Address
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
@@ -1324,15 +1437,15 @@ const TenderForm = ({
                         />
                       </div>
                     </div>
-                  </div> */}
+                  </div>
 
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                  {/* <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
                     <div className="font-semibold text-slate-800 mb-3">
                       Pickup<RequiredAsterisk />
                     </div>
 
-                    <div className="mb-4 rounded-lg border border-emerald-200 bg-white/80 p-3 text-xs text-emerald-800">
-                      Pickup location is fixed by default for this company.
+                    <div className="mb-4 rounded-lg border font-bold border-emerald-200 bg-white/80 p-3 text-sm text-emerald-800">
+                      RR ISPAT
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -1398,7 +1511,7 @@ const TenderForm = ({
                         />
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="font-semibold text-slate-800 mb-3">Drop<RequiredAsterisk /></div>
@@ -1749,7 +1862,7 @@ const TenderForm = ({
                             <Users className="h-3.5 w-3.5 text-emerald-600" />
                           </div>
                           <span className="font-medium text-slate-700">
-                            Transporter {index + 1}
+                            {transporter.anonymousLabel || `Transporter ${index + 1}`}
                           </span>
                         </div>
                       ))}

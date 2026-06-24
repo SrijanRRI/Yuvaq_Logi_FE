@@ -238,6 +238,7 @@ const AdminDashboardPage = () => {
   const handleLogout = async () => {
     try {
       await axios.post(API.LOGOUT_USER, {}, { withCredentials: true });
+      localStorage.removeItem("session_token");
       dispatch(logout());
       toast.success("Logged out successfully!");
     } catch (err) {
@@ -277,11 +278,10 @@ const AdminDashboardPage = () => {
         <div className="mb-6 bg-white rounded-xl shadow-sm p-1 flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${
-              activeTab === "dashboard"
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "dashboard"
                 ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-            }`}
+              }`}
           >
             Dashboard
           </button>
@@ -291,11 +291,10 @@ const AdminDashboardPage = () => {
               setActiveTab("requests");
               fetchPendingUsers();
             }}
-            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${
-              activeTab === "requests"
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "requests"
                 ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-            }`}
+              }`}
           >
             Requests
           </button>
@@ -305,44 +304,40 @@ const AdminDashboardPage = () => {
               setActiveTab("vehicleRequests");
               fetchPendingVehicleRequests();
             }}
-            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${
-              activeTab === "vehicleRequests"
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "vehicleRequests"
                 ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-            }`}
+              }`}
           >
             Vehicle Requests
           </button>
 
           <button
             onClick={fetchAllUsers}
-            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${
-              activeTab === "users"
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "users"
                 ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-            }`}
+              }`}
           >
             Users
           </button>
 
           <button
             onClick={fetchAllTenders}
-            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${
-              activeTab === "tenders"
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "tenders"
                 ? "bg-gradient-to-r from-orange-500 to-yellow-400 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-            }`}
+              }`}
           >
             Tenders
           </button>
 
           <button
             onClick={fetchReports}
-            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${
-              activeTab === "reports"
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "reports"
                 ? "bg-gradient-to-r from-gray-700 to-gray-900 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-            }`}
+              }`}
           >
             Reports
           </button>
@@ -454,21 +449,19 @@ const AdminDashboardPage = () => {
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => setUserFilter("user")}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      userFilter === "user"
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${userFilter === "user"
                         ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-                    }`}
+                      }`}
                   >
                     RRI Users
                   </button>
                   <button
                     onClick={() => setUserFilter("transportUser")}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      userFilter === "transportUser"
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${userFilter === "transportUser"
                         ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
-                    }`}
+                      }`}
                   >
                     Transport Users
                   </button>

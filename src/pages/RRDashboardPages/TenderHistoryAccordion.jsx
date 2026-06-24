@@ -74,33 +74,6 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (!fetchTenderHistory) return;
-
-    const shouldRefresh = tenderHistories.some((t) => {
-      const biddingEndMs = t?.biddingEnd ? new Date(t.biddingEnd).getTime() : null;
-      const postBidStatus = String(t?.postBid?.status || "").toLowerCase();
-
-      if (!biddingEndMs) return false;
-
-      const now = Date.now();
-
-      return (
-        now >= biddingEndMs &&
-        t.status !== "finalized" &&
-        postBidStatus !== "ended"
-      );
-    });
-
-    if (!shouldRefresh) return;
-
-    const id = setInterval(() => {
-      fetchTenderHistory(page, limit, scope);
-    }, 15000);
-
-    return () => clearInterval(id);
-  }, [tenderHistories, fetchTenderHistory, page, limit, scope]);
-
   const fetchFinalizedContact = async (tenderId) => {
     if (!tenderId) return;
 
@@ -136,35 +109,117 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
     }
   };
 
-  const getTransporterName = (transporter) => {
-    if (!transporter) return "Unknown"
-    if (typeof transporter === "object") {
-      return transporter.name || transporter.email || transporter._id
+  // const getTransporterName = (transporter) => {
+  //   if (!transporter) return "Unknown"
+  //   if (typeof transporter === "object") {
+  //     return transporter.name || transporter.email || transporter._id
+  //   }
+  //   const found = transporterList.find((t) => t._id === transporter)
+  //   return found ? found.name || found.email : transporter
+  // }
+
+  const getAnonymousTransporterName = (transporter, index = 0) => {
+    const id =
+      typeof transporter === "object"
+        ? String(transporter?._id || transporter?.id || "")
+        : String(transporter || "");
+
+    if (!id) return `Transporter ${index + 1}`;
+
+    const list = Array.isArray(transporterList) ? transporterList : [];
+
+    const foundIndex = list.findIndex((t) => String(t._id) === id);
+
+    return `Transporter ${foundIndex >= 0 ? foundIndex + 1 : index + 1}`;
+  };
+
+  const getTransporterName = (transporter, tender, index = 0) => {
+    const isFinalized =
+      String(tender?.status || "").toLowerCase() === "finalized";
+
+    if (!isFinalized) {
+      return getAnonymousTransporterName(transporter, index);
     }
-    const found = transporterList.find((t) => t._id === transporter)
-    return found ? found.name || found.email : transporter
-  }
+
+    if (!transporter) return "Unknown Transporter";
+
+    if (typeof transporter === "object") {
+      return (
+        transporter.name ||
+        transporter.email ||
+        `Transporter ${index + 1}`
+      );
+    }
+
+    const found = transporterList.find(
+      (t) => String(t._id) === String(transporter)
+    );
+
+    return found?.name || found?.email || `Transporter ${index + 1}`;
+  };
+
+  // const toggleResponses = (idx, tenderId) => {
+  //   setOpenIdx((prev) => (prev === idx ? null : idx))
+
+  //   if (fetchedResponseIds.has(tenderId) || responseErrors[tenderId]) return
+
+  //   axios
+  //     .get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
+  //       withCredentials: true,
+  //     })
+  //     .then((res) => {
+  //       setAllResponses((prev) => ({ ...prev, [tenderId]: res.data.data }))
+  //       setFetchedResponseIds((prev) => new Set(prev).add(tenderId))
+  //     })
+  //     .catch((err) => {
+  //       const errorMessage =
+  //         err?.response?.data?.err || err?.response?.data?.message || "Could not load transporter responses."
+
+  //       setResponseErrors((prev) => ({ ...prev, [tenderId]: errorMessage }))
+  //     })
+  // }
 
   const toggleResponses = (idx, tenderId) => {
-    setOpenIdx((prev) => (prev === idx ? null : idx))
+    setOpenIdx((prev) => (prev === idx ? null : idx));
 
-    if (fetchedResponseIds.has(tenderId) || responseErrors[tenderId]) return
+    if (!tenderId) return;
+
+    // ✅ If data already loaded successfully, do not fetch again
+    if (fetchedResponseIds.has(tenderId)) return;
 
     axios
       .get(`${API.FETCH_ALL_QUOTATION_FOR_PARTICULAR_TENDER}/${tenderId}`, {
         withCredentials: true,
       })
       .then((res) => {
-        setAllResponses((prev) => ({ ...prev, [tenderId]: res.data.data }))
-        setFetchedResponseIds((prev) => new Set(prev).add(tenderId))
+        setAllResponses((prev) => ({
+          ...prev,
+          [tenderId]: res?.data?.data || res?.data,
+        }));
+
+        // ✅ Clear old live-bidding / post-bid expected message after successful fetch
+        setResponseErrors((prev) => {
+          const copy = { ...prev };
+          delete copy[tenderId];
+          return copy;
+        });
+
+        setFetchedResponseIds((prev) => new Set(prev).add(tenderId));
       })
       .catch((err) => {
         const errorMessage =
-          err?.response?.data?.err || err?.response?.data?.message || "Could not load transporter responses."
+          err?.response?.data?.err ||
+          err?.response?.data?.message ||
+          "Could not load transporter responses.";
 
-        setResponseErrors((prev) => ({ ...prev, [tenderId]: errorMessage }))
-      })
-  }
+        // ✅ Do not add tenderId in fetchedResponseIds here.
+        // So after bidding/post-bid completes, user can open again and data will fetch.
+        setResponseErrors((prev) => ({
+          ...prev,
+          [tenderId]: errorMessage,
+        }));
+      });
+  };
 
   const authCfg = () => {
     const token = localStorage.getItem("session_token");
@@ -861,212 +916,228 @@ const TenderHistoryAccordion = ({ tenderHistories = [], transporterList = [], fe
           </div> */}
 
           {/* Tender List */}
-          <div className="space-y-4">
-            {filteredTenders.map((tender, idx) => {
-              const tenderId = tender._id
-              const selectedQuotationId = tender.selectedQuotation?._id
-              // const responses = allResponses[tenderId] || []
-              const raw = allResponses[tenderId];
-              const responses =
-                Array.isArray(raw)
-                  ? raw
-                  : Array.isArray(raw?.data)
-                    ? raw.data
-                    : Array.isArray(raw?.combinedForUI)
-                      ? raw.combinedForUI
-                      : Array.isArray(raw?.normal)
-                        ? raw.normal
-                        : [];
+          {loading ? (
+            <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
+              <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
+                <Loader2 className="h-10 w-10 text-emerald-500 animate-spin" />
+              </div>
 
-              return (
-                <div
-                  key={tenderId}
-                  className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300 hover:shadow-md hover:border-emerald-200"
-                >
-                  <TenderCard
-                    tender={tender}
-                    isOpen={openIdx === idx}
-                    onToggle={() => toggleResponses(idx, tenderId)}
-                    onExportPDF={() => exportWithResponses(tender, 'pdf')}
-                    onExportExcel={() => exportWithResponses(tender, 'excel')}
+              <p className="text-slate-700 font-semibold mb-1">
+                Loading tender history...
+              </p>
 
-                    canDelete={canDeleteTender(tender)}
-                    onDeleteClick={(t) => setDeleteTender(t)}
-                    deleteDisabledHint="Delete allowed only before bidding starts"
-                  />
+              <p className="text-slate-500 text-sm">
+                Please wait while we fetch the latest tender records.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTenders.map((tender, idx) => {
+                const tenderId = tender._id
+                const selectedQuotationId = tender.selectedQuotation?._id
+                // const responses = allResponses[tenderId] || []
+                const raw = allResponses[tenderId];
+                const responses =
+                  Array.isArray(raw)
+                    ? raw
+                    : Array.isArray(raw?.data)
+                      ? raw.data
+                      : Array.isArray(raw?.combinedForUI)
+                        ? raw.combinedForUI
+                        : Array.isArray(raw?.normal)
+                          ? raw.normal
+                          : [];
+
+                return (
+                  <div
+                    key={tenderId}
+                    className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300 hover:shadow-md hover:border-emerald-200"
+                  >
+                    <TenderCard
+                      tender={tender}
+                      isOpen={openIdx === idx}
+                      onToggle={() => toggleResponses(idx, tenderId)}
+                      onExportPDF={() => exportWithResponses(tender, 'pdf')}
+                      onExportExcel={() => exportWithResponses(tender, 'excel')}
+
+                      canDelete={canDeleteTender(tender)}
+                      onDeleteClick={(t) => setDeleteTender(t)}
+                      deleteDisabledHint="Delete allowed only before bidding starts"
+                    />
 
 
-                  {openIdx === idx && (
-                    <div className="border-t border-slate-200 p-5">
-                      <TenderDetails tender={tender} getTransporterName={getTransporterName} />
+                    {openIdx === idx && (
+                      <div className="border-t border-slate-200 p-5">
+                        <TenderDetails tender={tender} getTransporterName={getTransporterName} />
 
-                      {/* AUTO POST BID STATUS BAR */}
-                      {(() => {
-                        const postBidStatus = String(tender?.postBid?.status || "inactive").toLowerCase();
+                        {/* AUTO POST BID STATUS BAR */}
+                        {(() => {
+                          const postBidStatus = String(tender?.postBid?.status || "inactive").toLowerCase();
 
-                        const biddingEndMs = tender?.biddingEnd
-                          ? new Date(tender.biddingEnd).getTime()
-                          : null;
+                          const biddingEndMs = tender?.biddingEnd
+                            ? new Date(tender.biddingEnd).getTime()
+                            : null;
 
-                        const endsAt = tender?.postBid?.endsAt
-                          ? new Date(tender.postBid.endsAt)
-                          : null;
+                          const endsAt = tender?.postBid?.endsAt
+                            ? new Date(tender.postBid.endsAt)
+                            : null;
 
-                        const rangeMin = tender?.postBid?.rangeMin;
-                        const rangeMax = tender?.postBid?.rangeMax;
-                        const baseL1Price = tender?.postBid?.baseL1Price;
+                          const rangeMin = tender?.postBid?.rangeMin;
+                          const rangeMax = tender?.postBid?.rangeMax;
+                          const baseL1Price = tender?.postBid?.baseL1Price;
 
-                        const isBeforeBiddingEnd = biddingEndMs && nowMs < biddingEndMs;
-                        const isAfterBiddingEnd = biddingEndMs && nowMs >= biddingEndMs;
+                          const isBeforeBiddingEnd = biddingEndMs && nowMs < biddingEndMs;
+                          const isAfterBiddingEnd = biddingEndMs && nowMs >= biddingEndMs;
 
-                        const isActive = postBidStatus === "active";
-                        const isEnded = postBidStatus === "ended";
-                        const isInactive = !postBidStatus || postBidStatus === "inactive";
+                          const isActive = postBidStatus === "active";
+                          const isEnded = postBidStatus === "ended";
+                          const isInactive = !postBidStatus || postBidStatus === "inactive";
 
-                        let title = "";
-                        let description = "";
-                        let badgeClass = "bg-slate-100 text-slate-600 border-slate-200";
+                          let title = "";
+                          let description = "";
+                          let badgeClass = "bg-slate-100 text-slate-600 border-slate-200";
 
-                        if (isBeforeBiddingEnd) {
-                          const left = biddingEndMs - nowMs;
-                          const mm = Math.floor(left / 60000);
-                          const ss = Math.floor((left % 60000) / 1000);
+                          if (isBeforeBiddingEnd) {
+                            const left = biddingEndMs - nowMs;
+                            const mm = Math.floor(left / 60000);
+                            const ss = Math.floor((left % 60000) / 1000);
 
-                          title = "Normal bidding is active";
-                          description = `Auto post-bid will start after bidding ends. Time left: ${mm}:${String(ss).padStart(2, "0")}`;
-                          badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
-                        } else if (isAfterBiddingEnd && isInactive) {
-                          title = "Waiting for auto post-bid";
-                          description = "Bidding has ended. Backend will calculate L1 and start post-bid automatically.";
-                          badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
-                        } else if (isActive) {
-                          const remainingMs = endsAt ? endsAt.getTime() - nowMs : 0;
-                          const safeRemaining = Math.max(0, remainingMs);
-                          const mm = Math.floor(safeRemaining / 60000);
-                          const ss = Math.floor((safeRemaining % 60000) / 1000);
+                            title = "Normal bidding is active";
+                            description = `Auto post-bid will start after bidding ends. Time left: ${mm}:${String(ss).padStart(2, "0")}`;
+                            badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                          } else if (isAfterBiddingEnd && isInactive) {
+                            title = "Waiting for auto post-bid";
+                            description = "Bidding has ended. Backend will calculate L1 and start post-bid automatically.";
+                            badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
+                          } else if (isActive) {
+                            const remainingMs = endsAt ? endsAt.getTime() - nowMs : 0;
+                            const safeRemaining = Math.max(0, remainingMs);
+                            const mm = Math.floor(safeRemaining / 60000);
+                            const ss = Math.floor((safeRemaining % 60000) / 1000);
 
-                          title = "Post-bid is live";
-                          description = `Transporters can submit improved quotes. Time left: ${mm}:${String(ss).padStart(2, "0")}`;
-                          badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
-                        } else if (isEnded) {
-                          title = "Post-bid ended";
-                          description = "Post-bid window has ended. You can proceed with selection/finalization.";
-                          badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
-                        } else {
-                          title = "Post-bid status unavailable";
-                          description = "Refresh tender history to check latest post-bid status.";
-                        }
+                            title = "Post-bid is live";
+                            description = `Transporters can submit improved quotes. Time left: ${mm}:${String(ss).padStart(2, "0")}`;
+                            badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                          } else if (isEnded) {
+                            title = "Post-bid ended";
+                            description = "Post-bid window has ended. You can proceed with selection/finalization.";
+                            badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+                          } else {
+                            title = "Post-bid status unavailable";
+                            description = "Refresh tender history to check latest post-bid status.";
+                          }
 
-                        return (
-                          <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {isAfterBiddingEnd && isInactive && (
-                                    <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
-                                  )}
+                          return (
+                            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {isAfterBiddingEnd && isInactive && (
+                                      <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                                    )}
 
-                                  <h3 className="text-sm font-semibold text-slate-800">
-                                    {title}
-                                  </h3>
+                                    <h3 className="text-sm font-semibold text-slate-800">
+                                      {title}
+                                    </h3>
 
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
-                                    {postBidStatus.toUpperCase()}
-                                  </span>
-
-                                  {tender?.postBid?.autoStarted && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">
-                                      AUTO STARTED
+                                    <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                      {postBidStatus.toUpperCase()}
                                     </span>
-                                  )}
-                                </div>
 
-                                {/* <p className="mt-1 text-xs text-slate-600">
+                                    {tender?.postBid?.autoStarted && (
+                                      <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">
+                                        AUTO STARTED
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* <p className="mt-1 text-xs text-slate-600">
                                   {description}
                                 </p> */}
 
-                                <p className="mt-1 text-xs text-slate-600">
-                                  {description.split("Time left:")[0]}
-                                  {description.includes("Time left:") && (
-                                    <span className="ml-1 font-bold text-base text-red-600 tracking-wide">
-                                      Time left: {description.split("Time left:")[1]}
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
-
-                              {(rangeMin != null || rangeMax != null || baseL1Price != null) && (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                                  {baseL1Price != null && (
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                                      <div className="text-slate-500">Base L1 Price</div>
-                                      <div className="font-semibold text-slate-800">
-                                        ₹{Number(baseL1Price).toLocaleString("en-IN")}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {rangeMin != null && (
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                                      <div className="text-slate-500">Post-bid Min</div>
-                                      <div className="font-semibold text-emerald-700">
-                                        ₹{Number(rangeMin).toLocaleString("en-IN")}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {rangeMax != null && (
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                                      <div className="text-slate-500">Post-bid Max</div>
-                                      <div className="font-semibold text-emerald-700">
-                                        ₹{Number(rangeMax).toLocaleString("en-IN")}
-                                      </div>
-                                    </div>
-                                  )}
+                                  <p className="mt-1 text-xs text-slate-600">
+                                    {description.split("Time left:")[0]}
+                                    {description.includes("Time left:") && (
+                                      <span className="ml-1 font-bold text-base text-red-600 tracking-wide">
+                                        Time left: {description.split("Time left:")[1]}
+                                      </span>
+                                    )}
+                                  </p>
                                 </div>
-                              )}
+
+                                {(rangeMin != null || rangeMax != null || baseL1Price != null) && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                    {baseL1Price != null && (
+                                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                        <div className="text-slate-500">Base L1 Price</div>
+                                        <div className="font-semibold text-slate-800">
+                                          ₹{Number(baseL1Price).toLocaleString("en-IN")}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {rangeMin != null && (
+                                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                        <div className="text-slate-500">Post-bid Min</div>
+                                        <div className="font-semibold text-emerald-700">
+                                          ₹{Number(rangeMin).toLocaleString("en-IN")}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {rangeMax != null && (
+                                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                        <div className="text-slate-500">Post-bid Max</div>
+                                        <div className="font-semibold text-emerald-700">
+                                          ₹{Number(rangeMax).toLocaleString("en-IN")}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
 
-                      <TransporterResponses
-                        responses={responses}
-                        tender={tender}
-                        selectedQuotationId={selectedQuotationId}
-                        confirmedIdxMap={confirmedIdxMap}
-                        editingId={editingId}
-                        priceInput={priceInput}
-                        setEditingId={setEditingId}
-                        setPriceInput={setPriceInput}
-                        // onConfirmFinal={handleDone}
-                        onReopen={handleReopen}
-                        getTransporterName={getTransporterName}
-                        setPreviewFile={setPreviewFile}
-                        responseError={responseErrors[tenderId]}
-                        contact={contactByTender[tenderId]}
-                        contactLoading={!!contactLoading[tenderId]}
-                        onRevealContact={() => fetchFinalizedContact(tenderId)}
-                        onRequestConfirmation={handleRequestConfirmation}
-                        onProceedToPay={handleProceedToPay}
-                        requestingConfirmByQ={requestingConfirmByQ}
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                        <TransporterResponses
+                          responses={responses}
+                          tender={tender}
+                          selectedQuotationId={selectedQuotationId}
+                          confirmedIdxMap={confirmedIdxMap}
+                          editingId={editingId}
+                          priceInput={priceInput}
+                          setEditingId={setEditingId}
+                          setPriceInput={setPriceInput}
+                          // onConfirmFinal={handleDone}
+                          onReopen={handleReopen}
+                          getTransporterName={getTransporterName}
+                          setPreviewFile={setPreviewFile}
+                          responseError={responseErrors[tenderId]}
+                          contact={contactByTender[tenderId]}
+                          contactLoading={!!contactLoading[tenderId]}
+                          onRevealContact={() => fetchFinalizedContact(tenderId)}
+                          onRequestConfirmation={handleRequestConfirmation}
+                          onProceedToPay={handleProceedToPay}
+                          requestingConfirmByQ={requestingConfirmByQ}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
 
-            {!loading && filteredTenders.length === 0 && (
-              <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
-                <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
-                  <Search className="h-10 w-10 text-emerald-200" />
+              {!loading && filteredTenders.length === 0 && (
+                <div className="bg-gradient-to-br from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-10 text-center">
+                  <div className="bg-white rounded-full p-4 inline-flex mb-3 shadow-sm">
+                    <Search className="h-10 w-10 text-emerald-200" />
+                  </div>
+                  <p className="text-slate-700 font-medium mb-2">No tenders found</p>
+                  <p className="text-slate-500 text-sm">Try adjusting your search or filter criteria</p>
                 </div>
-                <p className="text-slate-700 font-medium mb-2">No tenders found</p>
-                <p className="text-slate-500 text-sm">Try adjusting your search or filter criteria</p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* ===== Pagination Bar ===== */}
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">

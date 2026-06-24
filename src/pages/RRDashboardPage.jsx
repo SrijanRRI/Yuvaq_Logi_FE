@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -36,13 +36,13 @@ const blankLocation = {
 };
 
 const DEFAULT_PICKUP_LOCATION = {
-  pincode: "492003",
+  pincode: "493221",
   state: "Chhattisgarh",
   district: "Raipur",
   city: "Birgoan",
   location: "Urla Industrial Complex",
   address:
-    "Road no.8, Urla Industrial Complex, Birgoan, Raipur, Chhattisgarh 492003",
+    "RRIspat : Road no.8, Urla Industrial Complex, Birgoan, Raipur, Chhattisgarh 493221",
   country: "India",
 };
 
@@ -69,7 +69,7 @@ const initialFormState = {
   minBidAmount: "",
   maxBidAmount: "",
   maxBidUnit: "",
-  priceDifference: "",
+  priceDifference: "25",
 };
 
 const RRDashboardPage = () => {
@@ -134,8 +134,13 @@ const RRDashboardPage = () => {
 
     // pickup: { ...blankLocation, ...(t?.pickup || {}) },
 
+    pickup: {
+      ...DEFAULT_PICKUP_LOCATION,
+      ...(t?.pickup || {}),
+    },
+
     // Fixed pickup location
-    pickup: { ...DEFAULT_PICKUP_LOCATION },
+    // pickup: { ...DEFAULT_PICKUP_LOCATION },
     drop: { ...blankLocation, ...(t?.drop || {}) },
 
     projectName: t?.projectName || "",
@@ -164,42 +169,72 @@ const RRDashboardPage = () => {
     minBidAmount: t?.minBidAmount != null ? String(t.minBidAmount) : "",
     maxBidAmount: t?.maxBidAmount != null ? String(t.maxBidAmount) : "",
     maxBidUnit: t?.maxBidUnit || "",
-    priceDifference: t?.priceDifference != null ? String(t.priceDifference) : "",
+    priceDifference:
+      t?.priceDifference != null && Number(t.priceDifference) >= 25
+        ? String(t.priceDifference)
+        : "25",
   });
 
-  const fetchTenderHistory = async (page = historyPage, limit = historyLimit, scope = historyScope) => {
-    try {
-      // Build URL: include userId only when scope === 'mine'
-      const qUser = scope === "mine" && userId ? `&userId=${encodeURIComponent(userId)}` : "";
-      const url = `${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}${qUser}`;
+  const fetchTenderHistory = useCallback(
+    async (page = historyPage, limit = historyLimit, scope = historyScope) => {
+      try {
+        setHistoryLoading(true);
 
-      const response = await axios.get(url, { withCredentials: true });
-      const data = response?.data?.data || response?.data?.results || [];
+        const qUser =
+          scope === "mine" && userId
+            ? `&userId=${encodeURIComponent(userId)}`
+            : "";
 
-      console.log("transporters detail", data);
+        const url = `${API.FETCH_ALL_TENDER_CREATED_BY_RRUSER}?page=${page}&limit=${limit}${qUser}`;
 
-      const meta =
-        response?.data?.pagination ||
-        response?.data?.meta || {
-          page: response?.data?.page ?? page,
-          limit: response?.data?.limit ?? limit,
-          totalPages: response?.data?.totalPages ??
-            Math.max(1, Math.ceil((response?.data?.total || response?.data?.totalCount || data.length) / (limit || 1))),
-          totalCount: response?.data?.totalCount ?? response?.data?.total ?? data.length,
-        };
+        const response = await axios.get(url, { withCredentials: true });
+        const data = response?.data?.data || response?.data?.results || [];
 
-      setTenderHistories(data);
-      setHistoryMeta({
-        page: Number(meta.page) || page,
-        limit: Number(meta.limit) || limit,
-        totalPages: Number(meta.totalPages) || 1,
-        totalCount: Number(meta.totalCount) || data.length,
-      });
-    } catch (err) {
-      console.error("Failed to fetch tender history", err);
-      toast.error("Could not fetch tender history. Please try again later.");
-    }
-  };
+        const meta =
+          response?.data?.pagination ||
+          response?.data?.meta || {
+            page: response?.data?.page ?? page,
+            limit: response?.data?.limit ?? limit,
+            totalPages:
+              response?.data?.totalPages ??
+              Math.max(
+                1,
+                Math.ceil(
+                  (response?.data?.total ||
+                    response?.data?.totalCount ||
+                    data.length) / (limit || 1)
+                )
+              ),
+            totalCount:
+              response?.data?.totalCount ??
+              response?.data?.total ??
+              data.length,
+          };
+
+        setTenderHistories(data);
+        setHistoryMeta({
+          page: Number(meta.page) || page,
+          limit: Number(meta.limit) || limit,
+          totalPages: Number(meta.totalPages) || 1,
+          totalCount: Number(meta.totalCount) || data.length,
+        });
+      } catch (err) {
+        console.error("Failed to fetch tender history", err);
+        toast.error("Could not fetch tender history. Please try again later.");
+
+        setTenderHistories([]);
+        setHistoryMeta({
+          page,
+          limit,
+          totalPages: 1,
+          totalCount: 0,
+        });
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [historyPage, historyLimit, historyScope, userId]
+  );
 
   const fetchTransporters = async () => {
     try {
@@ -215,9 +250,14 @@ const RRDashboardPage = () => {
   useEffect(() => {
     if (screen === "history") {
       fetchTenderHistory(historyPage, historyLimit, historyScope);
+    }
+  }, [screen, historyPage, historyLimit, historyScope, fetchTenderHistory]);
+
+  useEffect(() => {
+    if (screen === "history" && transporterList.length === 0) {
       fetchTransporters();
     }
-  }, [screen, historyPage, historyLimit, historyScope]);
+  }, [screen, transporterList.length]);
 
   const handleHistoryScopeChange = (scope) => {
     setHistoryScope(scope);
@@ -237,6 +277,37 @@ const RRDashboardPage = () => {
   // const [shipmentsRefreshSignal, setShipmentsRefreshSignal] = useState(0);
 
   // handlers
+  // const handleChange = (e) => {
+  //   const { name, value, options } = e.target;
+
+  //   if (name === "transporter") {
+  //     const selected = Array.from(options)
+  //       .filter((o) => o.selected)
+  //       .map((o) => o.value);
+  //     setForm((p) => ({ ...p, transporter: selected }));
+  //   } else if (name === "maxBidAmount") {
+  //     const rounded = value ? parseInt(value, 10) : "";
+  //     setForm((p) => ({ ...p, maxBidAmount: rounded.toString() }));
+  //   } else if (name === "priceDifference") {
+  //     const clean = value.replace(/\D/g, "");
+
+  //     // Allow empty while typing/backspacing
+  //     setForm((p) => ({
+  //       ...p,
+  //       priceDifference: clean,
+  //     }));
+  //   }
+  //   else if (name === "weight" || name === "quantity") {
+  //     setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
+  //   } else if (name === "maxBidAmount" || name === "minBidAmount") {
+  //     const rounded = value ? parseInt(value, 10) : "";
+  //     setForm((p) => ({ ...p, [name]: rounded === "" ? "" : String(rounded) }));
+  //   }
+  //   else {
+  //     setForm((p) => ({ ...p, [name]: value }));
+  //   }
+  // };
+
   const handleChange = (e) => {
     const { name, value, options } = e.target;
 
@@ -244,23 +315,41 @@ const RRDashboardPage = () => {
       const selected = Array.from(options)
         .filter((o) => o.selected)
         .map((o) => o.value);
+
       setForm((p) => ({ ...p, transporter: selected }));
-    } else if (name === "maxBidAmount") {
-      const rounded = value ? parseInt(value, 10) : "";
-      setForm((p) => ({ ...p, maxBidAmount: rounded.toString() }));
-    } else if (name === "priceDifference") {
-      // accept only non-negative integers
-      const v = value === "" ? "" : Math.max(0, parseInt(value, 10) || 0);
-      setForm((p) => ({ ...p, priceDifference: v === "" ? "" : String(v) }));
-    } else if (name === "weight" || name === "quantity") {
-      setForm((p) => ({ ...p, [name]: value, isManualTotals: true }));
-    } else if (name === "maxBidAmount" || name === "minBidAmount") {
-      const rounded = value ? parseInt(value, 10) : "";
-      setForm((p) => ({ ...p, [name]: rounded === "" ? "" : String(rounded) }));
+      return;
     }
-    else {
-      setForm((p) => ({ ...p, [name]: value }));
+
+    if (name === "priceDifference") {
+      const clean = value.replace(/\D/g, "");
+
+      setForm((p) => ({
+        ...p,
+        priceDifference: clean,
+      }));
+      return;
     }
+
+    if (name === "minBidAmount" || name === "maxBidAmount") {
+      const clean = value.replace(/\D/g, "");
+
+      setForm((p) => ({
+        ...p,
+        [name]: clean,
+      }));
+      return;
+    }
+
+    if (name === "weight" || name === "quantity") {
+      setForm((p) => ({
+        ...p,
+        [name]: value,
+        isManualTotals: true,
+      }));
+      return;
+    }
+
+    setForm((p) => ({ ...p, [name]: value }));
   };
 
   const handleRemoveMaterial = (indexToRemove) => {
@@ -271,8 +360,14 @@ const RRDashboardPage = () => {
   };
 
   const handleTransporterSave = (selectedIds) => {
-    setForm((p) => ({ ...p, transporter: selectedIds }));
-    const objs = transporterList.filter((t) => selectedIds.includes(t._id));
+    const cleanIds = selectedIds.map(String);
+
+    setForm((p) => ({ ...p, transporter: cleanIds }));
+
+    const objs = transporterList.filter((t) =>
+      cleanIds.includes(String(t._id))
+    );
+
     setSelectedTransporters(objs);
   };
 
@@ -361,8 +456,20 @@ const RRDashboardPage = () => {
       }
 
       // OPTIONAL validation: priceDifference present and non-negative integer
-      if (form.priceDifference !== "" && Number.isNaN(parseInt(form.priceDifference, 10))) {
-        toast.error("Price Difference must be a number (₹).");
+      // if (form.priceDifference !== "" && Number.isNaN(parseInt(form.priceDifference, 10))) {
+      //   toast.error("Price Difference must be a number (₹).");
+      //   return;
+      // }
+
+      const priceDiff = parseInt(form.priceDifference, 10);
+
+      if (Number.isNaN(priceDiff)) {
+        toast.error("Price Difference is required.");
+        return;
+      }
+
+      if (priceDiff < 25) {
+        toast.error("Price Difference cannot be less than ₹25.");
         return;
       }
 
@@ -450,7 +557,7 @@ const RRDashboardPage = () => {
         minBidAmount: form.minBidAmount === "" ? null : parseInt(form.minBidAmount, 10),
         maxBidAmount: form.maxBidAmount ? parseInt(form.maxBidAmount, 10) : null,
         maxBidUnit: form.maxBidUnit || null,
-        priceDifference: form.priceDifference === "" ? null : parseInt(form.priceDifference, 10),
+        priceDifference: Math.max(25, parseInt(form.priceDifference || "25", 10)),
       };
 
       // ---------------- AUTH CFG ----------------
@@ -496,7 +603,7 @@ const RRDashboardPage = () => {
         setEditingDraft(createdDraft);
 
         toast.success("Draft created. You have 3 minutes to edit.");
-        console.log("draft available", createdDraft);
+        // console.log("draft available", createdDraft);
 
         // RESET FORM
         setForm(initialFormState);
@@ -552,11 +659,12 @@ const RRDashboardPage = () => {
       //   pincode: shipment.pincode || "",
       // },
 
+      // pickup: { ...blankLocation },
       // Fixed pickup address
       pickup: { ...DEFAULT_PICKUP_LOCATION },
       drop: { ...blankLocation }, // keep empty unless shipment provides drop
       vehicleRequirements: [],
-
+      priceDifference: "25",
       deliveryWindow: { from: "", to: "" },
       closingDate: "",
       biddingStart: "",
@@ -593,6 +701,7 @@ const RRDashboardPage = () => {
   const clearForm = () => {
     setForm({
       ...initialFormState,
+      // pickup: { ...blankLocation },
       pickup: { ...DEFAULT_PICKUP_LOCATION },
       drop: { ...blankLocation },
       deliveryWindow: { from: "", to: "" },
@@ -637,6 +746,7 @@ const RRDashboardPage = () => {
   const onLogout = async () => {
     try {
       await axios.post(API.LOGOUT_USER, {}, { withCredentials: true });
+      localStorage.removeItem("session_token");
       dispatch(logout());
       toast.success("Logged out successfully!");
     } catch (err) {

@@ -11,6 +11,7 @@ import {
 const TransporterResponseItem = ({
   response,
   idx,
+  transporterDisplayName,
   tender,
   selectedQuotationId,
   confirmedIdxMap,
@@ -156,7 +157,7 @@ const TransporterResponseItem = ({
 
             <div className="min-w-0 flex-1">
               <h5 className="font-semibold text-slate-800 text-sm sm:text-base truncate">
-                Transporter {aliasNo ?? idx + 1}
+                {transporterDisplayName || `Transporter ${aliasNo ?? idx + 1}`}
               </h5>
 
               <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -477,8 +478,8 @@ const TransporterResponseItem = ({
                         : ""
                     }
                     className={`px-3 sm:px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base ${isRequestingConfirm || isPostBidTimerLive
-                        ? "bg-slate-400 cursor-not-allowed"
-                        : "bg-indigo-600 hover:bg-indigo-700"
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-700"
                       }`}
                   >
                     {isRequestingConfirm ? (

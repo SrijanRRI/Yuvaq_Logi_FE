@@ -1,4 +1,3 @@
-// src/utils/SubscriptionGate.jsx
 import React, { useEffect, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";

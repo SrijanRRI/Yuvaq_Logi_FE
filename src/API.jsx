@@ -2,7 +2,9 @@
 let serverUrl = "http://localhost:5000";
 
 // Production : 
-// let serverUrl = "https://logiqbe.yuvaq.com" 
+// let serverUrl = "https://logiqbe.yuvaq.com"
+// let serverUrl = "https://logiqtestbe.yuvaq.com"
+// let serverUrl = "https://logiqofficialbe.yuvaq.com"
 
 
 

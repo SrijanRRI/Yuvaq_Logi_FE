@@ -45,6 +45,7 @@ const SignInPage = () => {
       const {
         success,
         message,
+        token,
         data,
         subscription,
         subscriptionActive,
@@ -53,6 +54,10 @@ const SignInPage = () => {
       if (!success) {
         toast.error(message || "Login failed. Please try again.");
         return;
+      }
+
+      if (token) {
+        localStorage.setItem("session_token", token);
       }
 
       // 1) store auth info
@@ -105,70 +110,39 @@ const SignInPage = () => {
     }
   };
 
-  // // Toggle Server Mode
-  // const handleServerToggle = () => {
-  //   const newMode = serverMode === "DOMAIN" ? "IP" : "DOMAIN";
-  //   // console.log(newMode);
-  //   setServerMode(newMode);
-  //   switchServerUrl(newMode);
-  // };
+  useEffect(() => {
+    if (!isAuthenticated || !role) return;
 
-  // useEffect(() => {
-  //   const currentHost = window.location.hostname;
-  //   // window.location.reload();
+    const dashboardPath =
+      role === "admin"
+        ? "/admin/dashboard"
+        : role === "transportUser"
+          ? "/transporter/dashboard"
+          : "/rr/dashboard";
 
-  //   if (currentHost === "localhost") {
-  //     setServerMode("DOMAIN");
-  //     localStorage.setItem("serverUrl", "DOMAIN");
-  //   } else {
-  //     setServerMode("IP");
-  //     localStorage.setItem("serverUrl", "IP");
-  //   }
-  // }, []);
+    if (role === "admin") {
+      navigate(dashboardPath, { replace: true });
+      return;
+    }
 
-  // useEffect(() => {
-  //     const currentHost = window.location.hostname;
-  //     // window.location.reload();
+    if (!subscriptionLoaded) return;
 
-  //     if (currentHost === "reportfe.rrispat.in" ) {
-  //         console.log(currentHost);
+    if (!subscription?.isActive) {
+      navigate("/subscribe", {
+        replace: true,
+        state: { from: dashboardPath },
+      });
+      return;
+    }
 
-  //         setServerMode("DOMAIN");
-  //         localStorage.setItem("serverUrl", "DOMAIN");
-  //     } else {
-  //         setServerMode("IP");
-  //         localStorage.setItem("serverUrl", "IP");
-  //     }
-  // }, []);  
-
-  // Redirect if already logged in
-  // useEffect(() => {
-  //   if (!isAuthenticated || !role) return;
-
-  //   const dash =
-  //     role === "admin"
-  //       ? "/admin/dashboard"
-  //       : role === "transportUser"
-  //         ? "/transporter/dashboard"
-  //         : "/rr/dashboard";
-
-  //   // admin
-  //   if (role === "admin") {
-  //     navigate(dash, { replace: true });
-  //     return;
-  //   }
-
-  //   // for pay roles: wait until subscription is loaded
-  //   if (!subscriptionLoaded) return;
-
-  //   if (!subscription?.isActive) {
-  //     navigate("/subscribe", { replace: true, state: { from: dash } });
-  //     return;
-  //   }
-
-  //   navigate(dash, { replace: true });
-
-  // }, [isAuthenticated, role, subscriptionLoaded, subscription?.isActive, navigate]);
+    navigate(dashboardPath, { replace: true });
+  }, [
+    isAuthenticated,
+    role,
+    subscriptionLoaded,
+    subscription?.isActive,
+    navigate,
+  ]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50">

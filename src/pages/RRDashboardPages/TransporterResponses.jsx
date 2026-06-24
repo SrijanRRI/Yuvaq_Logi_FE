@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import TransporterResponseItem from "./TransporterResponseItem";
-import { Truck, AlertCircle } from "lucide-react";
+import { Truck, AlertCircle, Clock } from "lucide-react";
 
 const TransporterResponses = ({
   responses,
@@ -241,6 +241,89 @@ const TransporterResponses = ({
     setOpenResponseId((prev) => (prev === qid ? null : qid));
   };
 
+  const getMaskedOrRealTransporterName = (transporter, index = 0, aliasNo) => {
+    const isFinalized =
+      String(tender?.status || "").toLowerCase() === "finalized";
+
+    const displayIndex = Number(aliasNo || index + 1);
+
+    if (!isFinalized) {
+      return `Transporter ${displayIndex}`;
+    }
+
+    return (
+      getTransporterName?.(transporter, tender, displayIndex - 1) ||
+      `Transporter ${displayIndex}`
+    );
+  };
+
+  const isQuotationLockedMessage = (msg) => {
+    const text = String(msg || "").toLowerCase();
+
+    return (
+      text.includes("top quotations") ||
+      text.includes("bidding window") ||
+      text.includes("bidding window closes") ||
+      text.includes("viewed only after")
+    );
+  };
+
+  const tenderStatus = String(tender?.status || "").toLowerCase();
+
+  const biddingStartTimeMs = tender?.biddingStart
+    ? new Date(tender.biddingStart).getTime()
+    : null;
+
+  const biddingEndTimeMs = tender?.biddingEnd
+    ? new Date(tender.biddingEnd).getTime()
+    : null;
+
+  const postBidStatus = String(tender?.postBid?.status || "").toLowerCase();
+
+  const postBidEndsAtTimeMs = tender?.postBid?.endsAt
+    ? new Date(tender.postBid.endsAt).getTime()
+    : null;
+
+  const nowTimeMs = Date.now();
+
+  const isFinalizedOrClosed =
+    tenderStatus === "finalized" ||
+    tenderStatus === "closed" ||
+    tenderStatus === "cancelled";
+
+  const isPostBidLive =
+    postBidStatus === "active" &&
+    postBidEndsAtTimeMs &&
+    nowTimeMs < postBidEndsAtTimeMs;
+
+  const isNormalBiddingLive =
+    !isFinalizedOrClosed &&
+    !isPostBidLive &&
+    biddingEndTimeMs &&
+    nowTimeMs < biddingEndTimeMs &&
+    (!biddingStartTimeMs || nowTimeMs >= biddingStartTimeMs);
+
+  const isExpectedLockedMessage = isQuotationLockedMessage(responseError);
+
+  const shouldShowNormalBiddingInfo =
+    isNormalBiddingLive || (isExpectedLockedMessage && !isPostBidLive);
+
+  const shouldShowPostBidInfo =
+    isPostBidLive;
+
+  const shouldShowRealApiError =
+    responseError && !isExpectedLockedMessage;
+
+  const getTimeLeft = (endMs) => {
+    if (!endMs) return "";
+
+    const remaining = Math.max(0, endMs - Date.now());
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+
+    return `${mins}:${String(secs).padStart(2, "0")}`;
+  };
+
   return (
     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
       <h4 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-slate-800 flex items-center gap-2">
@@ -248,11 +331,60 @@ const TransporterResponses = ({
         <span className="truncate">Transporter Responses</span>
       </h4>
 
-      {responseError ? (
+      {shouldShowNormalBiddingInfo ? (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg sm:rounded-xl p-4 sm:p-5 text-sm mb-4 sm:mb-5 flex items-start gap-3">
+          <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+
+          <div className="min-w-0">
+            <p className="font-semibold mb-1">Normal bidding is currently live</p>
+
+            <p className="break-words text-amber-700">
+              Transporter responses and rankings will be visible after the normal bidding window closes.
+            </p>
+
+            {biddingEndTimeMs ? (
+              <p className="mt-2 text-xs text-amber-700">
+                Time left:{" "}
+                <span className="font-bold text-red-600">
+                  {getTimeLeft(biddingEndTimeMs)}
+                </span>
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : shouldShowPostBidInfo ? (
+        <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg sm:rounded-xl p-4 sm:p-5 text-sm mb-4 sm:mb-5 flex items-start gap-3">
+          <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <p className="font-semibold">Post-bid is currently live</p>
+
+              <span className="text-[11px] px-2 py-0.5 rounded-full border border-indigo-200 bg-white text-indigo-700 font-semibold">
+                IMPROVED QUOTES WINDOW
+              </span>
+            </div>
+
+            <p className="break-words text-indigo-700">
+              Normal bidding has ended. Transporters can still submit improved quotes during the post-bid window.
+              Final responses and rankings will be visible after the complete bidding process ends.
+            </p>
+
+            {postBidEndsAtTimeMs ? (
+              <p className="mt-2 text-xs text-indigo-700">
+                Post-bid time left:{" "}
+                <span className="font-bold text-red-600">
+                  {getTimeLeft(postBidEndsAtTimeMs)}
+                </span>
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : shouldShowRealApiError ? (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg sm:rounded-xl p-4 sm:p-5 text-sm mb-4 sm:mb-5 flex items-start gap-3">
           <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mt-0.5 flex-shrink-0" />
           <div className="min-w-0">
-            <p className="font-medium mb-1">Error Loading Responses</p>
+            <p className="font-medium mb-1">Unable to load responses</p>
             <p className="break-words">{responseError}</p>
           </div>
         </div>
@@ -295,6 +427,11 @@ const TransporterResponses = ({
                       key={res._id || `post-${idx}`}
                       response={res}
                       idx={idx}
+                      transporterDisplayName={getMaskedOrRealTransporterName(
+                        res.transportUser,
+                        idx,
+                        aliasNo
+                      )}
                       tender={tender}
                       selectedQuotationId={selectedQuotationId}
                       confirmedIdxMap={confirmedIdxMap}
@@ -356,6 +493,11 @@ const TransporterResponses = ({
                     key={res._id || `normal-${idx}`}
                     response={res}
                     idx={idx}
+                    transporterDisplayName={getMaskedOrRealTransporterName(
+                      res.transportUser,
+                      idx,
+                      aliasNo
+                    )}
                     tender={tender}
                     selectedQuotationId={selectedQuotationId}
                     confirmedIdxMap={confirmedIdxMap}

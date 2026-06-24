@@ -63,7 +63,7 @@ export default function PostBidNegotiationsView({ items = [], loading, onRefresh
         </div>
         <h3 className="text-xl font-bold text-slate-800 mb-2">No Active Post-Bid</h3>
         <p className="text-slate-500 max-w-md mb-6">
-          If you participated in a tender and User starts post-bid, it will appear here for 10 minutes.
+          If you participated in a tender and User starts post-bid, it will appear here for 5 minutes.
         </p>
         <button
           onClick={onRefresh}
