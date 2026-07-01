@@ -12,6 +12,7 @@ import AdminAllTenders from "./AdminPage/AdminAllTenders";
 import AdminRequests from "./AdminPage/AdminRequests";
 import AdminReports from "./AdminPage/AdminReports";
 import AdminVehicleRequests from "./AdminPage/AdminVehicleRequests";
+import AdminSubscriptionUsers from "./AdminPage/AdminSubscriptionUsers";
 
 const authCfg = () => {
   const token = localStorage.getItem("session_token");
@@ -63,7 +64,7 @@ const AdminDashboardPage = () => {
   const fetchAllUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(API.GETALLUSER);
+      const res = await axios.get(API.GETALLUSER , authCfg());
       const users = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setAllUsers(users);
       setUserFilter("user");
@@ -279,8 +280,8 @@ const AdminDashboardPage = () => {
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "dashboard"
-                ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
               }`}
           >
             Dashboard
@@ -292,8 +293,8 @@ const AdminDashboardPage = () => {
               fetchPendingUsers();
             }}
             className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "requests"
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
               }`}
           >
             Requests
@@ -305,8 +306,8 @@ const AdminDashboardPage = () => {
               fetchPendingVehicleRequests();
             }}
             className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "vehicleRequests"
-                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
               }`}
           >
             Vehicle Requests
@@ -315,18 +316,28 @@ const AdminDashboardPage = () => {
           <button
             onClick={fetchAllUsers}
             className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "users"
-                ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
               }`}
           >
             Users
           </button>
 
           <button
+            onClick={() => setActiveTab("subscriptions")}
+            className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "subscriptions"
+              ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              }`}
+          >
+            Subscriptions
+          </button>
+
+          <button
             onClick={fetchAllTenders}
             className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "tenders"
-                ? "bg-gradient-to-r from-orange-500 to-yellow-400 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              ? "bg-gradient-to-r from-orange-500 to-yellow-400 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
               }`}
           >
             Tenders
@@ -335,8 +346,8 @@ const AdminDashboardPage = () => {
           <button
             onClick={fetchReports}
             className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md ${activeTab === "reports"
-                ? "bg-gradient-to-r from-gray-700 to-gray-900 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+              ? "bg-gradient-to-r from-gray-700 to-gray-900 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
               }`}
           >
             Reports
@@ -368,7 +379,7 @@ const AdminDashboardPage = () => {
                 Manage users, transporters, vehicles, tenders and reports from one place.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
                 <div
                   onClick={() => {
                     setActiveTab("requests");
@@ -415,6 +426,35 @@ const AdminDashboardPage = () => {
                 </div>
 
                 <div
+                  onClick={() => setActiveTab("subscriptions")}
+                  className="bg-gradient-to-br from-teal-50 to-emerald-100 p-6 rounded-xl cursor-pointer hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="w-12 h-12 bg-teal-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-teal-700"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12A9 9 0 113 12a9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+
+                  <h3 className="font-semibold text-teal-800 text-lg mb-1">
+                    Subscriptions
+                  </h3>
+                  <p className="text-teal-600 text-sm">
+                    View validity and extend user plans
+                  </p>
+                </div>
+
+                <div
                   onClick={fetchAllTenders}
                   className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl cursor-pointer hover:shadow-md transition-shadow duration-200"
                 >
@@ -450,8 +490,8 @@ const AdminDashboardPage = () => {
                   <button
                     onClick={() => setUserFilter("user")}
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${userFilter === "user"
-                        ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+                      ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
                       }`}
                   >
                     RRI Users
@@ -459,8 +499,8 @@ const AdminDashboardPage = () => {
                   <button
                     onClick={() => setUserFilter("transportUser")}
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${userFilter === "transportUser"
-                        ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
+                      ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300"
                       }`}
                   >
                     Transport Users
@@ -474,6 +514,8 @@ const AdminDashboardPage = () => {
               />
             </div>
           )}
+
+          {activeTab === "subscriptions" && <AdminSubscriptionUsers />}
 
           {activeTab === "requests" && (
             <AdminRequests
