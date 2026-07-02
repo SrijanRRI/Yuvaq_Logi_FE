@@ -43,6 +43,10 @@ const API = {
   GETALLTENDER: `${serverUrl}/admin/all-tender`,
   GET_ALL_REPORTS: `${serverUrl}/admin/tenders/ranked-best-report`,
 
+  ADMIN_USER_SUBSCRIPTIONS: `${serverUrl}/admin/users/subscriptions`,
+
+  EXTEND_USER_SUBSCRIPTION: (userId) => `${serverUrl}/admin/users/${userId}/subscription/extend`,
+
   //Transport User
   FETCH_ALL_TRANSPORTER: `${serverUrl}/admin/transport-users`,
   UPCOMING_TENDERS: `${serverUrl}/tenders/transporter/upcoming`,
